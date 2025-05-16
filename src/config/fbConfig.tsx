@@ -31,7 +31,9 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 if (typeof window !== 'undefined') {
-  //analytics = getAnalytics(app);
+  if (process.env.NODE_ENV === "production") {
+    analytics = getAnalytics(app);
+  }
   auth = getAuth(app);
 
   setPersistence(auth, browserSessionPersistence)
