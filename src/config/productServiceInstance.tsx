@@ -22,7 +22,7 @@ switch (provider) {
     productService = new MockProductService();
     break;
   default:
-    throw new Error(`Proveedor de datos no soportado: ${provider}`);
+    throw new Error(`Data provider not supported: ${provider}`);
 }
 
 export default productService;
