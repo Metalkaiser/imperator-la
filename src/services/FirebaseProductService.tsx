@@ -7,46 +7,49 @@ import { dbCollections, noProductError } from '@/app/utils/utils';
 const catalogCollection = collection(db, dbCollections.products);
 
 export class FirebaseProductService implements ProductService {
-  async getAllProducts(): Promise<productProps[] | appResponse> {
+  async getAllProducts(): Promise<appResponse> {
     try {
       const querySnapshot = await getDocs(catalogCollection);
-      return querySnapshot.docs.map(doc => ({
+      const products = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       } as productProps));
+      return {code: "success", response: products , status: 200}
     } catch (error) {
-      return {code: "unknown", status: 500}
+      return {code: "unknown", response: null, status: 500}
     }
     
   }
 
-  async getActiveProducts(): Promise<productProps[] | appResponse> {
+  async getActiveProducts(): Promise<appResponse> {
     try {
     const catalogSnapshot = await getDocs(query(catalogCollection, where("status", "==", 1), orderBy('mainSku', 'asc')));
     const catalogItems = catalogSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as productProps));
     if (!catalogItems.length) {
-      return {code: "conection-failed", status: 503}
+      return {code: "conection-failed", response: null, status: 503}
     }
 
-    return catalogItems;
+    return {code: "success", response: catalogItems , status: 200};
   } catch (error) {
-    return {code: "unknown", status: 500}
+    return {code: "unknown", response: null, status: 500}
   }
   }
 
-  async getProductById(id: string): Promise<productProps | appResponse> {
+  async getProductById(id: string): Promise<appResponse> {
     const docRef = doc(db, dbCollections.products, id);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as productProps : noProductError;
+    return docSnap.exists() ? 
+      {code: "success", response: { id: docSnap.id, ...docSnap.data() } as productProps , status: 200} :
+      noProductError;
   }
 
   async updateProduct(product: productProps): Promise<appResponse> {
     try {
       const productDocRef = doc(db, (product.id as string));
       await updateDoc(productDocRef, { ...product });
-      return { code: "success", status: 200 };
+      return { code: "success", response: product, status: 200 };
     } catch (error) {
-      return {code: "unknown", status: 500}
+      return {code: "unknown", response: null, status: 500}
     }
   }
 }

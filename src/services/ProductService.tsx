@@ -1,8 +1,8 @@
-import { productProps, appResponse, movementsProps } from "@/app/utils/types";
+import { productProps, appResponse } from "@/app/utils/types";
 
 export interface ProductService {
-  getAllProducts(): Promise<productProps[] | appResponse>;
-  getActiveProducts(): Promise<productProps[] | appResponse>;
-  getProductById(id: string): Promise<productProps | appResponse>;
+  getAllProducts(): Promise<appResponse>;
+  getActiveProducts(): Promise<appResponse>;
+  getProductById(id: string): Promise<appResponse>;
   updateProduct(product: productProps): Promise<appResponse>;
 }

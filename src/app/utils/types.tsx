@@ -36,6 +36,7 @@ export type topProducts = {
 
 export type appResponse = {
   code: string;
+  response: any;
   status: number;
 }
 
