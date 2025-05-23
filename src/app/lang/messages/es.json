@@ -1,6 +1,6 @@
 {
-  "HomePage": {
-    "title": "Hola mundo!",
+  "Home": {
+    "home": "Inicio",
     "about": "Acerca de nosotros",
     "switchProp": "en",
     "switchlang": "Cambiar a inglés"

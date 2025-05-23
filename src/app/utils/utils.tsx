@@ -49,3 +49,23 @@ export const webAppProps = {
     "pulseras"
   ]
 }
+
+/*
+* 
+* Catalog's basic configs
+* 
+*/
+export const allCategories = [
+  "Anillos",
+  "Collares",
+  "Brazaletes",
+  "Relojes",
+  "Zarcillos"
+];
+
+export const allSubcategories = [
+  "Elegantes",
+  "Masónicos",
+  "Rockeros",
+  "Vikingos"
+]

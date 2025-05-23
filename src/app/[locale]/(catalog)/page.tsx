@@ -16,8 +16,7 @@ export const metadata: Metadata = {
 }
 
 export default function Home() {
-  const t = useTranslations('HomePage');
   return (
-     <Link href="/">{t('switchlang')}</Link>
+     ""
   );
 }
