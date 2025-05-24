@@ -56,16 +56,16 @@ export const webAppProps = {
 * 
 */
 export const allCategories = [
-  "Anillos",
-  "Collares",
-  "Brazaletes",
-  "Relojes",
-  "Zarcillos"
+  "rings",
+  "necklaces",
+  "bracelets",
+  "watches",
+  "pendants"
 ];
 
 export const allSubcategories = [
-  "Elegantes",
-  "Masónicos",
-  "Rockeros",
-  "Vikingos"
+  "elegants",
+  "masonics",
+  "rockers",
+  "vikings"
 ]

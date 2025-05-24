@@ -2,9 +2,9 @@ import {NextIntlClientProvider, hasLocale} from 'next-intl';
 import {notFound} from 'next/navigation';
 import {routing} from '@/i18n/routing';
 import Topmenu from './components/topmenu';
+import Custom404 from '@/app/not-found';
 import getProductService from '@/config/productServiceInstance';
 import { productProps } from '@/app/utils/types';
-import { allCategories, allSubcategories } from '@/app/utils/utils';
 
 export default async function CatalogLayout({
   children,
@@ -27,8 +27,12 @@ export default async function CatalogLayout({
   if (productServiceResponse.status === 200) {
     result = productServiceResponse.response as productProps[];
     const catIndexes = Array.from(new Set(result.map(item => item.category)));
-    const categories = Array.from(new Set(catIndexes.map(index => allCategories[index])));
-    render = <Topmenu categories={categories} />
+
+    render = <>
+      <Topmenu catIndexes={catIndexes} />
+    </>;
+  } else {
+    render = <Custom404 context='products'/>;
   }
 
   return (

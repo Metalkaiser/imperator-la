@@ -29,6 +29,8 @@ const nextConfig = {
  b. `npm run build`
  c. `firebase deploy`
 
+Please note that you will need to configure the static parameters for the dynamic routes.
+
  - Vercel: The process in Vercel is very simple. Just follow the instructions in their website for deployment
 
 
@@ -74,16 +76,31 @@ In the src/app/utils/utils.tsx file, you will find some constants which you can 
 
 ## Languages
 
-This web app supports multilanguage content, which depends on the accept-language of the user's web navigator. For that, you just need to set the translation files in the src/app/lang folder, and place the translation folders inside.
+This web app supports multilanguage content, which depends on the accept-language of the user's web navigator. For that, you just need to set the translation files in the src/app/lang/messages folder, and place the translation folders inside, with a {locale}.json format.
 
-For example, let's say you set a *messages* folder in the src/app/lang folder. In the src/app/lang/messages folder, you will place the languages files in .json extension, for example en.json, es.json, de.json, it.json, etc.
-
-Name your language files using the accept-language prefix options, according to the languages you want your website to serve.
-
-Then, in the src/i18n/request.tsx file, you will set the messages folder like this:
-
-    messages: (await  import(`../../src/app/lang/messages/${locale}.json`)).default
-
-inside of the *return* instruction.
+Name your language files using the accept-language prefix options, according to the languages you want your website to serve, for example en.json, es.json, de.json, it.json, etc.
 
 For more information about multilanguage setting, you can visit the  [next-intl library documentation](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://next-intl.dev/)
+
+This web app is configured to have some default values in spanish. Any developer can change them at will in each desired section.
+
+# Catalog sections
+
+## Header section
+
+The header section includes the following content:
+
+ - Hamburguer menu: this item triggers a left side menu with some category and subcategory links
+ - Shopping cart icon: this item triggers a right side menu with some details about the items in the shopping cart (if any)
+ - Store logo: a png image of the store logo
+ - Categories links: the links to the main categories, including the homepage link
+
+These are the main components involved in the header section:
+
+ - src/app/[locale]/(catalog)/components/topmenu.tsx: The main `<header>` tag component that contains all the header content.
+ - src/app/[locale]/(catalog)/components/menus/Topbtn.tsx: the component that renders both the hamburguer menu and the shopping cart icon, separately.
+
+The header section can be left as it is, you will just need to change some details according to your web app needs:
+ - The *webAppProps* constant properties, and the *allCategories* constant array items in src/app/utils/utils.tsx
+ - The images in public/brand folder, keeping the same names as the samples there. The logo_poster_(theme).webp images are the ones which will be set at the middle of the header.
+ - Set some translations in the src/app/lang/messages folder, beggining with your default language, and then any other additional language you have set for your web app. You can find a es.json file in the messages folder, which belongs to the spanish example version. Pay special attention to the home, categories and subcategories elements.
