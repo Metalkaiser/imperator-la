@@ -1,8 +1,23 @@
 {
-  "HomePage": {
-    "title": "Hola mundo!",
-    "about": "Acerca de nosotros",
-    "switchProp": "en",
-    "switchlang": "Cambiar a inglés"
+  "webAppProps": {
+    "home": "Catálogo de productos",
+    "description": "Catálogo online. Acero inoxidable hipoalergénico. Envíos a toda Venezuela.",
+    "adminDescription": "Sitio web de administración de inventario y ventas."
+  },
+  "home": {
+    "title": "Inicio"
+  },
+  "categories": {
+    "rings": "Anillos",
+    "necklaces": "Collares",
+    "bracelets": "Brazaletes",
+    "watches": "Relojes",
+    "pendants": "Zarcillos"
+  },
+  "subcategories": {
+    "elegants": "Elegantes",
+    "masonics": "Masónicos",
+    "rockers": "Rockeros",
+    "vikings": "Vikingos"
   }
 }

@@ -3,20 +3,20 @@ import { productProps, appResponse } from '@/app/utils/types';
 import { prisma } from '@/config/prisma';
 
 export class SQLProductService implements ProductService {
-  async getAllProducts(): Promise<productProps[] | appResponse> {
+  async getAllProducts(): Promise<appResponse> {
     const products = await prisma.product.findMany();
-    return products;
+    return {code: "success", response: products , status: 200};
   }
-  async getActiveProducts(): Promise<productProps[] | appResponse> {
+  async getActiveProducts(): Promise<appResponse> {
     const products = await prisma.product.findMany({
       where: { status: 1 },
     });
-    return products;
+    return {code: "success", response: products , status: 200};
   }
 
-  async getProductById(id: string): Promise<productProps | appResponse> {
+  async getProductById(id: string): Promise<appResponse> {
     const product = await prisma.product.findUnique({ where: { id } });
-    return product;
+    return {code: "success", response: product , status: 200};
   }
 
   async updateProduct(product: productProps): Promise<appResponse> {
@@ -31,9 +31,9 @@ export class SQLProductService implements ProductService {
           // Add other fields as necessary
         },
       });
-      return { code: "success", status: 200 };
+      return {code: "success", response: product , status: 200};
     } catch (error) {
-      return {code: "unknown", status: 500};
+      return {code: "unknown", response: null, status: 500};
     }
   }
 }
