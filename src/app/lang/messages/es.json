@@ -7,17 +7,19 @@
   "home": {
     "title": "Inicio"
   },
-  "categories": {
-    "rings": "Anillos",
-    "necklaces": "Collares",
-    "bracelets": "Brazaletes",
-    "watches": "Relojes",
-    "pendants": "Zarcillos"
+  "shoppingCart": {
+    "title": "Carrito de compras",
+    "noItem_1": "Aún no tienes nada en tu carrito de compras",
+    "noItem_2": "¡Comienza a agregar productos!",
+    "size": "Talla",
+    "quantity": "Cantidad",
+    "price": "Precio",
+    "actionBtnOrder": "Hacer pedido",
+    "deleteItem": "Quitar producto",
+    "deleteItemText": "¿Está seguro de quitar el producto del carrito?:",
+    "deleteCart": "Quitar producto"
   },
-  "subcategories": {
-    "elegants": "Elegantes",
-    "masonics": "Masónicos",
-    "rockers": "Rockeros",
-    "vikings": "Vikingos"
+  "misc": {
+    "cancelBtn": "Cancelar"
   }
 }

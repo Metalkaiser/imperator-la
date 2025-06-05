@@ -68,4 +68,8 @@ export const allSubcategories = [
   "masonics",
   "rockers",
   "vikings"
-]
+];
+
+export const sessionItemName = "imperator_products_data";
+export const sessionExpirationTime = 2 * 60 * 60 * 1000;
+export const sessionCartName = "imperator_cart";
