@@ -4,6 +4,7 @@ import {routing} from '@/i18n/routing';
 import Topmenu from './components/topmenu';
 import Sidemenu from './components/menus/Sidemenu';
 import Custom404 from '@/app/not-found';
+import Footer from './components/Footer';
 import { productProps } from '@/app/utils/types';
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
 import getProductService from '@/config/productServiceInstance';
@@ -43,6 +44,7 @@ export default async function CatalogLayout({
       {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
       <Topmenu catIndexes={catIndexes} />
       {children}
+      <Footer />
     </>;
   } else {
     render = <Custom404 context='products'/>;
