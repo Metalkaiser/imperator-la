@@ -88,6 +88,15 @@ export function getAllCategories(locale: string) {
   }));
 }
 
+export const getActiveCategory = (catIndexes:number[], locale:string) => {
+  const allCategories = getAllCategories(locale);
+
+  const categories = Array.from(new Set(catIndexes.map((index) => allCategories[index].label)));
+  const categoryLinks = Array.from(new Set(catIndexes.map((index) => allCategories[index].slug)));
+
+  return { categories, categoryLinks };
+}
+
 export function getCategoriesWithSubcategories(locale: string) {
   const labels = catalogLabels[locale] || catalogLabels[defaultLocale];
 
@@ -99,4 +108,11 @@ export function getCategoriesWithSubcategories(locale: string) {
       label: labels.subcategories[sub.slug] || sub.slug
     })) || []
   }));
+}
+
+export const getActiveCategoryWithSubcategories = (catIndex:number, locale:string) => {
+  const allCategories = getCategoriesWithSubcategories(locale);
+  const activeCategory = allCategories[catIndex];
+
+  return { activeCategory };
 }

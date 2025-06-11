@@ -268,3 +268,14 @@ To configure currency conversion, update:
     }
 
 To localize the configuration per language, override properties per `locale`.
+
+## Side menu
+Here you will find the active categories on the website, the subcategories for each one of them.
+
+The categories and subcategories images can be found in the public/misc/menu folder.
+
+ - **categories** folder: here you will store the images for each category in your store. Each category image must be in .webp format, and the filename must be the related *slug* found at src/config/websiteConfig/categoryConfig.tsx file (for example, *categoryname.webp*).
+ - **subcategories** folder: here you will store the images for each subcategory in your store. Each subcategory image must be in .webp format, and the filename must be the related *slug* for the category and subcategory found at src/config/websiteConfig/categoryConfig.tsx file (for example, *category-subcategory.webp*).
+
+The categories and related subcategories shown will depend on the active items for each one. For example, if your store has a category called "hardware", but there is no available item that belongs to that category, then the "hardware" category will not be shown in this menu. This also applies in case that any subcategory has no item available.
+

@@ -29,9 +29,17 @@ export default async function CatalogLayout({
 
   if (products.status === 200) {
     const catIndexes = Array.from(new Set((products.response as productProps[]).map(item => item.category)));
+    const subCatIndexes: number[][] = catIndexes.map(index => {
+      const subcategories = (products.response as productProps[])
+        .filter(item => item.category === index)
+        .map(item => item.subcategory)
+        .filter((subcat): subcat is number => typeof subcat === 'number')
+        .sort((a, b) => a - b);
+      return Array.from(new Set(subcategories));
+    });
 
     render = <>
-      <Sidemenu type='Menu' />
+      <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
       {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
       <Topmenu catIndexes={catIndexes} />
       {children}

@@ -5,7 +5,7 @@ import Topbtn from './menus/Topbtn';
 import { capitalize } from "@/app/utils/functions";
 import { webAppProps } from "@/app/utils/utils";
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
-import { getAllCategories } from '@/config/websiteConfig/categoryConfig';
+import { getActiveCategory } from '@/config/websiteConfig/categoryConfig';
 import brandLight from "@P/brand/logo_poster_light.webp";
 import brandDark from "@P/brand/logo_poster_dark.webp";
 
@@ -14,10 +14,7 @@ export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
 
   const locale = useLocale();
   const cartConfig = getShoppingCartConfig(locale);
-  const allCategories = getAllCategories(locale);
-
-  const categories = Array.from(new Set(catIndexes.map((index) => allCategories[index].label)));
-  const categoryLinks = Array.from(new Set(catIndexes.map((index) => allCategories[index].slug)));
+  const { categories, categoryLinks } = getActiveCategory(catIndexes, locale);
 
   const imgBannerClass = " w-auto max-w-1/2 md:max-w-auto h-[30px]";
 
@@ -33,7 +30,7 @@ export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
         <div className="flex gap-10 text-xl mx-5">
           <Link href="/">{home("title")}</Link>
           {categories.map((category, index) => (
-            <Link key={index} href={categoryLinks[index].toLowerCase()}>{capitalize(category)}</Link>
+            <Link key={index} href={`/catalog/${categoryLinks[index].toLowerCase()}`}>{capitalize(category)}</Link>
           ))}
         </div>
       </nav>

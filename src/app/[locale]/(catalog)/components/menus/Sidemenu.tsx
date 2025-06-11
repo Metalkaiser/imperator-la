@@ -1,12 +1,20 @@
 import Closebtn from "./Closebtn";
 import Cartcontent from "./Cartcontent";
+import Catmenu from "./Catmenu";
 
-export default function Sidemenu ({type}: {type:string}) {
+type catsType = {
+  catIndexes: number[];
+  subCatIndexes?: number[][];
+}
+
+export default function Sidemenu ({type, cats}: {type:string, cats?: catsType}) {
   let content = <></>;
   const location = type === "Menu" ? "-left-full" : "-right-full";
 
   if (type === "Menu") {
-    content = <></>;
+    if (cats) {
+      content = <Catmenu catIndexes={cats.catIndexes} subCatIndexes={cats.subCatIndexes} />;
+    }
   } else {
     content = <Cartcontent />
   }

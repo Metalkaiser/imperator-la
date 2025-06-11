@@ -8,7 +8,7 @@ import { cartItem } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import Cartitem from "../Cartitem";
-import { cartItems } from "@/app/utils/mockinfo"; //Cart mock info
+//import { cartItems } from "@/app/utils/mockinfo"; //Cart mock info
 
 export default function Cartcontent () {
   const locale = useLocale();
@@ -69,8 +69,8 @@ export default function Cartcontent () {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedCart = JSON.stringify(cartItems); // Replace with sessionStorage.getItem(sessionCartName) if needed
-      //const storedCart = sessionStorage.getItem(sessionCartName);
+      //const storedCart = JSON.stringify(cartItems); // Replace with sessionStorage.getItem(sessionCartName) if needed
+      const storedCart = sessionStorage.getItem(sessionCartName);
       if (storedCart) {
         setCart(JSON.parse(storedCart));
         fetchExchangeRate();

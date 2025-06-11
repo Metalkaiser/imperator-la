@@ -19,6 +19,10 @@
     "deleteItemText": "¿Está seguro de quitar el producto del carrito?:",
     "deleteCart": "Quitar producto"
   },
+  "sidemenu": {
+    "categoryTitle": "Categorías",
+    "subCategoryTitle": "Subcategorías"
+  },
   "misc": {
     "cancelBtn": "Cancelar"
   }
