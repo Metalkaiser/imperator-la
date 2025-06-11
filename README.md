@@ -5,13 +5,26 @@
 
 This Next.js (15.3.2) project is a web app for an online catalog and store admin for many types of online stores.
 
-  
+ ## Table of Contents
 
-## Installation
+ 1. [Installation](#installation)
+	 a. [Local](#local)
+	 b. [Remote hosting](#remote-hosting)
+ 3. [Environment configurations](#environment-configurations)
+	 a. [Database](#database)
+	 b. [Languages](#languages)
+ 4. [Catalog Menus](#catalog-menus)
+	 a. [Header section](#header-section)
+	 b. [Side menus](#side-menus)
+	 c. [Shopping Cart Configuration](#shopping-cart-configuration)
+	 d. [Categories menu](#categories-menu)
+ 5. ASDF
+
+# Installation
 
 Let's give you 2 use cases for installation: local and remote hosting
 
--  **Local:**
+## Local
 
   
 
@@ -35,7 +48,7 @@ Let's give you 2 use cases for installation: local and remote hosting
 
   
 
--  **Remote hosting:**
+## Remote hosting
 
 The remote hosting deployment depends on the particular hosting you have decided to use for your web app.
 
@@ -171,7 +184,7 @@ This web app is configured to have some default values in spanish. Any developer
 
   
 
-# Catalog sections
+# Catalog Menus
 
 ## Header section
 
@@ -269,7 +282,7 @@ To configure currency conversion, update:
 
 To localize the configuration per language, override properties per `locale`.
 
-## Side menu
+## Categories menu
 Here you will find the active categories on the website, the subcategories for each one of them.
 
 The categories and subcategories images can be found in the public/misc/menu folder.
@@ -279,3 +292,14 @@ The categories and subcategories images can be found in the public/misc/menu fol
 
 The categories and related subcategories shown will depend on the active items for each one. For example, if your store has a category called "hardware", but there is no available item that belongs to that category, then the "hardware" category will not be shown in this menu. This also applies in case that any subcategory has no item available.
 
+# Catalog footer
+This section is quite simple.
+
+ 1. Make sure you have a footer.copyright object in your translation files.
+ 2. In the src/config/websiteConfig/miscConfigs.tsx file, configure your links for the footer in the footerLinks constant, and the correspondent translations in the footer object, using the links as the keys.
+ 3. Also, in the miscConfigs.tsx file, set the socialLinks constant for any icon link, usually social media links. The socialLinks constant objects follow the following structure:
+	
+
+    { href:  link string, icon:  icon string}
+
+	You can find the icon strings at the src/app/utils/svgItems.tsx file, in the footerIcons constant. You are free to add any othe icon you consider needed for your website.
