@@ -51,3 +51,13 @@ export type movementsProps = {
   clientId?: string | number;
   orderId?:  string | number;
 }
+
+export type cartItem = {
+  id: number;
+  name: string;
+  mainSku: string;
+  sku: string;
+  qt: number;
+  size?: number | string;
+  price: number;
+}

@@ -2,9 +2,11 @@ import {NextIntlClientProvider, hasLocale} from 'next-intl';
 import {notFound} from 'next/navigation';
 import {routing} from '@/i18n/routing';
 import Topmenu from './components/topmenu';
+import Sidemenu from './components/menus/Sidemenu';
 import Custom404 from '@/app/not-found';
-import getProductService from '@/config/productServiceInstance';
 import { productProps } from '@/app/utils/types';
+import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
+import getProductService from '@/config/productServiceInstance';
 
 export default async function CatalogLayout({
   children,
@@ -18,18 +20,29 @@ export default async function CatalogLayout({
     notFound();
   }
 
-  const productService = await getProductService();
-  const productServiceResponse = await productService.getActiveProducts();
+  const cartConfig = getShoppingCartConfig(locale)
 
-  let result: productProps[] | null;
   let render = <></>;
 
-  if (productServiceResponse.status === 200) {
-    result = productServiceResponse.response as productProps[];
-    const catIndexes = Array.from(new Set(result.map(item => item.category)));
+  const dbConfig = await getProductService();
+  const products = await dbConfig.getActiveProducts();
+
+  if (products.status === 200) {
+    const catIndexes = Array.from(new Set((products.response as productProps[]).map(item => item.category)));
+    const subCatIndexes: number[][] = catIndexes.map(index => {
+      const subcategories = (products.response as productProps[])
+        .filter(item => item.category === index)
+        .map(item => item.subcategory)
+        .filter((subcat): subcat is number => typeof subcat === 'number')
+        .sort((a, b) => a - b);
+      return Array.from(new Set(subcategories));
+    });
 
     render = <>
+      <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
+      {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
       <Topmenu catIndexes={catIndexes} />
+      {children}
     </>;
   } else {
     render = <Custom404 context='products'/>;
@@ -39,7 +52,6 @@ export default async function CatalogLayout({
     <body>
       <NextIntlClientProvider>
         {render}
-        {children}
       </NextIntlClientProvider>
     </body>
   );
