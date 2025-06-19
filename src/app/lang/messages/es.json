@@ -31,5 +31,10 @@
     "faq": "Preguntas frecuentes",
     "delivery": "Envíos",
     "privacy": "Política de Privacidad"
+  },
+  "homeDescription": {
+    "payment": "Varios métodos de pago para tu comodidad",
+    "quality": "Acero inoxidable hipoalergénico de gran calidad",
+    "delivery": "Envíos a toda Venezuela"
   }
 }
