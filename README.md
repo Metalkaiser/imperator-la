@@ -10,15 +10,19 @@ This Next.js (15.3.2) project is a web app for an online catalog and store admin
  1. [Installation](#installation)
 	 a. [Local](#local)
 	 b. [Remote hosting](#remote-hosting)
- 3. [Environment configurations](#environment-configurations)
+ 2. [Environment configurations](#environment-configurations)
 	 a. [Database](#database)
 	 b. [Languages](#languages)
- 4. [Catalog Menus](#catalog-menus)
+ 3. [Catalog Menus](#catalog-menus)
 	 a. [Header section](#header-section)
 	 b. [Side menus](#side-menus)
 	 c. [Shopping Cart Configuration](#shopping-cart-configuration)
 	 d. [Categories menu](#categories-menu)
- 5. ASDF
+ 4. [Catalog footer](#catalog-footer)
+ 5. [Catalog homepage](#catalog-homepage)
+	 a. [Auto sliding images carousel](#auto-sliding-images-carousel)
+	 b. [Description banner](#description-banner)
+ 7. ghnfn
 
 # Installation
 
@@ -229,7 +233,7 @@ The component src/app/[locale]/(catalog)/components/menus/Sidemenu.tsx allows yo
  - Options menu: A menu designed to show a list of categories and subcategories of the website.
  - Shopping cart menu: A menu designed to show any item added to a shopping cart.
 
-## Shopping Cart Configuration
+### Shopping Cart Configuration
 
 The shopping cart functions and components are optional. You can enable or disable them by setting to true or false respectively with the *enabled* property of the baseConfig variable in src/config/shoppingCartConfig.tsx.
 
@@ -282,7 +286,7 @@ To configure currency conversion, update:
 
 To localize the configuration per language, override properties per `locale`.
 
-## Categories menu
+### Categories menu
 Here you will find the active categories on the website, the subcategories for each one of them.
 
 The categories and subcategories images can be found in the public/misc/menu folder.
@@ -303,3 +307,105 @@ This section is quite simple.
     { href:  link string, icon:  icon string}
 
 	You can find the icon strings at the src/app/utils/svgItems.tsx file, in the footerIcons constant. You are free to add any othe icon you consider needed for your website.
+
+# Catalog homepage
+The homepage of the catalog website can be found in the src/app/[locale]/(catalog)/page.tsx file. You can modify the content at will, but the default structure is the following:
+
+ - Auto sliding images carousel: A series of informative or decorative images, looping automaticaly.
+ - Descriptive icons: A section for setting some short information, such as the shop services or characteristics.
+
+## Auto sliding images carousel
+The images displayed in the homepage slider are defined in the src/config/websiteConfig/miscConfigs.tsx file.
+All slider images are stored in public/misc/banner/ folder.
+
+The project uses the alias `@P/` to reference the `public/` folder. For example:
+
+    import newImage from "@P/misc/banner/new-image.webp";
+
+### ➕ Adding a New Image to the Slider
+
+1.  Place your image (preferably in `.webp` format) inside public/misc/banner/ folder
+2. Open the miscConfigs.tsx file.
+3. Import your new image at the top of the file:
+
+    import newImage from "@P/misc/banner/new-image.webp";
+
+5. Add it to the `imageSliderData` array:
+
+    export const imageSliderData = [
+      { src: image1 },
+      { src: image2 },
+      { src: image3 },
+      { src: newImage }, // ← New image added
+    ];
+
+### 💡 Tips
+
+-   Keep all images the same dimensions for a consistent layout.
+-   Use `.webp` format for optimized performance and good visual quality.
+-   Try to keep image file sizes under `200KB` for fast loading.
+
+## Description banner
+The `Description.tsx` component displays a set of feature highlights or service descriptions, each paired with a corresponding SVG icon. It is designed to visually communicate key advantages or offerings of the business (e.g. fast payment, quality assurance, quick delivery) in a compact and responsive layout.
+
+-   Each item consists of an icon and a translated text label.
+    
+-   The content is dynamically rendered based on an array (`descriptionImages`) and translation keys.
+    
+-   Built-in support for internationalization (i18n) using `next-intl`.
+    
+This component is ideal for the homepage or landing section where key features need to be quickly showcased to users.
+
+### 📌 How to Customize the `Descr` Component
+1. Locate the Component File
+Your component is likely located at `src/app/[locale]/(catalog)/components/home/Description.tsx`
+
+ 2. Understand the Data Source
+
+The `descriptionImages` array (e.g. in `/app/utils/svgItems.tsx`) contains objects with two keys:
+
+-   `name`: the translation lookup key
+    
+-   `icon`: the SVG icon element
+    
+
+Example entry:
+
+`{ name: "payment", icon: <svg>…</svg>,
+}` 
+
+3. Editing or Adding Items
+
+To **edit** an existing item, adjust its `name` and/or swap the `icon` SVG.  
+To **add** a new item:
+
+1.  Add a new object to the array.
+    
+2.  Provide a unique `name`, matching a key in your translation JSON.
+    
+3.  Include a valid SVG element for the new icon.
+    
+
+Example of adding a `support` icon:
+
+`{ name: "support", icon: ( <svg  className="…">
+      {/* new SVG path here */} </svg>
+  )
+},` 
+
+4. Add the Translation Key
+
+In your locale JSON file under `homeDescription.*` (e.g., `en.json`):
+
+`{  "payment":  "Fast payment",  "quality":  "Top quality",  "delivery":  "Quick delivery",  "support":  "24/7 Support"  }` 
+
+Make sure the new `name` (“support”) matches here.
+
+5. Check Styling
+
+By default, icons are rendered in a flex container with centered text:
+
+`<article  className="h-[200px] md:h-[250px] flex justify-evenly items-center">
+  … </article>` 
+
+Adjust this wrapper’s Tailwind classes to control layout, spacing, sizing, or alignment if needed.

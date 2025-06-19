@@ -20,7 +20,7 @@ export default function Sidemenu ({type, cats}: {type:string, cats?: catsType}) 
   }
   
   return (
-    <div id={`aside-${type}`} className={`flex flex-col fixed h-dvh w-screen md:w-[350px] absolute transform duration-200 top-0 ${location} p-5 aside border border-gray-300 dark:border-gray-700`}>
+    <div id={`aside-${type}`} className={`flex flex-col z-99 fixed h-dvh w-screen md:w-[350px] absolute transform duration-200 top-0 ${location} p-5 aside border border-gray-300 dark:border-gray-700`}>
       <div className="w-full flex justify-end">
         <Closebtn type={type} />
       </div>

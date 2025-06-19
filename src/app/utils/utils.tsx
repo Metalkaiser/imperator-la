@@ -1,3 +1,6 @@
+import ogImgLight from "@P/brand/logo_banner_light.webp";
+import ogImgDark from "@P/brand/logo_banner_dark.webp";
+
 /*
 *
 * DB variable values.
@@ -25,9 +28,9 @@ export const noProductError = {
 */
 export const webAppProps = {
   name: "Imperator",
-  catalogDescription: "Catálogo online. Acero inoxidable hipoalergénico. Envíos a toda Venezuela.",
+  catalogDescription: "Imperator - Catálogo online. Acero inoxidable hipoalergénico. Envíos a toda Venezuela.",
   adminDescription: "Sitio web de administración de inventario y ventas.",
-  ogImages: [""],
+  ogImages: [ogImgLight, ogImgDark],
   catalogKeywords: [
     "Imperator",
     "catálogo",
