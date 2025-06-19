@@ -22,7 +22,8 @@ This Next.js (15.3.2) project is a web app for an online catalog and store admin
  5. [Catalog homepage](#catalog-homepage)
 	 a. [Auto sliding images carousel](#auto-sliding-images-carousel)
 	 b. [Description banner](#description-banner)
- 7. ghnfn
+ 6. [Category Select Section](#category-select-section)
+ 7. scvfb
 
 # Installation
 
@@ -409,3 +410,33 @@ By default, icons are rendered in a flex container with centered text:
   … </article>` 
 
 Adjust this wrapper’s Tailwind classes to control layout, spacing, sizing, or alignment if needed.
+
+## Category Select Section
+
+The _Category Select_ section on the catalog homepage displays a grid of category cards. Each card allows users to navigate directly to a specific category page.
+
+This section is built using two main components:
+
+### `CategoryGrid.tsx`
+
+-   **Location**: `src/app/[locale]/(catalog)/components/home/categories/CategoryGrid.tsx`
+    
+-   **Responsibility**: Displays a responsive grid of category cards.
+
+### `CategoryCard.tsx`
+
+-   **Location**: `src/app/[locale]/(catalog)/components/home/categories/CategoryCard.tsx`
+    
+-   **Responsibility**: Renders the visual representation of a single category.
+
+### Supporting Logic
+
+-   The list of visible categories is determined dynamically based on available product data.
+    
+-   This logic is centralized in the layout file:
+    
+    -   `src/app/[locale]/(catalog)/layout.tsx`
+        
+    -   It fetches all products and maps out which categories and subcategories have products.
+        
+    -   This data is passed via `CategoryProvider`, making it accessible app-wide using the `useCategoryContext()` hook.

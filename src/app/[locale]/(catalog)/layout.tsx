@@ -7,6 +7,7 @@ import Custom404 from '@/app/not-found';
 import Footer from './components/Footer';
 import { productProps } from '@/app/utils/types';
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
+import CategoryProvider from './components/context/CategoryContext';
 import getProductService from '@/config/productServiceInstance';
 
 export default async function CatalogLayout({
@@ -43,7 +44,9 @@ export default async function CatalogLayout({
       <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
       {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
       <Topmenu catIndexes={catIndexes} />
-      {children}
+      <CategoryProvider catIndexes={catIndexes} subCatIndexes={subCatIndexes} >
+        {children}
+      </CategoryProvider>
       <Footer />
     </>;
   } else {

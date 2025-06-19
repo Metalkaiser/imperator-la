@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import ImageSlider from './components/home/Imageslider';
 import Descr from './components/home/Description';
+import CategoryGrid from './components/home/categories/CategoryGrid';
 import { webAppProps } from '@/app/utils/utils';
 
 export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
@@ -41,6 +42,7 @@ export default function Home() {
     <main>
       <ImageSlider />
       <Descr />
+      <CategoryGrid />
     </main>
   );
 }
