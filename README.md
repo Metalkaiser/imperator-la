@@ -440,3 +440,23 @@ This section is built using two main components:
     -   It fetches all products and maps out which categories and subcategories have products.
         
     -   This data is passed via `CategoryProvider`, making it accessible app-wide using the `useCategoryContext()` hook.
+
+## Top products slider
+The src/app/[locale]/(catalog)/components/home/ProductCarousel.tsx file is actually a component with double purpose:
+
+ - In the homepage, its purpose is to show some top products. In fact, these "top" products are actually suggested by the store administration, useful for giving the spotlight to any desired products.
+ - In the Product details page, it shows some products that are somehow related to the currently seen product.
+
+The behavior is a horizontal scrollable section. The user can scroll through the product cards using a bottom scrollbar or some buttons in the desktop version, and scroll using the touchscreen in the mobile version.
+
+You just need to have the following items for this section to work:
+
+ - The name of the top products in the dbCollections.topProducts constant, and the base url path to the project images in the storagePath constant. Both constants at src/app/utils/utils.tsx
+ - The "top" products in the corresponding database table or collection. At least 6 products recommended, with the following data structure:
+
+    export  type  topProductsProps  = {
+	    id:  string  |  number;
+	    productId:  string  |  number;
+    }
+
+and, of course, all the products set in the products database table or collection.

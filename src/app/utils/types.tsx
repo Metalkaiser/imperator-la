@@ -30,8 +30,9 @@ export type productProps = {
   deletedAt?: string;
 }
 
-export type topProducts = {
+export type topProductsProps = {
   id: string | number;
+  productId: string | number;
 }
 
 export type appResponse = {
