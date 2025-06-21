@@ -7,15 +7,38 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCatalogContext } from '../context/CatalogContext';
 import { storagePath } from '@/app/utils/utils';
+import { productProps } from '@/app/utils/types';
+import { getRandomItems } from '@/app/utils/functions';
 
 interface ProductCarouselProps {
   title: string;
+  type?: number[];
 }
 
-export default function ProductCarousel({ title }: ProductCarouselProps) {
+export default function ProductCarousel({ title, type }: ProductCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("productCarousel");
   const { catIndexes, subCatIndexes, products, topProducts } = useCatalogContext();
+
+  let renderArray:productProps[] = [];
+
+  if (title === "home") {
+    renderArray = topProducts;
+  } else {
+    if (type && type.length > 0) {
+      const [category, subCategory] = type;
+      if (category >= 0 && category <= 2) {
+        renderArray = products.filter(product => {
+          return product.category === category && product.subcategory === subCategory;
+        });
+      } else {
+        renderArray = products.filter(product => {
+          return product.category === category;
+        });
+      }
+    }
+    renderArray = getRandomItems(renderArray, 6);
+  }
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
@@ -49,7 +72,7 @@ export default function ProductCarousel({ title }: ProductCarouselProps) {
         ref={containerRef}
         className="overflow-x-auto scroll-smooth whitespace-nowrap flex gap-5 md:gap-10 py-2"
       >
-        {topProducts.map((product) => (
+        {renderArray.map((product) => (
           <Link
             key={product.mainSku}
             href={`/product/${product.mainSku}`}
