@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse } from '@/app/utils/types';
+import { productProps, appResponse, topProductsProps } from '@/app/utils/types';
 import { prisma } from '@/config/prisma';
 
 export class SQLProductService implements ProductService {
@@ -12,6 +12,11 @@ export class SQLProductService implements ProductService {
       where: { status: 1 },
     });
     return {code: "success", response: products , status: 200};
+  }
+
+  async getTopProducts(): Promise<appResponse> {
+    const topProducts = await prisma.topProducts.findMany();
+    return {code: "success", response: topProducts , status: 200};
   }
 
   async getProductById(id: string): Promise<appResponse> {

@@ -22,7 +22,8 @@ This Next.js (15.3.2) project is a web app for an online catalog and store admin
  5. [Catalog homepage](#catalog-homepage)
 	 a. [Auto sliding images carousel](#auto-sliding-images-carousel)
 	 b. [Description banner](#description-banner)
- 7. ghnfn
+ 6. [Category Select Section](#category-select-section)
+ 7. scvfb
 
 # Installation
 
@@ -409,3 +410,53 @@ By default, icons are rendered in a flex container with centered text:
   … </article>` 
 
 Adjust this wrapper’s Tailwind classes to control layout, spacing, sizing, or alignment if needed.
+
+## Category Select Section
+
+The _Category Select_ section on the catalog homepage displays a grid of category cards. Each card allows users to navigate directly to a specific category page.
+
+This section is built using two main components:
+
+### `CategoryGrid.tsx`
+
+-   **Location**: `src/app/[locale]/(catalog)/components/home/categories/CategoryGrid.tsx`
+    
+-   **Responsibility**: Displays a responsive grid of category cards.
+
+### `CategoryCard.tsx`
+
+-   **Location**: `src/app/[locale]/(catalog)/components/home/categories/CategoryCard.tsx`
+    
+-   **Responsibility**: Renders the visual representation of a single category.
+
+### Supporting Logic
+
+-   The list of visible categories is determined dynamically based on available product data.
+    
+-   This logic is centralized in the layout file:
+    
+    -   `src/app/[locale]/(catalog)/layout.tsx`
+        
+    -   It fetches all products and maps out which categories and subcategories have products.
+        
+    -   This data is passed via `CategoryProvider`, making it accessible app-wide using the `useCategoryContext()` hook.
+
+## Top products slider
+The src/app/[locale]/(catalog)/components/home/ProductCarousel.tsx file is actually a component with double purpose:
+
+ - In the homepage, its purpose is to show some top products. In fact, these "top" products are actually suggested by the store administration, useful for giving the spotlight to any desired products.
+ - In the Product details page, it shows some products that are somehow related to the currently seen product.
+
+The behavior is a horizontal scrollable section. The user can scroll through the product cards using a bottom scrollbar or some buttons in the desktop version, and scroll using the touchscreen in the mobile version.
+
+You just need to have the following items for this section to work:
+
+ - The name of the top products in the dbCollections.topProducts constant, and the base url path to the project images in the storagePath constant. Both constants at src/app/utils/utils.tsx
+ - The "top" products in the corresponding database table or collection. At least 6 products recommended, with the following data structure:
+
+    export  type  topProductsProps  = {
+	    id:  string  |  number;
+	    productId:  string  |  number;
+    }
+
+and, of course, all the products set in the products database table or collection.

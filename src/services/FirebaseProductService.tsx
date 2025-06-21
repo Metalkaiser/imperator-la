@@ -1,10 +1,11 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse } from '@/app/utils/types';
+import { productProps, appResponse, topProductsProps } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
 import { dbCollections, noProductError } from '@/app/utils/utils';
 
 const catalogCollection = collection(db, dbCollections.products);
+const topProductsCollection = collection(db, dbCollections.topProducts);
 
 export class FirebaseProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
@@ -23,16 +24,30 @@ export class FirebaseProductService implements ProductService {
 
   async getActiveProducts(): Promise<appResponse> {
     try {
-    const catalogSnapshot = await getDocs(query(catalogCollection, where("status", "==", 1), orderBy('mainSku', 'asc')));
-    const catalogItems = catalogSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as productProps));
-    if (!catalogItems.length) {
-      return {code: "conection-failed", response: null, status: 503}
-    }
+      const catalogSnapshot = await getDocs(query(catalogCollection, where("status", "==", 1), orderBy('mainSku', 'asc')));
+      const catalogItems = catalogSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as productProps));
+      if (!catalogItems.length) {
+        return {code: "conection-failed", response: null, status: 503}
+      }
 
-    return {code: "success", response: catalogItems , status: 200};
-  } catch (error) {
-    return {code: "unknown", response: null, status: 500}
+      return {code: "success", response: catalogItems , status: 200};
+    } catch (error) {
+      return {code: "unknown", response: null, status: 500}
+    }
   }
+
+  async getTopProducts(): Promise<appResponse> {
+    try {
+      const topProductsSnapshot = await getDocs(query(topProductsCollection));
+      const topProducts = topProductsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as topProductsProps));
+      if (!topProducts.length) {
+        return {code: "conection-failed", response: null, status: 503}
+      }
+
+      return {code: "success", response: topProducts , status: 200};
+    } catch (error) {
+      return {code: "unknown", response: null, status: 500}
+    }
   }
 
   async getProductById(id: string): Promise<appResponse> {

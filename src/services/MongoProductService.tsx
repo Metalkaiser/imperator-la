@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { appResponse, productProps } from '@/app/utils/types';
+import { appResponse, productProps, topProductsProps } from '@/app/utils/types';
 import { getDb } from '@/config/mongoClient';
 import { dbCollections, noProductError } from '@/app/utils/utils';
 
@@ -20,6 +20,17 @@ export class MongoProductService implements ProductService {
     return products.length ? 
       {code: "success", response: products , status: 200} :
       {code: "conection-failed", response: null, status: 503};
+  }
+
+
+  async getTopProducts(): Promise<appResponse> {
+    const db = await getDb();
+    const collection = db.collection<topProductsProps>(dbCollections.topProducts);
+    const topProducts = await collection.find({}).toArray();
+    if (topProducts.length === 0) {
+      return {code: "not-found", response: null, status: 404};
+    }
+    return {code: "success", response: topProducts , status: 200};
   }
 
   async getProductById(id: string): Promise<appResponse> {

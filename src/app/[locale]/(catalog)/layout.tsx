@@ -5,9 +5,11 @@ import Topmenu from './components/topmenu';
 import Sidemenu from './components/menus/Sidemenu';
 import Custom404 from '@/app/not-found';
 import Footer from './components/Footer';
-import { productProps } from '@/app/utils/types';
+import { productProps, topProductsProps } from '@/app/utils/types';
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
+import CatalogProvider from './components/context/CatalogContext';
 import getProductService from '@/config/productServiceInstance';
+import { console } from 'inspector';
 
 export default async function CatalogLayout({
   children,
@@ -21,12 +23,13 @@ export default async function CatalogLayout({
     notFound();
   }
 
-  const cartConfig = getShoppingCartConfig(locale)
+  const cartConfig = getShoppingCartConfig(locale);
 
   let render = <></>;
 
   const dbConfig = await getProductService();
   const products = await dbConfig.getActiveProducts();
+  const topProductsIds = await dbConfig.getTopProducts();
 
   if (products.status === 200) {
     const catIndexes = Array.from(new Set((products.response as productProps[]).map(item => item.category)));
@@ -39,11 +42,18 @@ export default async function CatalogLayout({
       return Array.from(new Set(subcategories));
     });
 
+    const topProducts = topProductsIds.response.map((item: topProductsProps) => {
+      const product = (products.response as productProps[]).find(p => p.id === item.productId);
+      return product ? {...item, ...product} : item;
+    });
+
     render = <>
       <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
       {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
       <Topmenu catIndexes={catIndexes} />
-      {children}
+      <CatalogProvider catIndexes={catIndexes} subCatIndexes={subCatIndexes} products={products.response as productProps[]} topProducts={topProducts}>
+        {children}
+      </CatalogProvider>
       <Footer />
     </>;
   } else {

@@ -1,6 +1,6 @@
 import { ProductService } from './ProductService';
 import { productProps, appResponse } from '@/app/utils/types';
-import { mockProducts } from '@/app/utils/mockinfo';
+import { mockProducts, mockTopProds } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
 
 export class MockProductService implements ProductService {
@@ -21,6 +21,11 @@ export class MockProductService implements ProductService {
     return activeProds.length ?
     {code: "success", response: activeProds , status: 200} :
     {code: "conection-failed", response: null , status: 503}
+  }
+
+  async getTopProducts(): Promise<appResponse> {
+    const topProducts = mockTopProds;
+    return {code: "success", response: topProducts , status: 200}
   }
 
   async getProductById(id: string | number): Promise<appResponse> {
