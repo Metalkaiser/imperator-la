@@ -86,8 +86,8 @@ export default function ImageSlider() {
   }, [isAnimating]);
 
   return (
-    <div className="w-screen overflow-hidden relative">
-      <div
+    <section className="w-screen overflow-hidden relative">
+      <article
         ref={sliderRef}
         className={`flex transition-transform duration-700 ease-in-out`}
         style={{
@@ -112,7 +112,7 @@ export default function ImageSlider() {
             />
           </div>
         ))}
-      </div>
-    </div>
+      </article>
+    </section>
   );
 }

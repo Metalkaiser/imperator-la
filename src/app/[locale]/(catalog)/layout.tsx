@@ -9,7 +9,6 @@ import { productProps, topProductsProps } from '@/app/utils/types';
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
 import CatalogProvider from './components/context/CatalogContext';
 import getProductService from '@/config/productServiceInstance';
-import { console } from 'inspector';
 
 export default async function CatalogLayout({
   children,

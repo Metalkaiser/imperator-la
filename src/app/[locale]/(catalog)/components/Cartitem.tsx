@@ -67,15 +67,15 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
       <input type="checkbox" name={item.sku} id={item.sku} checked={checked} onChange={(e) => handleCheckboxChange(e.target.checked)} />
       <Image src={`https://imperator-next.web.app/thumbnails/${item.mainSku}.webp`} alt={item.mainSku} height={0} width={70}></Image>
       <div className="flex flex-col justify-between">
-        <h2 className="font-bold max-w-full text-nowrap overflow-hidden text-ellipsis w-[200px]">{item.name}</h2>
-        <p className="text-sm">SKU: {item.sku}</p>
+        <h2 className="max-w-full text-nowrap overflow-hidden text-ellipsis cartitemname">{item.name}</h2>
+        <p className="cartdetailstext">SKU: {item.sku}</p>
         <div className="flex justify-between gap-5">
           <div className="flex flex-col justify-center items-center">
-            <p className="text-sm font-semibold">{t("size")}</p>
-            <p className="text-sm font-thin">{item.size ? item.size : "N/A"}</p>
+            <p className="cartdetailstext font-semibold">{t("size")}</p>
+            <p className="cartdetailstext font-thin">{item.size ? item.size : "N/A"}</p>
           </div>
           <div className="flex flex-col justify-center items-center">
-            <p className="text-sm font-semibold">{t("quantity")}</p>
+            <p className="cartdetailstext font-semibold">{t("quantity")}</p>
             <div className="flex items-center gap-2">
               <QuantitySelector
                 value={qt}
@@ -86,8 +86,8 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
             </div>
           </div>
           <div className="flex flex-col justify-center items-center">
-            <p className="text-sm font-semibold">{t("price")}</p>
-            <h2 className="text-sm font-thin">{`${mainCurrency}${total}`}</h2>
+            <p className="cartdetailstext font-semibold">{t("price")}</p>
+            <h2 className="cartdetailstext font-thin">{`${mainCurrency}${total}`}</h2>
           </div>
         </div>
       </div>

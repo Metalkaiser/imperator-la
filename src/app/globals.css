@@ -1,10 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #ffffff;  /* Website background color */
   --foreground: #171717;
-  --btnbg: #9d1515;
-  --btntxt: #ffffff;
+  --btnbg: #9d1515;       /* Action buttons background color */
+  --btntxt: #ffffff;      /* Action buttons text color */
+  --discbg: oklch(37.3% 0.034 259.733); /* Discount amount indicator background color */
+  --disradius: 1.5rem;      /* Discount amount indicator border radius */
+  --pnamelist: 0.75rem;     /* Products list product name font size */
+  --sectiontitlesize: 1.5rem;       /* Section title font size */
+  --sectiontitleline: calc(2/1.5);  /* Section title line height */
+  --topmenuitemsize: 1.25rem;       /* Top menu items font size */
+  --footerbg: oklch(86.9% 0.005 56.366);  /* Footer background color */
+  --carttitlesize: 1.125rem;        /* Shopping cart title font size*/
+  --carttitleweight: 700;           /* Shopping cart title font weight*/
+  --cartitemnameweight: 700;        /* Shopping cart item name font weight */
+  --cartitemnamewidth: 200px;       /* Shopping cart item name width */
+  --cartdetailstext: 0.875rem;      /* Shopping cart item SKU font size */
+  --sidemenucattextsize: 1.5rem;    /* Side menu category font size */
+  --sidemenusubcattextsize: 1.125rem;    /* Side menu subcategory font size */
+  --sidemenuitemhover: oklch(87.2% 0.01 258.338); /* Side menu item hover background */
+  --topproductbg: oklch(87.2% 0.01 258.338);     /* Top product (carousel item) background color */
 }
 
 @theme inline {
@@ -18,6 +34,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --footerbg: oklch(14.7% 0.004 49.25);  /* Footer background color (dark theme) */
+    --sidemenuitemhover: oklch(27.8% 0.033 256.848);  /* Side menu item hover background (dark theme) */
+    --topproductbg: oklch(21% 0.034 264.665);     /* Top product (carousel item) background color (dark theme) */
   }
 }
 
@@ -30,4 +49,56 @@ body, .aside {
 .actionbtn {
   background-color: var(--btnbg);
   color: var(--btntxt);
+}
+
+.discount-indicator-list {
+  background: var(--discbg);
+  border-radius: var(--disradius);
+}
+
+.name-list {
+  font-size: var(--pnamelist);
+}
+
+.sectiontitle {
+  font-size: var(--sectiontitlesize);
+  line-height: var(--sectiontitleline);
+}
+
+nav div {
+  font-size: var(--topmenuitemsize);
+}
+
+footer {
+  background: var(--footerbg);
+}
+
+.carttitle {
+  font-size: var(--carttitlesize);
+  font-weight: var(--carttitleweight);
+}
+
+.cartitemname {
+  font-weight: var(--cartitemnameweight);
+  width: var(--cartitemnamewidth);
+}
+
+.cartdetailstext {
+  font-size: var(--cartdetailstext);
+}
+
+.sidemenu-category {
+  font-size: var(--sidemenucattextsize);
+}
+
+.sidemenu-subcategory {
+  font-size: var(--sidemenusubcattextsize);
+}
+
+.sidemenu-category:hover, .sidemenu-subcategory:hover {
+  background: var(--sidemenuitemhover);
+}
+
+.topproduct {
+  background: var(--topproductbg);
 }

@@ -76,7 +76,7 @@ export default function ProductCarousel({ title, type }: ProductCarouselProps) {
           <Link
             key={product.mainSku}
             href={`/product/${product.mainSku}`}
-            className="min-w-[180px] max-w-[200px] md:min-w-[220px] md:max-w-[240px] bg-white dark:bg-gray-900 rounded-md shadow-md flex flex-col items-center flex-shrink-0"
+            className="min-w-[180px] max-w-[200px] md:min-w-[220px] md:max-w-[240px] topproduct rounded-md shadow-md flex flex-col items-center flex-shrink-0"
           >
             <Image
               src={storagePath + product.images[0]}

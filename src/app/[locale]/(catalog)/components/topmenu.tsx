@@ -27,7 +27,7 @@ export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
         {cartConfig.shoppingCart.enabled ? <Topbtn purpose='Carrito' /> : <div className="w-[30px]"></div>}
       </div>
       <nav className='flex flex-nowrap overflow-x-scroll pt-4 touch-pan-x whitespace-nowrap w-screen no-scrollbar md:justify-center'>
-        <div className="flex gap-10 text-xl mx-5">
+        <div className="flex gap-10 mx-5">
           <Link href="/">{home("title")}</Link>
           {categories.map((category, index) => (
             <Link key={index} href={`/catalog/${categoryLinks[index].toLowerCase()}`}>{capitalize(category)}</Link>
