@@ -22,7 +22,7 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
   const allCategories = useMemo(() => getCategoriesWithSubcategories(locale), [locale]);
   const categories = useMemo(() => catIndexes.map(index => allCategories[index]), [catIndexes, allCategories]);
 
-  const hoverClass = "flex items-center hover:bg-gray-300 dark:hover:bg-gray-800";
+  const hoverClass = "flex items-center";
 
   const toggleMenu = (index: number) => {
     setOpenIndex(prev => (prev === index ? null : index));
@@ -39,7 +39,7 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
               {hasSubs ? (
                 <button
                   onClick={() => toggleMenu(index)}
-                  className={`w-full text-left px-2 text-2xl justify-between ${hoverClass}`}
+                  className={`w-full text-left px-2 sidemenu-category justify-between ${hoverClass}`}
                   aria-expanded={openIndex === index}
                   aria-controls={`submenu-${index}`}
                 >
@@ -62,7 +62,7 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
               ) : (
                 <Link
                   href={`/catalog/${category.slug}`}
-                  className={`block px-2 text-2xl justify-between ${hoverClass}`}
+                  className={`block px-2 sidemenu-category justify-between ${hoverClass}`}
                 >
                   <div className="flex items-center gap-3">
                     <Image
@@ -89,7 +89,7 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
                       <li key={sub.slug}>
                         <Link
                           href={`/catalog/${category.slug}/${sub.slug}`}
-                          className={`block px-2 text-lg gap-4 ${hoverClass}`}
+                          className={`block px-2 sidemenu-subcategory gap-4 ${hoverClass}`}
                         >
                           <Image
                             src={`/misc/menu/subcategories/${category.slug}-${sub.slug}.webp`}

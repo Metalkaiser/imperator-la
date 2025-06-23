@@ -10,7 +10,7 @@ import { footerIconsMap } from "@/app/utils/svgItems";
 export default function Footer(){
   const t = useTranslations("footer");
   return(
-    <footer className="bg-stone-300 p-5 flex flex-col items-center dark:text-white dark:bg-stone-950">
+    <footer className="p-5 flex flex-col items-center dark:text-white">
       <div className="h-10"></div>
       <div className="mb-5">
         <Image className="dark:hidden" src={banner_light} alt="Logo" height={30}></Image>

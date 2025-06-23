@@ -92,7 +92,7 @@ export default function Cartcontent () {
 
   return (
     <div className="flex flex-col my-5 justify-between items-center h-full w-full">
-      <h1 className="text-xl font-bold">{t("title")}</h1>
+      <h1 className="carttitle">{t("title")}</h1>
 
       {cart.length > 0 ? (
         <>
@@ -115,7 +115,7 @@ export default function Cartcontent () {
 
           <div className="w-full flex justify-between items-center">
             <div className="flex flex-col gap-2 items-center">
-              <h2 className="text-xl font-bold">
+              <h2 className="carttitle">
                 Total: {currencyConversion.mainCurrency}{total}
               </h2>
               {exchangeRate > 0 && (

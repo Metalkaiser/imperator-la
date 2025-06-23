@@ -40,5 +40,9 @@
   "productCarousel": {
     "home": "Productos destacados",
     "product": "Productos relacionados"
+  },
+  "products": {
+    "loading": "Cargando productos",
+    "allProds": "Todos nuestros productos"
   }
 }
