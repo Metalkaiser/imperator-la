@@ -119,7 +119,7 @@ export default function ProductList(props:viewData){
   }, [isLoading]);
 
   return(
-    <article className="px-2 py-5">
+    <section className="px-2 py-5">
       {props.name == "allProds" && (<h2 className="sectiontitle text-center dark:text-white">{t(props.name)}</h2>)}
       <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7'>
         {currentproducts}
@@ -133,6 +133,6 @@ export default function ProductList(props:viewData){
         <span className='dark:text-white'>{t("loading")}...</span>
       </div>
       )}
-    </article>
+    </section>
   );
 }
