@@ -7,10 +7,11 @@ import { useTranslations, useLocale } from 'next-intl';
 import { storagePath } from '@/app/utils/utils';
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
 import { useCatalogContext } from '../context/CatalogContext';
+import { getCategoryIndexes } from "@/config/websiteConfig/categoryConfig";
 
 interface viewData {
   name:string,
-  items:any[],
+  items:string[],
   loadSub:boolean
 }
 
@@ -27,7 +28,7 @@ export default function ProductList(props:viewData){
   const cartConfig = getShoppingCartConfig(locale);
   const { enabled, currencyConversion } = cartConfig.shoppingCart;
   const t = useTranslations("products");
-  const {catIndexes, subCatIndexes, products, topProducts} = useCatalogContext();
+  const {catIndexes, products, topProducts} = useCatalogContext();
 
   const determineProductsToLoad = useCallback(() => {
     const width = window.innerWidth;
@@ -56,12 +57,13 @@ export default function ProductList(props:viewData){
   const loadMoreProducts = async () => {
     if (hasMoreProducts && !isLoading) {
       let prodList = [];
+      let { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
       switch (props.items.length) {
         case 1:
-          prodList = products.filter((prod) => prod.category === props.items[0]);
+          prodList = products.filter((prod) => prod.category === categoryIndex);
           break;
         case 2:
-          prodList = products.filter((prod) => prod.category === props.items[0] && prod.subcategory === props.items[1]);
+          prodList = products.filter((prod) => prod.category === categoryIndex && prod.subcategory === subcategoryIndex);
             break;
         default:
           prodList = products;

@@ -25,12 +25,12 @@ export default function Custom404({context}:{context:string}) {
   const errMessage = t.has(context) ? t(context) : errDefault;
 
   return(
-    <div className="flex flex-col justify-center items-center h-screen">
-      <div>
+    <body className="flex flex-col justify-center items-center h-screen">
+      <main>
         <Image className="hidden dark:block mx-auto mb-5" src={notFountDark} width={100} height={0} alt="Imperator"></Image>
         <Image className="block dark:hidden mx-auto mb-5" src={notFoundLight} width={100} height={0} alt="Imperator"></Image>
         <h1 className="m-0 p-0 text-center dark:text-white">{errMessage}</h1>
-      </div>
-    </div>
+      </main>
+    </body>
   );
 }
