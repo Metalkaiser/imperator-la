@@ -4,10 +4,9 @@ import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
-import { capitalize } from "@/app/utils/functions";
-import { useState } from "react";
+import { capitalize, sideMenu } from "@/app/utils/functions";
 
 interface CatmenuProps {
   catIndexes: number[];
@@ -27,6 +26,11 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
   const toggleMenu = (index: number) => {
     setOpenIndex(prev => (prev === index ? null : index));
   };
+
+  const clickedItem = (index: number) => {
+    setOpenIndex(prev => (prev === index ? null : index));
+    sideMenu("Menu");
+  }
 
   return (
     <div className="flex flex-col gap-2 mt-4 overflow-y-scroll">
@@ -63,6 +67,7 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
                 <Link
                   href={`/catalog/${category.slug}`}
                   className={`block px-2 sidemenu-category justify-between ${hoverClass}`}
+                  onClick={() => clickedItem(index)}
                 >
                   <div className="flex items-center gap-3">
                     <Image
@@ -90,6 +95,7 @@ export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
                         <Link
                           href={`/catalog/${category.slug}/${sub.slug}`}
                           className={`block px-2 sidemenu-subcategory gap-4 ${hoverClass}`}
+                          onClick={() => clickedItem(index)}
                         >
                           <Image
                             src={`/misc/menu/subcategories/${category.slug}-${sub.slug}.webp`}
