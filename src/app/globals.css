@@ -17,6 +17,7 @@
   --cartitemnameweight: 700;        /* Shopping cart item name font weight */
   --cartitemnamewidth: 200px;       /* Shopping cart item name width */
   --cartdetailstext: 0.875rem;      /* Shopping cart item SKU font size */
+  --cartaddbtn: oklch(37.3% 0.034 259.733); /* Shopping cart "Add to cart" button background color */
   --sidemenucattextsize: 1.5rem;    /* Side menu category font size */
   --sidemenusubcattextsize: 1.125rem;    /* Side menu subcategory font size */
   --sidemenuitemhover: oklch(87.2% 0.01 258.338); /* Side menu item hover background */
@@ -101,4 +102,21 @@ footer {
 
 .topproduct {
   background: var(--topproductbg);
+}
+
+.addtocart {
+  background: var(--cartaddbtn);
+}
+
+.purchase {
+  background: var(--btnbg);
+}
+
+.disabledcart {
+  background: color-mix(in srgb, var(--cartaddbtn) 50%, transparent);
+}
+
+.disabledcart p, .disabledcart svg {
+  opacity: 30%;
+  text-decoration: line-through;
 }

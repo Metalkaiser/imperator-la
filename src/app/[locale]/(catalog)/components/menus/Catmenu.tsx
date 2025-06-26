@@ -1,6 +1,6 @@
 "use client"
 
-import { useTranslations, useLocale } from "next-intl";
+import { useLocale } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -15,7 +15,6 @@ interface CatmenuProps {
 
 export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
   const locale = useLocale();
-  const t = useTranslations("sidemenu");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const allCategories = useMemo(() => getCategoriesWithSubcategories(locale), [locale]);

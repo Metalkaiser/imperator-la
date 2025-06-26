@@ -25,8 +25,6 @@ export async function generateMetadata(
   } else {
     notFound();
   }
-  
-  
 }
 
 export default async function CategoryPage ({ params }: Props) {

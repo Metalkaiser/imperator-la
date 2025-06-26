@@ -8,32 +8,20 @@ import { cartItem } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import Cartitem from "../Cartitem";
+import { useCart } from "../context/Cartcontext";
 //import { cartItems } from "@/app/utils/mockinfo"; //Cart mock info
 
 export default function Cartcontent () {
+  const { cart, addOrUpdateItem, removeItem } = useCart();
   const locale = useLocale();
   const cartConfig = getShoppingCartConfig(locale);
   const { enabled, currencyConversion } = cartConfig.shoppingCart;
-  const [cart, setCart] = useState<cartItem[]>([]);
   const [exchangeRate, setExchangeRate] = useState<number>(0);
   const t = useTranslations("shoppingCart");
 
   const updateCart = (item: cartItem) => {
-    const updatedCart = [...cart];
-    const index = updatedCart.findIndex(ci => ci.id === item.id);
-
-    if (index > -1) {
-      if (item.price <= 0) {
-        updatedCart.splice(index, 1);
-      } else {
-        updatedCart[index] = item;
-      }
-    } else if (item.qt > 0) {
-      updatedCart.push(item);
-    }
-
-    setCart(updatedCart);
-  };
+    item.price ? addOrUpdateItem(item) : item.size ? removeItem(item.sku, item.size) : removeItem(item.sku);
+  }
 
   const fetchExchangeRate = async () => {
     if (!currencyConversion.enabled) return;
@@ -58,7 +46,7 @@ export default function Cartcontent () {
     try {
       const response = await fetch(currencyConversion.apiUrl);
       const data = await response.json();
-      const rate = Math.round((Number(data[currencyConversion.targetExchangeCurrency]) + 0.01) * 100) / 100;
+      const rate = Number(data[currencyConversion.targetExchangeCurrency]);
       setExchangeRate(rate);
       sessionStorage.setItem("ExchangeRate", JSON.stringify({ exchangeRate: rate, timestamp: now }));
     } catch (err) {
@@ -68,21 +56,9 @@ export default function Cartcontent () {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      //const storedCart = JSON.stringify(cartItems); // Replace with sessionStorage.getItem(sessionCartName) if needed
-      const storedCart = sessionStorage.getItem(sessionCartName);
-      if (storedCart) {
-        setCart(JSON.parse(storedCart));
-        fetchExchangeRate();
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (cart !== null) {
-      sessionStorage.setItem(sessionCartName, JSON.stringify(cart));
-    }
-  }, [cart]);
+    if (!enabled || !currencyConversion.enabled) return;
+    fetchExchangeRate();
+  }, [enabled, currencyConversion]);
 
   const total = useMemo(() => (
     cart.reduce((sum, item) => sum + item.price * item.qt, 0)
@@ -103,7 +79,7 @@ export default function Cartcontent () {
             <div className="flex flex-col gap-5 items-center w-max">
               {cart.map((item, index) => (
                 <Cartitem
-                  key={item.id}
+                  key={`${item.sku}-${item.size}`}
                   item={item}
                   index={index}
                   mainCurrency={currencyConversion.mainCurrency}
