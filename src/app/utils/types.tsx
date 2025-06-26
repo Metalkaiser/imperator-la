@@ -54,11 +54,12 @@ export type movementsProps = {
 }
 
 export type cartItem = {
-  id: number;
+  id: number | string;
   name: string;
   mainSku: string;
   sku: string;
   qt: number;
+  max: number;
   size?: number | string;
   price: number;
 }

@@ -77,7 +77,7 @@ export default function ProductList(props:viewData){
             <div key={"product-" + product.mainSku} className='flex flex-col items-center gap-2 size-full'>
               <Link href={"/catalog/product/" + product.mainSku} className="m-1 pb-3 size-11/12">
                 <div className='relative grow-1'>
-                  {product.discount && (<p className='absolute py-2 px-4 text-white font-bold right-0 discount-indicator-list z-10'>-{`${product.discount.value}${product.discount.type === 0 ? "%" : currencyConversion.mainCurrency}`}</p>)}
+                  {product.discount && (<p className='absolute py-2 px-4 text-white font-bold right-0 discount-indicator-list z-10'>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
                       src={storagePath + product.images[0]}
@@ -87,7 +87,7 @@ export default function ProductList(props:viewData){
                     />
                   </div>
                   <div className={Object.hasOwn(product, "variants") ? "absolute bottom-1 right-1 space-y-2" : "hidden"}>
-                    {product.variants ? Object.values(product.variants).map((variant) => (<div key={variant.sku} style={{backgroundColor: variant.color}} className='border-white border-solid border-2 w-[20px] h-[20px] rounded-full'></div>))
+                    {(product.variants && product.variants.length > 1) ? Object.values(product.variants).map((variant) => (<div key={variant.sku} style={{backgroundColor: variant.color}} className='border-white border-solid border-2 w-[20px] h-[20px] rounded-full'></div>))
                     : ""}
                   </div>
                 </div>

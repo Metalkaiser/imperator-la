@@ -49,9 +49,10 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
 
   const handleQuantityChange = (newQt: number) => {
     const validQt = Math.max(1, newQt || 1);
-    setQt(validQt);
+    const qt = validQt <= item.max ? validQt : item.max;
+    setQt(qt);
     if (checked) {
-      updateCart({ ...item, qt: validQt });
+      updateCart({ ...item, qt: qt });
     }
   };
 

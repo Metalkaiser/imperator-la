@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import { productProps, topProductsProps } from '@/app/utils/types';
 import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
 import CatalogProvider from './components/context/CatalogContext';
+import { CartProvider } from './components/context/Cartcontext';
 import getProductService from '@/config/productServiceInstance';
 
 export default async function CatalogLayout({
@@ -47,12 +48,14 @@ export default async function CatalogLayout({
     });
 
     render = <>
-      <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
-      {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
-      <Topmenu catIndexes={catIndexes} />
-      <CatalogProvider catIndexes={catIndexes} subCatIndexes={subCatIndexes} products={products.response as productProps[]} topProducts={topProducts}>
-        {children}
-      </CatalogProvider>
+      <CartProvider>
+        <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
+        {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
+        <Topmenu catIndexes={catIndexes} />
+        <CatalogProvider catIndexes={catIndexes} subCatIndexes={subCatIndexes} products={products.response as productProps[]} topProducts={topProducts}>
+          {children}
+        </CatalogProvider>
+      </CartProvider>
       <Footer />
     </>;
   } else {

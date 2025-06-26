@@ -13,11 +13,16 @@
     "noItem_2": "¡Comienza a agregar productos!",
     "size": "Talla",
     "quantity": "Cantidad",
+    "qtRemaining": "Quedan",
     "price": "Precio",
     "actionBtnOrder": "Hacer pedido",
+    "addToCart": "Agregar al carrito",
+    "purchase": "Comprar",
     "deleteItem": "Quitar producto",
     "deleteItemText": "¿Está seguro de quitar el producto del carrito?:",
-    "deleteCart": "Quitar producto"
+    "deleteCart": "Quitar producto",
+    "itemalready": "Ese producto ya está en el carrito de compras",
+    "itemadded": "agregado al carrito"
   },
   "sidemenu": {
     "categoryTitle": "Categorías",
@@ -43,6 +48,13 @@
   },
   "products": {
     "loading": "Cargando productos",
-    "allProds": "Todos nuestros productos"
+    "allProds": "Todos nuestros productos",
+    "allProdsFilter": "Todos",
+    "productDetails": "Detalles del producto",
+    "models": "Modelos disponibles (haga click)"
+  },
+  "actionDetailsButtons": {
+    "whatsAppProduct": "Preguntar al WhatsApp",
+    "waLink": "Hola,%20estoy%20interesado%20en%20"
   }
 }

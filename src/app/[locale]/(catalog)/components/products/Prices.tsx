@@ -1,3 +1,5 @@
+import { getDiscountedPrice } from "@/app/utils/functions";
+
 type prices = {
   price:number;
   currency:string;
@@ -29,18 +31,7 @@ export default function Prices({prices, view}: {prices: prices, view: string}) {
   let render = (<></>);
 
   if (discount) {
-    let discountPrice = 0;
-    if (discount.type == 0) {
-      discountPrice = price * (100 - discount.value) / 100;
-    } else {
-      discountPrice = price - discount.value;
-    }
-
-    if (discountPrice >= 10) {
-      priceDiscountString = discountPrice.toPrecision(4);
-    } else {
-      priceDiscountString = discountPrice.toPrecision(3);
-    }
+    priceDiscountString = getDiscountedPrice(price,discount)
     const discountPriceArr = priceDiscountString.split(".");
     const discountPriceInteger = discountPriceArr[0];
     const discountPriceDecimal = discountPriceArr[1];
