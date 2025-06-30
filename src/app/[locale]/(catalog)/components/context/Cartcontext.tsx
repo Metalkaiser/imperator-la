@@ -1,20 +1,25 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { cartItem } from "@/app/utils/types";
+import type { cartItem, PaymentMethod, shippingMethod } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
 
-// shape of our context
+type purchaseOptions = {
+  paymentMethods: PaymentMethod[];
+  shippingMethods: shippingMethod[];
+}
+
 interface CartContextType {
   cart: cartItem[];
   addOrUpdateItem: (item: cartItem) => void;
   removeItem: (sku: string, size?: string | number) => void;
   clearCart: () => void;
+  purchaseOptions: purchaseOptions;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({ children, purchaseOptions }: { children: React.ReactNode, purchaseOptions: purchaseOptions }) {
   const [cart, setCart] = useState<cartItem[]>([]);
 
   // on mount, load from sessionStorage
@@ -61,7 +66,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, addOrUpdateItem, removeItem, clearCart }}
+      value={{ cart, addOrUpdateItem, removeItem, clearCart, purchaseOptions }}
     >
       {children}
     </CartContext.Provider>

@@ -3,7 +3,8 @@ import ogImgDark from "@P/brand/logo_banner_dark.webp";
 
 /*
 *
-* DB variable values.
+* Database collections and storage paths
+* Here we define the names of the collections in the selected database
 * 
 */
 export const dbCollections = {
@@ -11,8 +12,13 @@ export const dbCollections = {
   topProducts: "top_products",
   clients: "clients",
   movements: "movements",
-  orders: "orders"
+  orders: "orders",
+  shipping: "shipping_methods",
+  payment: "payment_methods"
 }
+
+// Firebase storage path for product images
+// This path is used to store and retrieve product images in the Firebase storage.
 export const storagePath = "https://firebasestorage.googleapis.com/v0/b/imperator-next.appspot.com/o/products";
 
 export const noProductError = {
@@ -23,7 +29,9 @@ export const noProductError = {
 
 /*
 * 
-* Website basic configs
+* Web app properties
+* This object contains the basic properties of the web application,
+* including the name, description, Open Graph images, and keywords.
 * 
 */
 export const webAppProps = {
@@ -55,7 +63,7 @@ export const webAppProps = {
 
 /*
 * 
-* Catalog's basic configs
+* Product categories and subcategories
 * 
 */
 export const allCategories = [
@@ -65,7 +73,6 @@ export const allCategories = [
   "watches",
   "pendants"
 ];
-
 export const allSubcategories = [
   "elegants",
   "masonics",
@@ -73,7 +80,7 @@ export const allSubcategories = [
   "vikings"
 ];
 
-export const sessionItemName = "imperator_products_data";
-export const sessionExpirationTime = 2 * 60 * 60 * 1000;
-export const sessionCartName = "imperator_cart";
-export const phoneNumber = "584267835498";
+export const sessionItemName = "imperator_products_data";   // Name of the session storage item for product data
+export const sessionExpirationTime = 2 * 60 * 60 * 1000;    // Session expiration time in milliseconds (2 hours)
+export const sessionCartName = "imperator_cart";            // Name of the session storage item for the shopping cart
+export const phoneNumber = "584267835498";                  // Phone number for contact, used in the footer and other places

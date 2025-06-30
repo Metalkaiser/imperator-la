@@ -5,10 +5,10 @@ import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { shoppingCartImg } from "@/app/utils/svgItems";
 import { cartItem } from "@/app/utils/types";
-import { sessionCartName } from "@/app/utils/utils";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import Cartitem from "../Cartitem";
 import { useCart } from "../context/Cartcontext";
+import { sideMenu } from "@/app/utils/functions";
 //import { cartItems } from "@/app/utils/mockinfo"; //Cart mock info
 
 export default function Cartcontent () {
@@ -75,7 +75,7 @@ export default function Cartcontent () {
           <p>{cart.length} items</p>
           <hr className="h-[2px] my-5 bg-gray-200 border-0 dark:bg-gray-700 w-full" />
 
-          <div className="overflow-auto touch-auto max-w-full max-h-[40dvh] pb-5">
+          <div className="overflow-auto touch-auto max-w-full max-h-[60dvh] pb-5">
             <div className="flex flex-col gap-5 items-center w-max">
               {cart.map((item, index) => (
                 <Cartitem
@@ -101,7 +101,7 @@ export default function Cartcontent () {
               )}
             </div>
             {total > 0 ? (
-              <Link href="#" className="block text-center p-3 actionbtn rounded-xl">
+              <Link href="/cart" className="block text-center p-3 actionbtn rounded-xl" onClick={() => sideMenu("Carrito")}>
                 {t("actionBtnOrder")}
               </Link>
             ) : (

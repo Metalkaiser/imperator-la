@@ -1,11 +1,13 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, topProductsProps } from '@/app/utils/types';
+import { productProps, appResponse, topProductsProps, PaymentMethod, shippingMethod } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
 import { dbCollections, noProductError } from '@/app/utils/utils';
 
 const catalogCollection = collection(db, dbCollections.products);
 const topProductsCollection = collection(db, dbCollections.topProducts);
+const paymentCollection = collection(db, dbCollections.payment);
+const shippingCollection = collection(db, dbCollections.shipping);
 
 export class FirebaseProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
@@ -65,6 +67,25 @@ export class FirebaseProductService implements ProductService {
       return { code: "success", response: product, status: 200 };
     } catch (error) {
       return {code: "unknown", response: null, status: 500}
+    }
+  }
+
+  async getCartConfigs(): Promise<appResponse> {
+    try {
+      const paymentSnapshot = await getDocs(query(paymentCollection));
+      const shippingSnapshot = await getDocs(query(shippingCollection));
+
+      const paymentMethods = paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+      const shippingMethods = shippingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as shippingMethod));
+
+      const response = {
+        paymentMethods: paymentMethods,
+        shippingMethods: shippingMethods
+      }
+
+      return {code: "success", response: response , status: 200};
+    } catch (error) {
+      return {code: "unknown", response: null, status: 500};
     }
   }
 }

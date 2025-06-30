@@ -64,9 +64,9 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
   }, [qt, item.price]);
 
   return (
-    <div key={index} className="flex gap-2 items-center">
+    <div key={index} className="flex gap-2 md:gap-10 items-center">
       <input type="checkbox" name={item.sku} id={item.sku} checked={checked} onChange={(e) => handleCheckboxChange(e.target.checked)} />
-      <Image src={`https://imperator-next.web.app/thumbnails/${item.mainSku}.webp`} alt={item.mainSku} height={0} width={70}></Image>
+      <Image src={item.image} alt={item.mainSku} height={0} width={70}></Image>
       <div className="flex flex-col justify-between">
         <h2 className="max-w-full text-nowrap overflow-hidden text-ellipsis cartitemname">{item.name}</h2>
         <p className="cartdetailstext">SKU: {item.sku}</p>

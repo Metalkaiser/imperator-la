@@ -41,4 +41,16 @@ export class SQLProductService implements ProductService {
       return {code: "unknown", response: null, status: 500};
     }
   }
+
+  async getCartConfigs(): Promise<appResponse> {
+    const payment = await prisma.payment.findMany();
+    const shipping = await prisma.shipping.findMany();
+
+    const response = {
+      paymentMethods: payment,
+      shippingMethods: shipping
+    }
+
+    return {code: "success", response: response , status: 200};
+  }
 }

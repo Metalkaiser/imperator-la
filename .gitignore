@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 src/app/utils/mockinfo.tsx
+public/misc/other/*
 
 # debug
 npm-debug.log*

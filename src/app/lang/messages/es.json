@@ -22,7 +22,15 @@
     "deleteItemText": "¿Está seguro de quitar el producto del carrito?:",
     "deleteCart": "Quitar producto",
     "itemalready": "Ese producto ya está en el carrito de compras",
-    "itemadded": "agregado al carrito"
+    "itemadded": "agregado al carrito",
+    "cash": "Efectivo",
+    "live": "Entrega en persona",
+    "paymentMethods": "Métodos de pago",
+    "shippingMethods": "Métodos de entrega",
+    "shop": "Retiro en persona",
+    "banktransfer": "Transferencia bancaria",
+    "giftOptionsTitle": "Opciones para regalo",
+    "giftOptionsDescription": "Puedes agregar una de estas opciones para hacer un regalo ideal"
   },
   "sidemenu": {
     "categoryTitle": "Categorías",

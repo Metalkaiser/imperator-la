@@ -17,6 +17,7 @@ export default function Modelselect ({product}:{product:productProps}) {
     name: product.name,
     mainSku: product.mainSku,
     sku: (product.variants && product.variants.length === 1) ? product.mainSku : "",
+    image: (product.variants && product.variants.length === 1) ? product.variants[0].image : "",
     qt: 0,
     max: 1,
     price: currentPrice
@@ -32,6 +33,7 @@ export default function Modelselect ({product}:{product:productProps}) {
       case "sku":
         item = { ...defaultItemProps };
         item.sku = String(value);
+        item.image = product.variants.find(variant => variant.sku === String(value))?.image || "";
         break;
       case "qt":
         item.qt = Number(value);
@@ -65,13 +67,13 @@ export default function Modelselect ({product}:{product:productProps}) {
 
   return (
   <>
-  <div className={`${product.variants && product.variants?.length > 1 ? "" : "hidden"} flex gap-5 my-5`}>
+  <div className={`${product.variants.length > 1 ? "" : "hidden"} flex gap-5 my-5`}>
     {product.variants && (<p className="text-center dark:text-white">{t("models")}:</p>)}
     {product.variants && (
       Object.values(product.variants).map((variant) => (
         <label key={variant.sku}>
           <input
-            defaultChecked={product.variants && product.variants?.length > 1 ? false : true}
+            defaultChecked={product.variants.length > 1 ? false : true}
             type="radio"
             name="model"
             className="peer hidden"
@@ -87,7 +89,7 @@ export default function Modelselect ({product}:{product:productProps}) {
     )}
   </div>
   <div>
-    {(selectedItem.sku && product.variants && product.variants.find(variant => variant.sku === selectedItem.sku)) && (
+    {(selectedItem.sku && product.variants.find(variant => variant.sku === selectedItem.sku)) && (
       <div>
         {(() => {
           const variant = product.variants.find(variant => variant.sku === selectedItem.sku);

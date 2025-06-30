@@ -1,6 +1,6 @@
 import { ProductService } from './ProductService';
 import { productProps, appResponse } from '@/app/utils/types';
-import { mockProducts, mockTopProds } from '@/app/utils/mockinfo';
+import { mockProducts, mockTopProds, paymentMethods, shippingMethods } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
 
 export class MockProductService implements ProductService {
@@ -36,5 +36,17 @@ export class MockProductService implements ProductService {
 
   async updateProduct(product: productProps): Promise<appResponse> {
     return {code: "success-edit", response: product , status: 200}
+  }
+
+  async getCartConfigs(): Promise<appResponse> {
+    const payment = paymentMethods;
+    const shipping = shippingMethods;
+
+    const response = {
+      paymentMethods: payment,
+      shippingMethods: shipping
+    }
+
+    return {code: "success", response: response , status: 200}
   }
 }

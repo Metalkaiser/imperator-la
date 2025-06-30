@@ -30,6 +30,7 @@ export default async function CatalogLayout({
   const dbConfig = await getProductService();
   const products = await dbConfig.getActiveProducts();
   const topProductsIds = await dbConfig.getTopProducts();
+  const cartDetails = cartConfig.shoppingCart.enabled ? (await dbConfig.getCartConfigs()).response : {paymentMethods:[], shippingMethods:[]}
 
   if (products.status === 200) {
     const catIndexes = Array.from(new Set((products.response as productProps[]).map(item => item.category)));
@@ -48,7 +49,7 @@ export default async function CatalogLayout({
     });
 
     render = <>
-      <CartProvider>
+      <CartProvider purchaseOptions={cartDetails}>
         <Sidemenu type='Menu' cats={{catIndexes, subCatIndexes}} />
         {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
         <Topmenu catIndexes={catIndexes} />
