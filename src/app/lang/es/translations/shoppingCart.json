@@ -1,0 +1,18 @@
+{
+  "title": "Carrito de compras",
+  "noItem_1": "Aún no tienes nada en tu carrito de compras",
+  "noItem_2": "¡Comienza a agregar productos!",
+  "size": "Talla",
+  "quantity": "Cantidad",
+  "qtRemaining": "Quedan",
+  "price": "Precio",
+  "addToCart": "Agregar al carrito",
+  "purchase": "Comprar",
+  "actionBtnOrder": "Hacer pedido",
+  "deleteItem": "Quitar producto",
+  "deleteItemText": "¿Está seguro de quitar el producto del carrito?:",
+  "deleteCart": "Quitar producto",
+  "itemalready": "Ese producto ya está en el carrito de compras",
+  "itemadded": "agregado al carrito"
+
+}

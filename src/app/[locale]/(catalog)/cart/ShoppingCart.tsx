@@ -20,6 +20,9 @@ import { giftOptions } from "@/app/utils/mockinfo";
 
 export default function ShoppingCart() {
   const t = useTranslations("shoppingCart");
+  const giftT = useTranslations("gifts");
+  const paynshipT = useTranslations("paynship");
+  const feesT = useTranslations("fees");
   const locale = useLocale();
   const { purchaseOptions, cart, addOrUpdateItem, removeItem } = useCart();
 
@@ -43,11 +46,13 @@ export default function ShoppingCart() {
   };
 
   const updateCart = (item: cartItem) => {
-    item.price
-      ? addOrUpdateItem(item)
-      : item.size
-      ? removeItem(item.sku, item.size)
-      : removeItem(item.sku);
+    if (item.price) {
+      addOrUpdateItem(item);
+    } else if (item.size) {
+      removeItem(item.sku, item.size);
+    } else {
+      removeItem(item.sku);
+    }
   };
 
   const toggleGift = (gift: GiftOption) => {
@@ -70,11 +75,11 @@ export default function ShoppingCart() {
 
   const translateMethodName = (name: string) =>
     name === "cash"
-      ? t("cash")
+      ? paynshipT("cash")
       : name === "banktransfer"
-      ? t("banktransfer")
+      ? paynshipT("banktransfer")
       : name === "shop"
-      ? t("shop")
+      ? paynshipT("shop")
       : name;
 
   const renderMethodOptions = (
@@ -98,11 +103,11 @@ export default function ShoppingCart() {
           <Image src={method.icon} alt={method.name} width={50} height={50} />
           <h2 className="text-lg">{translateMethodName(method.name)}</h2>
           {method.fee.status && (
-            <p className="text-xs">(Costo: {getPaymentFee(method.fee, mainCurrency)})</p>
+            <p className="text-xs">({feesT("cost")}: {getPaymentFee(method.fee, mainCurrency)})</p>
           )}
           {"onlyPayOnDelivery" in method.fee &&
             method.fee.onlyPayOnDelivery && (
-              <p className="text-xs">(Cobro al destino)</p>
+              <p className="text-xs">({feesT("shippingOnArrival")})</p>
             )}
         </label>
       ));
@@ -172,8 +177,8 @@ export default function ShoppingCart() {
           </div>
           {activeGiftOptions.length > 0 && (
             <div className="flex flex-col gap-5 mx-5 mt-10">
-              <h2 className="text-lg font-semibold">{t("giftOptionsTitle")}</h2>
-              <p className="text-sm text-center">{t("giftOptionsDescription")}</p>
+              <h2 className="text-lg font-semibold">{giftT("giftOptionsTitle")}</h2>
+              <p className="text-sm text-center">{giftT("giftOptionsDescription")}</p>
               <div className="flex flex-col gap-4">
                 {activeGiftOptions.map((gift) => (
                   <label
@@ -215,16 +220,16 @@ export default function ShoppingCart() {
         </div>
 
         {/* Métodos */}
-        <div className="flex flex-col gap-5 mx-5">
+        <div className="flex flex-col gap-10 mx-5">
           {purchaseOptions.paymentMethods.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-lg">{t("paymentMethods")}:</h2>
+              <h2 className="text-lg">{paynshipT("paymentMethods")}:</h2>
               {renderMethodOptions(purchaseOptions.paymentMethods, "payment")}
             </div>
           )}
           {purchaseOptions.shippingMethods.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-lg">{t("shippingMethods")}:</h2>
+              <h2 className="text-lg">{paynshipT("shippingMethods")}:</h2>
               {renderMethodOptions(purchaseOptions.shippingMethods, "shipping")}
             </div>
           )}
@@ -241,19 +246,19 @@ export default function ShoppingCart() {
             </p>
             {paymentFee > 0 && (
               <p className="text-xs font-light">
-                Comisión de pago: {mainCurrency}
+                {feesT("paymentFee")}: {mainCurrency}
                 {paymentFee.toFixed(2)}
               </p>
             )}
             {shippingFee > 0 && (
               <p className="text-xs font-light">
-                Costo de envío: {mainCurrency}
+                {feesT("shippingFee")}: {mainCurrency}
                 {shippingFee.toFixed(2)}
               </p>
             )}
             {giftTotal > 0 && (
               <p className="text-xs font-light">
-                Extras de regalo: {mainCurrency}
+                {feesT("giftFee")}: {mainCurrency}
                 {giftTotal.toFixed(2)}
               </p>
             )}

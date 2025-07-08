@@ -7,20 +7,20 @@ const provider = process.env.DATA_PROVIDER;
 async function getProductService(): Promise<ProductService> {
   switch (provider) {
     case 'firebase': {
-      const module = await import('@/services/FirebaseProductService');
-      return new module.FirebaseProductService();
+      const dbModule = await import('@/services/FirebaseProductService');
+      return new dbModule.FirebaseProductService();
     }
     case 'mongo': {
-      const module = await import('@/services/MongoProductService');
-      return new module.MongoProductService();
+      const dbModule = await import('@/services/MongoProductService');
+      return new dbModule.MongoProductService();
     }
     case 'sql': {
-      const module = await import('@/services/SQLProductService');
-      return new module.SQLProductService();
+      const dbModule = await import('@/services/SQLProductService');
+      return new dbModule.SQLProductService();
     }
     case 'mock': {
-      const module = await import('@/services/MockProductService');
-      return new module.MockProductService();
+      const dbModule = await import('@/services/MockProductService');
+      return new dbModule.MockProductService();
     }
     default:
       throw new Error(`Data provider not supported: ${provider}`);

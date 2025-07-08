@@ -20,7 +20,13 @@ export default function Cartcontent () {
   const t = useTranslations("shoppingCart");
 
   const updateCart = (item: cartItem) => {
-    item.price ? addOrUpdateItem(item) : item.size ? removeItem(item.sku, item.size) : removeItem(item.sku);
+    if (item.price) {
+      addOrUpdateItem(item);
+    } else if (item.size) {
+      removeItem(item.sku, item.size);
+    } else {
+      removeItem(item.sku);
+    }
   }
 
   const fetchExchangeRate = async () => {

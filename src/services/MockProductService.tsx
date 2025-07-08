@@ -11,7 +11,7 @@ export class MockProductService implements ProductService {
   }
 
   async getActiveProducts(): Promise<appResponse> {
-    let activeProds: productProps[] = [];
+    const activeProds: productProps[] = [];
     mockProducts.map((product) => {
       if (product.status === 1) {
         activeProds.push(product);

@@ -15,11 +15,11 @@ import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 export default function ProductDetails({ sku }: { sku:string }) {
   const { products } = useCatalogContext();
   const product = products.find(item => item.mainSku === sku);
+  const t = useTranslations("products");
+  const locale = useLocale();
   if (!product) {
     return notFound();
   }
-  const t = useTranslations("products");
-  const locale = useLocale();
   const cartConfig = getShoppingCartConfig(locale);
   const currency = cartConfig.shoppingCart.currencyConversion.mainCurrency;
 

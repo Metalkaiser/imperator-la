@@ -26,9 +26,9 @@ export default function ProductList(props:viewData){
 
   const locale = useLocale();
   const cartConfig = getShoppingCartConfig(locale);
-  const { enabled, currencyConversion } = cartConfig.shoppingCart;
+  const { currencyConversion } = cartConfig.shoppingCart;
   const t = useTranslations("products");
-  const {catIndexes, products, topProducts} = useCatalogContext();
+  const { products } = useCatalogContext();
 
   const determineProductsToLoad = useCallback(() => {
     const width = window.innerWidth;
@@ -57,7 +57,7 @@ export default function ProductList(props:viewData){
   const loadMoreProducts = async () => {
     if (hasMoreProducts && !isLoading) {
       let prodList = [];
-      let { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
+      const { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
       switch (props.items.length) {
         case 1:
           prodList = products.filter((prod) => prod.category === categoryIndex);

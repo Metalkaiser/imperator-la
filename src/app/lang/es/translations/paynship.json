@@ -1,0 +1,9 @@
+{
+  "paymentMethods": "Métodos de pago",
+  "shippingMethods": "Métodos de entrega",
+  "cash": "Efectivo",
+  "banktransfer": "Transferencia bancaria",
+  "shop": "Retiro en persona",
+  "live": "Entrega en persona"
+
+}

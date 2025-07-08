@@ -1,7 +1,8 @@
 import { ProductService } from './ProductService';
-import { appResponse, productProps, topProductsProps, PaymentMethod, shippingMethod } from '@/app/utils/types';
+import { appResponse, productProps, topProductsProps, PaymentMethod } from '@/app/utils/types';
 import { getDb } from '@/config/mongoClient';
 import { dbCollections, noProductError } from '@/app/utils/utils';
+import { MongoError } from 'mongodb';
 
 export class MongoProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
@@ -13,6 +14,7 @@ export class MongoProductService implements ProductService {
         {code: "success", response: products , status: 200} :
         {code: "conection-failed", response: null, status: 503};
     } catch (error) {
+      console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }
@@ -26,6 +28,7 @@ export class MongoProductService implements ProductService {
         {code: "success", response: products , status: 200} :
         {code: "conection-failed", response: null, status: 503};
     } catch (error) {
+      console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }
@@ -41,6 +44,7 @@ export class MongoProductService implements ProductService {
       }
       return {code: "success", response: topProducts , status: 200};
     } catch (error) {
+      console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }
@@ -55,6 +59,7 @@ export class MongoProductService implements ProductService {
       }
       return noProductError;
     } catch (error) {
+      console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }
@@ -74,6 +79,7 @@ export class MongoProductService implements ProductService {
 
       return {code: "success", response: product , status: 200};
     } catch (error) {
+      console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }
@@ -93,6 +99,7 @@ export class MongoProductService implements ProductService {
 
       return {code: "success", response: response , status: 200};
     } catch (error) {
+      console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }

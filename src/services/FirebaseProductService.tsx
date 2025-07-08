@@ -3,6 +3,7 @@ import { productProps, appResponse, topProductsProps, PaymentMethod, shippingMet
 import { db } from '@/config/fbConfig';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
 import { dbCollections, noProductError } from '@/app/utils/utils';
+import { FirebaseError } from 'firebase/app';
 
 const catalogCollection = collection(db, dbCollections.products);
 const topProductsCollection = collection(db, dbCollections.topProducts);
@@ -19,6 +20,7 @@ export class FirebaseProductService implements ProductService {
       } as productProps));
       return {code: "success", response: products , status: 200}
     } catch (error) {
+      console.error((error as FirebaseError).message);
       return {code: "unknown", response: null, status: 500}
     }
     
@@ -31,9 +33,9 @@ export class FirebaseProductService implements ProductService {
       if (!catalogItems.length) {
         return {code: "conection-failed", response: null, status: 503}
       }
-
       return {code: "success", response: catalogItems , status: 200};
     } catch (error) {
+      console.error((error as FirebaseError).message);
       return {code: "unknown", response: null, status: 500}
     }
   }
@@ -45,9 +47,9 @@ export class FirebaseProductService implements ProductService {
       if (!topProducts.length) {
         return {code: "conection-failed", response: null, status: 503}
       }
-
       return {code: "success", response: topProducts , status: 200};
     } catch (error) {
+      console.error((error as FirebaseError).message);
       return {code: "unknown", response: null, status: 500}
     }
   }
@@ -66,6 +68,7 @@ export class FirebaseProductService implements ProductService {
       await updateDoc(productDocRef, { ...product });
       return { code: "success", response: product, status: 200 };
     } catch (error) {
+      console.error((error as FirebaseError).message);
       return {code: "unknown", response: null, status: 500}
     }
   }
@@ -85,6 +88,7 @@ export class FirebaseProductService implements ProductService {
 
       return {code: "success", response: response , status: 200};
     } catch (error) {
+      console.error((error as FirebaseError).message);
       return {code: "unknown", response: null, status: 500};
     }
   }

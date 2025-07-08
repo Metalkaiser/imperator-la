@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext } from "react";
-import { productProps, topProductsProps } from "@/app/utils/types";
+import { productProps } from "@/app/utils/types";
 
 interface CatalogContextType {
   catIndexes: number[];
