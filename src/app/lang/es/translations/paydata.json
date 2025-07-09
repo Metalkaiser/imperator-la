@@ -1,0 +1,15 @@
+{
+  "id": "Cédula de identidad",
+  "name": "Nombre",
+  "phone": "Teléfono",
+  "phoneNumber": "Teléfono",
+  "bank": "Banco",
+  "accountNumber": "Número de cuenta",
+  "accountType": "Tipo de cuenta",
+  "email": "Correo electrónico",
+  "reference": "Referencia de pago",
+  "modalTitle": "Instrucciones de pago",
+  "actionBtn": "Notificar pago",
+  "cancelBtn": "Cancelar",
+  "modalInputError": "Por favor, llene todos los campos"
+}

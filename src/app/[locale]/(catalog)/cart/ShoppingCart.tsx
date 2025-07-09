@@ -5,17 +5,11 @@ import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useCart } from "../components/context/Cartcontext";
 import Cartitem from "../components/Cartitem";
-import {
-  getShoppingCartConfig,
-  getPaymentFee,
-} from "@/config/shoppingCartConfig";
-import {
-  cartItem,
-  PaymentMethod,
-  shippingMethod,
-  GiftOption,
-} from "@/app/utils/types";
+import { getShoppingCartConfig, getPaymentFee } from "@/config/shoppingCartConfig";
+import { cartItem, PaymentMethod, shippingMethod, GiftOption, } from "@/app/utils/types";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
+import showCheckoutModal from "./checkoutModal";
+import { shoppingCartImg } from "@/app/utils/svgItems";
 import { giftOptions } from "@/app/utils/mockinfo";
 
 export default function ShoppingCart() {
@@ -23,6 +17,10 @@ export default function ShoppingCart() {
   const giftT = useTranslations("gifts");
   const paynshipT = useTranslations("paynship");
   const feesT = useTranslations("fees");
+  const tPay = useTranslations("paydata");
+  const tShip = useTranslations("shipdata");
+  const tModal = useTranslations("modal");
+
   const locale = useLocale();
   const { purchaseOptions, cart, addOrUpdateItem, removeItem } = useCart();
 
@@ -33,6 +31,41 @@ export default function ShoppingCart() {
   const { enabled, currencyConversion } =
     getShoppingCartConfig(locale).shoppingCart;
   const mainCurrency = currencyConversion.mainCurrency;
+
+  const [modalWidth, setWidth] = useState('60vw'); // valor por defecto para escritorio
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (window.innerWidth <= 768) {
+        setWidth('90vw'); // móvil
+      } else {
+        setWidth('60vw'); // escritorio
+      }
+    };
+
+    // Ejecutar al montar
+    updateWidth();
+
+    // Opcional: actualizar en resize
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  if (cart.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <div className="w-1/4 flex flex-col items-center justify-center">
+        {shoppingCartImg}
+        </div>
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-white">
+          {t("noItem_1")}
+        </h2>
+        <p className="text-gray-500 dark:text-gray-300">
+          {t("noItem_2")}
+        </p>
+      </div>
+    );
+  }
 
   // Fetch exchange rate on mount
   useEffect(() => {
@@ -278,9 +311,25 @@ export default function ShoppingCart() {
         </div>
         <button
           className={`block text-center p-3 actionbtn rounded-xl ${
-            !isPurchaseReady ? "opacity-50 cursor-not-allowed" : ""
+            !isPurchaseReady ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
           }`}
           disabled={!isPurchaseReady}
+          onClick={() =>
+            showCheckoutModal({
+              payment: selectedPayment!,
+              shipping: selectedShipping!,
+              cart,
+              modalWidth,
+              mainCurrency,
+              exchangeCurrency: currencyConversion.exchangeCurrency,
+              exchangeRate,
+              total,
+              selectedGifts,
+              tPay,
+              tShip,
+              tModal
+            })
+          }
         >
           {t("purchase")}
         </button>

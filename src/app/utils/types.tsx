@@ -74,6 +74,7 @@ export type PaymentMethod = {
   data: {
     [key: string]: string | number; // Using string or number to allow for different types of data (e.g., id, phoneNumber, bank, etc.)
   };
+  userData: string[];
   icon: string;
   fee: {
     status: boolean;  // Indicates if there is a fee for this payment method
@@ -88,9 +89,7 @@ export type shippingMethod = {
   name: string;
   enabled: boolean;
   shipToHome: boolean;  // Indicates if the method can ship to home
-  data: {
-    [key: string]: string[];  // Using an array to allow multiple fields for address details
-  };
+  data: string[];  // Using an array to allow multiple fields for address details
   icon: string;
   fee: {
     status: boolean;  // Indicates if there is a fee for this shipping method

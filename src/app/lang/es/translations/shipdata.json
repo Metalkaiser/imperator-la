@@ -1,0 +1,11 @@
+{
+  "id": "Cédula de identidad",
+  "name": "Nombre",
+  "officeName": "Nombre de la oficina",
+  "officeAddress": "Dirección de la oficina",
+  "Municipality": "Municipio",
+  "Community": "Parroquia",
+  "City": "Ciudad",
+  "State": "Estado",
+  "address": "Retiro en persona"
+}

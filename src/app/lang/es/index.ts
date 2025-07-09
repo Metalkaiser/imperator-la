@@ -10,6 +10,9 @@ import productCarousel from './translations/productCarousel.json';
 import misc from './translations/misc.json';
 import footer from './translations/footer.json';
 import actionDetailsButtons from './translations/actionDetailsButtons.json';
+import paydata from './translations/paydata.json';
+import shipdata from './translations/shipdata.json';
+import modal from './translations/modal.json';
 
 export default {
   webAppProps: general,
@@ -23,5 +26,8 @@ export default {
   productCarousel,
   misc,
   footer,
-  actionDetailsButtons
+  actionDetailsButtons,
+  paydata,
+  shipdata,
+  modal
 };

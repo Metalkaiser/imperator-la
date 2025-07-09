@@ -58,6 +58,7 @@ export default function Modelselect ({product}:{product:productProps}) {
     addOrUpdateItem(selectedItem);
     Swal.fire({
       text: `${selectedItem.name} (${selectedItem.sku}) ${cartTranslations("itemadded")}`,
+      theme: "auto",
       icon: "success",
       timer: 2500,
       timerProgressBar: true

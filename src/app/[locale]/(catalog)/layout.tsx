@@ -1,6 +1,8 @@
 import {NextIntlClientProvider, hasLocale} from 'next-intl';
 import {notFound} from 'next/navigation';
 import {routing} from '@/i18n/routing';
+import { Suspense } from 'react';
+import LoadingPage from './components/LoadingPage';
 import Topmenu from './components/topmenu';
 import Sidemenu from './components/menus/Sidemenu';
 import Custom404 from '@/app/not-found';
@@ -54,7 +56,9 @@ export default async function CatalogLayout({
         {cartConfig.shoppingCart.enabled && <Sidemenu type="Carrito" />}
         <Topmenu catIndexes={catIndexes} />
         <CatalogProvider catIndexes={catIndexes} subCatIndexes={subCatIndexes} products={products.response as productProps[]} topProducts={topProducts}>
-          {children}
+          <Suspense fallback={<LoadingPage />}>
+            {children}
+          </Suspense>
         </CatalogProvider>
       </CartProvider>
       <Footer />
