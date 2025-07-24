@@ -13,6 +13,9 @@
   "deleteItemText": "¿Está seguro de quitar el producto del carrito?:",
   "deleteCart": "Quitar producto",
   "itemalready": "Ese producto ya está en el carrito de compras",
-  "itemadded": "agregado al carrito"
-
+  "itemadded": "agregado al carrito",
+  "directBuyTitle": "Comprar producto",
+  "directBuyDescription": "Compra directa desde el botón 'Comprar'",
+  "confirmBtn": "Ir al carrito",
+  "closeBtn": "Continuar"
 }

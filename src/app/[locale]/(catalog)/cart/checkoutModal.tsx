@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { PaymentMethod, shippingMethod, cartItem, GiftOption } from "@/app/utils/types";
@@ -121,6 +122,8 @@ export default async function showCheckoutModal({
       `🛒 ${tModal("newPurchase")}:\n\n${tModal("products")}:\n${productList}\n\n${tModal("payment")}: ${payment.name}\n${tModal("shipping")}: ${shipping.name}\n${tModal("gift")}: ${gifts}\nTotal: ${mainCurrency}${total.toFixed(2)}\n\n${tModal("clientData")}:\n${userInputs}`
     );
     //Aquí irá un llamado a base de datos para descontar lo vendido del inventario, limpiar el carrito de compras, y enviar al usuario a la página de inicio
+    sessionStorage.removeItem("directBuyProduct");
     window.open(`https://wa.me/${phoneNumber}?text=${msg}`, "_blank");
+    return true;
   }
 }

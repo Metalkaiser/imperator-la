@@ -10,5 +10,7 @@
   "payment": "Método de pago",
   "shipping": "Método de envío",
   "gift": "Regalo",
-  "clientData": "Datos del cliente"
+  "clientData": "Datos del cliente",
+  "purchaseFinish": "Muchas gracias por su compra",
+  "confirmBtn": "Cerrar"
 }

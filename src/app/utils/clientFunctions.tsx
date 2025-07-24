@@ -1,6 +1,7 @@
 "use client"
 
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
+import { cartItem, GiftOption } from "./types";
 
 /**
  * Fetches the current exchange rate for currency conversion based on the shopping cart configuration.
@@ -47,4 +48,25 @@ export const fetchExchangeRate = async (locale:string): Promise<number> => {
     console.error("Error fetching exchange rate:", err);
     return 0;
   }
+};
+
+export const getActiveGiftOptions = (giftOptions: GiftOption[], cart: cartItem[]): GiftOption[] => {
+  if (!Array.isArray(giftOptions)) return [];
+  return giftOptions.filter((gift) => {
+    if (!gift.available) return false;
+    if (!gift.exclusiveToProducts?.length) return true;
+    return cart.some((item) =>
+      gift.exclusiveToProducts?.includes(item.sku)
+    );
+  });
+};
+
+export const getFeeValue = (
+  fee: { status: boolean; percentage?: number; fixed?: number },
+  base: number
+) => {
+  if (!fee.status) return 0;
+  const fixed = fee.fixed ?? 0;
+  const percent = fee.percentage ? (fee.percentage / 100) * base : 0;
+  return parseFloat((fixed + percent).toFixed(2));
 };

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Swal from "sweetalert2";
 import { productProps, cartItem } from "@/app/utils/types";
 import { QuantitySelector } from "../Quantityselector";
@@ -10,6 +10,7 @@ import { getDiscountedPrice } from "@/app/utils/functions";
 import { useCart } from "../context/Cartcontext";
 
 export default function Modelselect ({product}:{product:productProps}) {
+  const locale = useLocale();
   const { addOrUpdateItem } = useCart();
   const currentPrice = product.discount ? parseFloat(getDiscountedPrice(product.price,product.discount)) : product.price;
   const defaultItemProps = {
@@ -61,9 +62,24 @@ export default function Modelselect ({product}:{product:productProps}) {
       theme: "auto",
       icon: "success",
       timer: 2500,
-      timerProgressBar: true
-    })
-    addOrUpdateItem(selectedItem);
+      timerProgressBar: true,
+      showCloseButton: true,
+      showConfirmButton: true,
+      confirmButtonText: cartTranslations("confirmBtn"),
+      showCancelButton: true,
+      cancelButtonText: cartTranslations("closeBtn")
+    }).then((res) => {
+      if (res.isConfirmed) {
+        window.location.href = `/${locale}/cart`;
+      }
+    });
+  }
+
+  const buyProduct = () => {
+    if (!selectedItem || !selectedItem.sku) return;
+
+    sessionStorage.setItem("directBuyProduct", JSON.stringify(selectedItem));
+    window.location.href = `/${locale}/cart/direct`;
   }
 
   return (
@@ -151,7 +167,7 @@ export default function Modelselect ({product}:{product:productProps}) {
       </div>
     </button>
     <button
-      onClick={addToCart}
+      onClick={buyProduct}
       disabled={!selectedItem.qt}>
       <div className={`${selectedItem.qt ? "purchase cursor-pointer" : "disabledcart cursor-not-allowed"} flex relative justify-evenly justify-items-stretch items-center w-5/6 p-5 rounded-lg shadow-lg text-center mx-auto`}>
         <p className="text-white text-md md:text-lg">{cartTranslations("purchase")}</p>

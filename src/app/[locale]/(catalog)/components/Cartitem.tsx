@@ -35,6 +35,7 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
       title: t("deleteItem"),
       text: `${t("deleteItemText")} ${item.name}`,
       icon: "warning",
+      theme: "auto",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
