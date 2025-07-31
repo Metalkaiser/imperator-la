@@ -22,13 +22,15 @@ export type productProps = {
   }[];
   waLink: string;
   discount?: {
-    type: number;
+    type: number; //0: percentage, 1: fixed
     value: number;
   }
   position?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string;
+  numReviews?: number;
+  rating?: number;
+  createdAt?: number | null;
+  updatedAt?: number | null;
+  deletedAt?: number | null;
 }
 
 export type topProductsProps = {
@@ -109,4 +111,19 @@ export type GiftOption = {
   available: boolean;                     // Si está disponible o no
   exclusiveToProducts?: string[];        // Lista opcional de SKUs/productos a los que se aplica
   data?: { [key: string]: string | number | boolean }; // Extra info personalizada
+}
+
+export type saleData = {
+  clientName: string;                     // Nombre del cliente
+  clientPhone: string;                    // Teléfono del cliente
+  clientEmail?: string;                   // Email del cliente (opcional)
+  clientAddress?: { [key: string]: string | number | boolean };                 // Dirección del cliente (opcional)
+  paymentMethodId: PaymentMethod["id"];   // Método de pago seleccionado
+  paymentData: { [key: string]: string | number | boolean }; // Datos adicionales del pago (opcional)
+  shippingMethod: shippingMethod["id"];   // Método de envío seleccionado
+  shippingData?: { [key: string]: string | number | boolean }; // Datos adicionales del envío (opcional)
+  giftOption?: GiftOption["id"][];                // Opción de regalo seleccionada (opcional)
+  totalAmount: number;                    // Monto total de la venta
+  items: cartItem[];                      // Lista de productos en el carrito
+  notes?: string;                         // Notas adicionales para la venta (opcional)
 }

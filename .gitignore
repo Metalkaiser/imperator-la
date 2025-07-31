@@ -25,6 +25,8 @@
 *.pem
 src/app/utils/mockinfo.tsx
 public/misc/other/*
+public/misc/test-thumbnails
+src/app/utils/mockProducts.json
 
 # debug
 npm-debug.log*

@@ -21,7 +21,6 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children, purchaseOptions }: { children: React.ReactNode, purchaseOptions: purchaseOptions }) {
-  const [isMounted, setMounted] = useState(false);
   const [cart, setCart] = useState<cartItem[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -43,8 +42,6 @@ export function CartProvider({ children, purchaseOptions }: { children: React.Re
         setCart(JSON.parse(raw));
       } catch {
         sessionStorage.removeItem(sessionCartName);
-      } finally {
-        setMounted(true);
       }
     }
   }, []);
@@ -81,7 +78,6 @@ export function CartProvider({ children, purchaseOptions }: { children: React.Re
     sessionStorage.removeItem(sessionCartName);
   };
 
-  if (!isMounted) return <LoadingPage />;
   return (
     <CartContext.Provider
       value={{ cart, addOrUpdateItem, removeItem, clearCart, purchaseOptions }}

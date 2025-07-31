@@ -1,95 +1,105 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, topProductsProps, PaymentMethod, shippingMethod } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
-import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
-import { dbCollections, noProductError } from '@/app/utils/utils';
-import { FirebaseError } from 'firebase/app';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, addDoc } from "firebase/firestore";
+import { dbCollections } from '@/app/utils/utils';
+import { handleFirebase } from './helpers/Firebase/firebaseWrapper';
 
 const catalogCollection = collection(db, dbCollections.products);
 const topProductsCollection = collection(db, dbCollections.topProducts);
 const paymentCollection = collection(db, dbCollections.payment);
 const shippingCollection = collection(db, dbCollections.shipping);
+const ordersCollection = collection(db, dbCollections.orders);
 
 export class FirebaseProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
-    try {
+    return handleFirebase(async () => {
       const querySnapshot = await getDocs(catalogCollection);
-      const products = querySnapshot.docs.map(doc => ({
+      return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-      } as productProps));
-      return {code: "success", response: products , status: 200}
-    } catch (error) {
-      console.error((error as FirebaseError).message);
-      return {code: "unknown", response: null, status: 500}
-    }
-    
+      }));
+    });
   }
 
   async getActiveProducts(): Promise<appResponse> {
-    try {
-      const catalogSnapshot = await getDocs(query(catalogCollection, where("status", "==", 1), orderBy('mainSku', 'asc')));
-      const catalogItems = catalogSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as productProps));
-      if (!catalogItems.length) {
-        return {code: "conection-failed", response: null, status: 503}
-      }
-      return {code: "success", response: catalogItems , status: 200};
-    } catch (error) {
-      console.error((error as FirebaseError).message);
-      return {code: "unknown", response: null, status: 500}
-    }
+    return handleFirebase(async () => {
+      const snapshot = await getDocs(query(catalogCollection, where("status", "==", 1), orderBy('mainSku', 'asc')));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
   }
 
   async getTopProducts(): Promise<appResponse> {
-    try {
-      const topProductsSnapshot = await getDocs(query(topProductsCollection));
-      const topProducts = topProductsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as topProductsProps));
-      if (!topProducts.length) {
-        return {code: "conection-failed", response: null, status: 503}
-      }
-      return {code: "success", response: topProducts , status: 200};
-    } catch (error) {
-      console.error((error as FirebaseError).message);
-      return {code: "unknown", response: null, status: 500}
-    }
+    return handleFirebase(async () => {
+      const snapshot = await getDocs(query(topProductsCollection));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
   }
 
   async getProductById(id: string): Promise<appResponse> {
-    const docRef = doc(db, dbCollections.products, id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? 
-      {code: "success", response: { id: docSnap.id, ...docSnap.data() } as productProps , status: 200} :
-      noProductError;
+    return handleFirebase(async () => {
+      const docRef = doc(db, dbCollections.products, id);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) throw new Error("Product not found");
+      return { id: docSnap.id, ...docSnap.data() };
+    });
   }
 
   async updateProduct(product: productProps): Promise<appResponse> {
-    try {
-      const productDocRef = doc(db, (product.id as string));
+    return handleFirebase(async () => {
+      const productDocRef = doc(db, dbCollections.products, product.id as string);
       await updateDoc(productDocRef, { ...product });
-      return { code: "success", response: product, status: 200 };
-    } catch (error) {
-      console.error((error as FirebaseError).message);
-      return {code: "unknown", response: null, status: 500}
-    }
+      return product;
+    });
   }
 
   async getCartConfigs(): Promise<appResponse> {
-    try {
-      const paymentSnapshot = await getDocs(query(paymentCollection));
-      const shippingSnapshot = await getDocs(query(shippingCollection));
+    return handleFirebase(async () => {
+      const paymentSnapshot = await getDocs(paymentCollection);
+      const shippingSnapshot = await getDocs(shippingCollection);
+      return {
+        paymentMethods: paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+        shippingMethods: shippingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      };
+    });
+  }
 
-      const paymentMethods = paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
-      const shippingMethods = shippingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as shippingMethod));
+  async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const updatedProducts: productProps[] = [];
 
-      const response = {
-        paymentMethods: paymentMethods,
-        shippingMethods: shippingMethods
+      for (const item of cart) {
+        const productRef = doc(db, dbCollections.products, item.id.toString());
+        const productSnap = await getDoc(productRef);
+        if (!productSnap.exists()) throw new Error(`Producto ${item.name} no encontrado`);
+
+        const product = productSnap.data() as productProps;
+        const variantIndex = product.variants.findIndex(v => v.sku === item.sku);
+        if (variantIndex === -1) throw new Error(`SKU ${item.sku} no encontrado`);
+
+        const sizeIndex = product.variants[variantIndex].stock.findIndex(s => s.name === item.size);
+        if (sizeIndex === -1) throw new Error(`Talla ${item.size} no encontrada`);
+
+        const stock = product.variants[variantIndex].stock[sizeIndex];
+        if (stock.quantity < item.qt) throw new Error(`Stock insuficiente para ${item.name}, talla ${item.size}`);
+
+        // Descontar del stock
+        product.variants[variantIndex].stock[sizeIndex].quantity -= item.qt;
+
+        // Guardar el producto actualizado
+        await updateDoc(productRef, { variants: product.variants });
+        const { id, ...productWithoutId } = product;
+        updatedProducts.push({ id: item.id, ...productWithoutId });
       }
 
-      return {code: "success", response: response , status: 200};
-    } catch (error) {
-      console.error((error as FirebaseError).message);
-      return {code: "unknown", response: null, status: 500};
-    }
+      // Registrar la venta
+      await addDoc(ordersCollection, {
+        cart,
+        clientData,
+        createdAt: new Date().toISOString()
+      });
+
+      return updatedProducts;
+    });
   }
 }
