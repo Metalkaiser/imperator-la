@@ -2,26 +2,21 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
-import LoadingPage from "../../components/LoadingPage";
-import GiftOptions from "../../components/shoppingcart/Giftoptions";
-import Methodrender from "../../components/shoppingcart/Methodsrender";
-import Carttotal from "../../components/shoppingcart/Carttotal";
 import { useCart } from "../../components/context/Cartcontext";
-import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
+import { useCatalogContext } from "../../components/context/CatalogContext";
 import { cartItem, GiftOption, } from "@/app/utils/types";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
-import { getActiveGiftOptions } from "@/app/utils/clientFunctions";
+import Methodrender from "../../components/shoppingcart/Methodsrender";
+import GiftOptions from "../../components/shoppingcart/Giftoptions";
+import Carttotal from "../../components/shoppingcart/Carttotal";
 import { giftOptions } from "@/app/utils/mockinfo";
 
-export default function DirectBuyPage() {
-  const [product, setProduct] = useState<cartItem | null>(null);
-  const router = useRouter();
-  const { purchaseOptions, clearCart } = useCart();
-  const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
-  const [selectedGifts, setSelectedGifts] = useState<GiftOption[]>([]);
-  const [exchangeRate, setExchangeRate] = useState(0);
+import { useRouter } from "next/navigation";
+import LoadingPage from "../../components/LoadingPage";
+import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
+import { getActiveGiftOptions } from "@/app/utils/clientFunctions";
 
+export default function DirectBuyPage() {
   const t = useTranslations("shoppingCart");
   const giftT = useTranslations("gifts");
   const paynshipT = useTranslations("paynship");
@@ -29,8 +24,16 @@ export default function DirectBuyPage() {
   const tPay = useTranslations("paydata");
   const tShip = useTranslations("shipdata");
   const tModal = useTranslations("modal");
-
+  const { refreshProducts } = useCatalogContext();
   const locale = useLocale();
+
+  const [exchangeRate, setExchangeRate] = useState(0);
+  const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
+  const [selectedGifts, setSelectedGifts] = useState<GiftOption[]>([]);
+
+  const [product, setProduct] = useState<cartItem | null>(null);
+  const { purchaseOptions, clearCart } = useCart();
+  const router = useRouter();
 
   const { enabled, currencyConversion } =
     getShoppingCartConfig(locale).shoppingCart;
@@ -40,6 +43,19 @@ export default function DirectBuyPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: parseInt(value) }));
+  };
+
+  useEffect(() => {
+    if (!enabled || !currencyConversion.enabled) return;
+    fetchExchangeRate(locale).then((rate) => rate && setExchangeRate(rate));
+  }, [enabled, currencyConversion, locale]);
+
+  const toggleGift = (gift: GiftOption) => {
+    setSelectedGifts((prev) =>
+      prev.find((g) => g.id === gift.id)
+        ? prev.filter((g) => g.id !== gift.id)
+        : [...prev, gift]
+    );
   };
 
   useEffect(() => {
@@ -55,12 +71,6 @@ export default function DirectBuyPage() {
       router.push("/");
     }
   }, []);
-
-  // Fetch exchange rate on mount
-  useEffect(() => {
-    if (!enabled || !currencyConversion.enabled) return;
-    fetchExchangeRate(locale).then((rate) => rate && setExchangeRate(rate));
-  }, [enabled, currencyConversion, locale]);
 
   const activeGiftOptions = getActiveGiftOptions(
     giftOptions,
@@ -111,14 +121,6 @@ export default function DirectBuyPage() {
 
   const isPurchaseReady =
     total > 0 && formData.payment > 0 && formData.shipping > 0;
-
-  const toggleGift = (gift: GiftOption) => {
-    setSelectedGifts((prev) =>
-      prev.find((g) => g.id === gift.id)
-        ? prev.filter((g) => g.id !== gift.id)
-        : [...prev, gift]
-    );
-  };
 
   if (!product) return <LoadingPage />;
 
@@ -174,7 +176,7 @@ export default function DirectBuyPage() {
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
         purchaseParams={{item: [product], exchangeRate, isPurchaseReady}} 
         currencyConversion={currencyConversion}
-        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart}} />
+        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart, refreshProducts }} />
     </div>
   );
 }

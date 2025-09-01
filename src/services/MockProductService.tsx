@@ -1,11 +1,12 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, sale } from '@/app/utils/types';
 import { 
   firebaseProductsList as mutableProducts,
   mockTopProds as mutableTop,
   mockSales as mutableSales,
   paymentMethods as mutablePays,
-  shippingMethods as mutableShips
+  shippingMethods as mutableShips,
+  paymentMethods
 } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
 
@@ -57,61 +58,74 @@ export class MockProductService implements ProductService {
   }
 
   async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
-  try {
-    const updatedProducts: productProps[] = [];
+    try {
+      const updatedProducts: productProps[] = [];
 
-    for (const item of cart) {
-      const product = mutableProducts.find(p => p.id === item.id);
-      if (!product) {
-        return { code: "product-not-found", response: { id: item.id }, status: 404 };
+      for (const item of cart) {
+        const product = mutableProducts.find(p => p.id === item.id);
+        if (!product) {
+          return { code: "product-not-found", response: { id: item.id }, status: 404 };
+        }
+
+        const variant = product.variants.find(v => v.sku === item.sku);
+        if (!variant) {
+          return { code: "variant-not-found", response: { sku: item.sku }, status: 404 };
+        }
+
+        const stockItem = variant.stock.find(s => s.name === item.size);
+        if (!stockItem) {
+          return { code: "size-not-found", response: { size: item.size }, status: 404 };
+        }
+
+        if (stockItem.quantity < item.qt) {
+          return {
+            code: "insufficient-stock",
+            response: {
+              sku: item.sku,
+              size: item.size,
+              available: stockItem.quantity
+            },
+            status: 409
+          };
+        }
+
+        // Descontar del stock
+        stockItem.quantity -= item.qt;
+        updatedProducts.push(product);
       }
 
-      const variant = product.variants.find(v => v.sku === item.sku);
-      if (!variant) {
-        return { code: "variant-not-found", response: { sku: item.sku }, status: 404 };
-      }
+      // Registrar la venta
+      const newSale = {
+        id: mutableSales.length + 1,
+        clientName: clientData.clientName || "",
+        clientId: clientData.clientId,
+        clientPhone: clientData.clientPhone || "",
+        clientEmail: clientData.clientEmail || "",
+        clientAddress: clientData.clientAddress,
+        paymentMethodId: clientData.paymentMethodId,
+        paymentData: clientData.paymentData,
+        shippingMethod: clientData.shippingMethod,
+        shippingData: clientData.shippingData || {},
+        giftOption: clientData.giftOption || [],
+        totalAmount: clientData.totalAmount,
+        items: cart,
+        notes: clientData.notes || "",
+        date: new Date().toISOString()
+      };
 
-      const stockItem = variant.stock.find(s => s.name === item.size);
-      if (!stockItem) {
-        return { code: "size-not-found", response: { size: item.size }, status: 404 };
-      }
+      mutableSales.push(newSale);
 
-      if (stockItem.quantity < item.qt) {
-        return {
-          code: "insufficient-stock",
-          response: {
-            sku: item.sku,
-            size: item.size,
-            available: stockItem.quantity
-          },
-          status: 409
-        };
-      }
-
-      // Descontar del stock
-      stockItem.quantity -= item.qt;
-      updatedProducts.push(product);
+      return {
+        code: "success",
+        response: {
+          updatedProducts: updatedProducts.map(p => p.id),
+          totalItems: cart.length
+        },
+        status: 200
+      };
+    } catch (err) {
+      return { code: "mock-error", response: err, status: 500 };
     }
-
-    // Registrar la venta
-    mutableSales.push({
-      id: mutableSales.length + 1,
-      cart,
-      clientData,
-      date: new Date().toISOString()
-    });
-
-    return {
-      code: "success",
-      response: {
-        updatedProducts: updatedProducts.map(p => p.id),
-        totalItems: cart.length
-      },
-      status: 200
-    };
-  } catch (err) {
-    return { code: "mock-error", response: null, status: 500 };
   }
-}
 
 }

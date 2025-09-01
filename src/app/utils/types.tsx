@@ -11,6 +11,7 @@ export type productProps = {
   atributes?: {
     [key: string]: string | number | boolean;
   }[];
+  thumbnail: string;
   variants: {
     color: string;
     sku: string;
@@ -114,16 +115,37 @@ export type GiftOption = {
 }
 
 export type saleData = {
-  clientName: string;                     // Nombre del cliente
-  clientPhone: string;                    // Teléfono del cliente
-  clientEmail?: string;                   // Email del cliente (opcional)
-  clientAddress?: { [key: string]: string | number | boolean };                 // Dirección del cliente (opcional)
-  paymentMethodId: PaymentMethod["id"];   // Método de pago seleccionado
-  paymentData: { [key: string]: string | number | boolean }; // Datos adicionales del pago (opcional)
-  shippingMethod: shippingMethod["id"];   // Método de envío seleccionado
-  shippingData?: { [key: string]: string | number | boolean }; // Datos adicionales del envío (opcional)
-  giftOption?: GiftOption["id"][];                // Opción de regalo seleccionada (opcional)
-  totalAmount: number;                    // Monto total de la venta
-  items: cartItem[];                      // Lista de productos en el carrito
-  notes?: string;                         // Notas adicionales para la venta (opcional)
+  clientName?: string;  // Puede que siempre esté presente, pero lo dejamos opcional
+  clientId?: string | number;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientAddress?: { [key: string]: string | number | boolean };
+
+  paymentMethodId: PaymentMethod["id"];
+  paymentData: { [key: string]: string | number | boolean };
+
+  shippingMethod: shippingMethod["id"];
+  shippingData?: { [key: string]: string | number | boolean };
+
+  giftOption?: GiftOption["id"][];
+  totalAmount: number;
+  notes?: string;
+};
+
+
+export type sale = {
+  id: string | number;
+  clientName: string;
+  clientPhone: string;
+  clientEmail?: string;
+  clientAddress?: { [key: string]: string | number | boolean };
+  paymentMethodId: PaymentMethod["id"];
+  paymentData: { [key: string]: string | number | boolean };
+  shippingMethod: shippingMethod["id"];
+  shippingData?: { [key: string]: string | number | boolean };
+  giftOption?: GiftOption["id"][];
+  totalAmount: number;
+  items: cartItem[];
+  notes?: string;
+  date: string;
 }

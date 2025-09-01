@@ -1,6 +1,6 @@
 {
-  "id": "Cédula de identidad",
-  "name": "Nombre",
+  "clientId": "Cédula de identidad",
+  "clientName": "Nombre",
   "officeName": "Nombre de la oficina",
   "officeAddress": "Dirección de la oficina",
   "Municipality": "Municipio",

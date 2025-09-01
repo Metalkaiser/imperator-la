@@ -45,7 +45,7 @@ export default function Home() {
       <ImageSlider />
       <Descr />
       <CategoryGrid />
-      {/*<ProductCarousel title="home"/>*/}
+      <ProductCarousel title="home"/>
       <ProductList name='allProds' items={[]} loadSub={true} />
     </main>
   );

@@ -80,7 +80,7 @@ export default function ProductList(props:viewData){
                   {product.discount && (<p className='absolute py-2 px-4 text-white font-bold right-0 discount-indicator-list z-10'>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
-                      src={storagePath + product.images[0]}
+                      src={storagePath + product.thumbnail}
                       alt={product.name}
                       fill
                       className="object-cover"

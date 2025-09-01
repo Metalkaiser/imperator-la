@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import LoadingPage from "../LoadingPage";
-import type { cartItem, PaymentMethod, shippingMethod } from "@/app/utils/types";
+import type { appResponse, cartItem, PaymentMethod, shippingMethod } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
 
 type purchaseOptions = {
@@ -10,17 +9,21 @@ type purchaseOptions = {
   shippingMethods: shippingMethod[];
 }
 
+type registerSaleFunction = (cart: cartItem[], clientData: any) => Promise<appResponse>;
+
 interface CartContextType {
   cart: cartItem[];
   addOrUpdateItem: (item: cartItem) => void;
   removeItem: (sku: string, size?: string | number) => void;
   clearCart: () => void;
   purchaseOptions: purchaseOptions;
+  enabled: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children, purchaseOptions }: { children: React.ReactNode, purchaseOptions: purchaseOptions }) {
+export function CartProvider({ children, purchaseOptions, enabled }:
+  { children: React.ReactNode, purchaseOptions: purchaseOptions, enabled: boolean }) {
   const [cart, setCart] = useState<cartItem[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -80,7 +83,7 @@ export function CartProvider({ children, purchaseOptions }: { children: React.Re
 
   return (
     <CartContext.Provider
-      value={{ cart, addOrUpdateItem, removeItem, clearCart, purchaseOptions }}
+      value={{ cart, addOrUpdateItem, removeItem, clearCart, purchaseOptions, enabled }}
     >
       {children}
     </CartContext.Provider>

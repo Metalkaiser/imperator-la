@@ -2,8 +2,9 @@
 
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { PaymentMethod, shippingMethod, cartItem, GiftOption } from "@/app/utils/types";
+import { PaymentMethod, shippingMethod, cartItem, GiftOption, saleData } from "@/app/utils/types";
 import { phoneNumber } from "@/app/utils/utils";
+import { giftOptions } from "@/app/utils/mockinfo";
 
 const MySwal = withReactContent(Swal);
 
@@ -120,9 +121,43 @@ export default async function showCheckoutModal({
     const msg = encodeURIComponent(
       `🛒 ${tModal("newPurchase")}:\n\n${tModal("products")}:\n${productList}\n\n${tModal("payment")}: ${payment.name}\n${tModal("shipping")}: ${shipping.name}\n${tModal("gift")}: ${gifts}\nTotal: ${mainCurrency}${total.toFixed(2)}\n\n${tModal("clientData")}:\n${userInputs}`
     );
-    //Aquí irá un llamado a base de datos para descontar lo vendido del inventario, limpiar el carrito de compras, y enviar al usuario a la página de inicio
     sessionStorage.removeItem("directBuyProduct");
-    window.open(`https://wa.me/${phoneNumber}?text=${msg}`, "_blank");
-    return true;
+    //window.open(`https://wa.me/${phoneNumber}?text=${msg}`, "_blank");
+    const clientDataPayment = payment.userData?.reduce((acc: Record<string, any>, field: string, index: number) => {
+      acc[field] = formValues[index];
+      return acc;
+    }, {}) || {};
+
+    const clientDataShipping = shipping.data?.reduce((acc: Record<string, any>, field: string, index: number) => {
+      acc[field] = formValues[index + (payment.userData?.length || 0)];
+      return acc;
+    }, {}) || {};
+
+    const sale: saleData = {
+      paymentMethodId: payment.id,
+      paymentData: clientDataPayment,
+      shippingMethod: shipping.id,
+      shippingData: clientDataShipping,
+      totalAmount: total,
+    };
+
+    // Intentamos “mapear” campos comunes si están presentes
+    if (clientDataShipping.clientName) sale.clientName = String(clientDataShipping.clientName);
+    if (clientDataShipping.clientId) sale.clientId = clientDataShipping.clientId;
+    if (clientDataPayment.clientPhone || clientDataShipping.clientPhone) {
+      sale.clientPhone = String(clientDataPayment.clientPhone || clientDataShipping.clientPhone);
+    }
+    if (clientDataPayment.clientEmail) sale.clientEmail = String(clientDataPayment.clientEmail);
+    if (clientDataShipping.address) sale.clientAddress = { address: clientDataShipping.address };
+
+    if (selectedGifts.length) {
+      sale.giftOption = selectedGifts.map(g => g.id);
+    }
+
+
+    return { code: "purchase-complete", response: { data: formValues, inputs: sale }, status: 200 };
+  } else {
+    console.log("❌ El usuario canceló o no llenó todos los campos");
+    return { code: "purchase-canceled", response: null, status: 400 };
   }
 }

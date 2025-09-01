@@ -2,7 +2,7 @@
 
 import Swal from "sweetalert2";
 import showCheckoutModal from "../../cart/checkoutModal";
-import { PaymentMethod, shippingMethod, GiftOption, cartItem } from "@/app/utils/types";
+import { PaymentMethod, shippingMethod, GiftOption, cartItem, saleData } from "@/app/utils/types";
 
 interface Props {
   title: string;
@@ -42,6 +42,7 @@ interface Props {
     tShip: (key: string) => string;
     tModal: (key: string) => string;
     clearCartFunction: () => void;
+    refreshProducts: () => Promise<void>;
   }
 }
 
@@ -78,8 +79,26 @@ export default function Carttotal ({
       tModal: functions.tModal,
     });
 
-    if (wasConfirmed) {
-      functions.clearCartFunction();
+    if (wasConfirmed.status == 200 && wasConfirmed.response) {
+      const clientData: saleData = wasConfirmed.response.inputs;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/registerSale`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cart: purchaseParams.item,
+          clientData: clientData,
+        }),
+      });
+      if (response.status === 200) {
+        const resData = await response.json();
+        functions.clearCartFunction();
+        await functions.refreshProducts();
+        console.log(resData);
+      } else {
+        console.error("❌ Error al registrar la venta:", response.statusText);
+      }
       Swal.fire({
         text: functions.tModal("purchaseFinish"),
         icon: "success",
@@ -89,7 +108,7 @@ export default function Carttotal ({
         timerProgressBar: true,
       }).finally(() => {
         console.log("✅ El usuario completó la compra y el carrito fue limpiado.");
-        window.open("/", "_self");
+        //window.open("/", "_self");
       });
     } else {
       console.log("❌ El usuario canceló o no llenó todos los campos");

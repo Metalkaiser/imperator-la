@@ -89,7 +89,7 @@ export class FirebaseProductService implements ProductService {
         // Guardar el producto actualizado
         await updateDoc(productRef, { variants: product.variants });
         const { id, ...productWithoutId } = product;
-        updatedProducts.push({ id: item.id, ...productWithoutId });
+        updatedProducts.push({ id: id, ...productWithoutId });
       }
 
       // Registrar la venta
