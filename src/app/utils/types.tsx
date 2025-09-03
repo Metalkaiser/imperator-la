@@ -136,6 +136,7 @@ export type saleData = {
 export type sale = {
   id: string | number;
   clientName: string;
+  clientId?: string | number;
   clientPhone: string;
   clientEmail?: string;
   clientAddress?: { [key: string]: string | number | boolean };
@@ -145,6 +146,7 @@ export type sale = {
   shippingData?: { [key: string]: string | number | boolean };
   giftOption?: GiftOption["id"][];
   totalAmount: number;
+  status: string;
   items: cartItem[];
   notes?: string;
   date: string;

@@ -108,7 +108,7 @@ export default function Carttotal ({
         timerProgressBar: true,
       }).finally(() => {
         console.log("✅ El usuario completó la compra y el carrito fue limpiado.");
-        //window.open("/", "_self");
+        window.open("/", "_self");
       });
     } else {
       console.log("❌ El usuario canceló o no llenó todos los campos");

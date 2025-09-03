@@ -4,12 +4,14 @@ import { db } from '@/config/fbConfig';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, addDoc } from "firebase/firestore";
 import { dbCollections } from '@/app/utils/utils';
 import { handleFirebase } from './helpers/Firebase/firebaseWrapper';
+import { firebaseProductsList, mockTopProds, paymentMethods, shippingMethods, giftOptions } from '@/app/utils/mockinfo';
 
 const catalogCollection = collection(db, dbCollections.products);
 const topProductsCollection = collection(db, dbCollections.topProducts);
 const paymentCollection = collection(db, dbCollections.payment);
 const shippingCollection = collection(db, dbCollections.shipping);
 const ordersCollection = collection(db, dbCollections.orders);
+const giftOptionsCollection = collection(db, dbCollections.giftOptions);
 
 export class FirebaseProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
@@ -57,16 +59,18 @@ export class FirebaseProductService implements ProductService {
     return handleFirebase(async () => {
       const paymentSnapshot = await getDocs(paymentCollection);
       const shippingSnapshot = await getDocs(shippingCollection);
+      const giftSnapshot = await getDocs(giftOptionsCollection);
       return {
         paymentMethods: paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-        shippingMethods: shippingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        shippingMethods: shippingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+        giftOptions: giftSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
       };
     });
   }
 
   async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
     return handleFirebase(async () => {
-      const updatedProducts: productProps[] = [];
+      //const updatedProducts: productProps[] = [];
 
       for (const item of cart) {
         const productRef = doc(db, dbCollections.products, item.id.toString());
@@ -83,6 +87,7 @@ export class FirebaseProductService implements ProductService {
         const stock = product.variants[variantIndex].stock[sizeIndex];
         if (stock.quantity < item.qt) throw new Error(`Stock insuficiente para ${item.name}, talla ${item.size}`);
 
+        /*
         // Descontar del stock
         product.variants[variantIndex].stock[sizeIndex].quantity -= item.qt;
 
@@ -90,16 +95,45 @@ export class FirebaseProductService implements ProductService {
         await updateDoc(productRef, { variants: product.variants });
         const { id, ...productWithoutId } = product;
         updatedProducts.push({ id: id, ...productWithoutId });
+        */
       }
 
       // Registrar la venta
-      await addDoc(ordersCollection, {
+      const newOrder = await addDoc(ordersCollection, {
         cart,
         clientData,
+        status: "placed",
         createdAt: new Date().toISOString()
       });
 
-      return updatedProducts;
+      return newOrder.id;
+    });
+  }
+
+  async migrateDB(): Promise<appResponse> {
+    return handleFirebase(async () => {
+      firebaseProductsList.forEach( async (product) => {
+        let { id, ...productNoId } = product;
+        await addDoc(catalogCollection, productNoId);
+      });
+      mockTopProds.forEach( async (topProd) => {
+        let { id, ...top } = topProd;
+        await addDoc(topProductsCollection, top);
+      });
+      paymentMethods.forEach( async (pay) => {
+        let { id, ...payNoId } = pay;
+        await addDoc(paymentCollection, payNoId);
+      });
+      shippingMethods.forEach( async (ship) => {
+        let { id, ...shipNoId } = ship;
+        await addDoc(shippingCollection, shipNoId);
+      });
+      giftOptions.forEach( async (gift) => {
+        let { id, ...giftNoId } = gift;
+        await addDoc(collection(db, dbCollections.giftOptions), giftNoId);
+      });
+
+      return { message: "Database migration completed" };
     });
   }
 }

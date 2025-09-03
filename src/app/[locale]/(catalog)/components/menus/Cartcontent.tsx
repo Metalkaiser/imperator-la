@@ -9,7 +9,6 @@ import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import Cartitem from "../Cartitem";
 import { useCart } from "../context/Cartcontext";
 import { sideMenu } from "@/app/utils/functions";
-//import { cartItems } from "@/app/utils/mockinfo"; //Cart mock info
 
 export default function Cartcontent () {
   const { cart, addOrUpdateItem, removeItem } = useCart();
@@ -70,7 +69,7 @@ export default function Cartcontent () {
     cart.reduce((sum, item) => sum + item.price * item.qt, 0)
   ), [cart]);
 
-  if (!enabled) return null;
+  if (!cartConfig.shoppingCart.enabled) return null;
 
   return (
     <div className="flex flex-col my-5 justify-between items-center h-full w-full">

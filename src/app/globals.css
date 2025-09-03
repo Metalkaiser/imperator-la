@@ -120,3 +120,7 @@ footer {
   opacity: 30%;
   text-decoration: line-through;
 }
+
+#onlysku ~ * {
+  display: none !important;
+}

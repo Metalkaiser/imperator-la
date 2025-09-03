@@ -3,7 +3,6 @@ import { useLocale } from "next-intl";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import { cartItem, GiftOption } from "@/app/utils/types";
-import { giftOptions } from "@/app/utils/mockinfo";
 
 export function useCartSummary(cart: cartItem[]) {
   const locale = useLocale();

@@ -89,13 +89,13 @@ export class MockProductService implements ProductService {
           };
         }
 
-        // Descontar del stock
+        /* Descontar del stock
         stockItem.quantity -= item.qt;
-        updatedProducts.push(product);
+        updatedProducts.push(product);*/
       }
 
       // Registrar la venta
-      const newSale = {
+      const newSale:sale = {
         id: mutableSales.length + 1,
         clientName: clientData.clientName || "",
         clientId: clientData.clientId,
@@ -109,6 +109,7 @@ export class MockProductService implements ProductService {
         giftOption: clientData.giftOption || [],
         totalAmount: clientData.totalAmount,
         items: cart,
+        status: "placed",
         notes: clientData.notes || "",
         date: new Date().toISOString()
       };

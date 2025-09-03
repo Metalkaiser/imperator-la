@@ -1,15 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { appResponse, cartItem, PaymentMethod, shippingMethod } from "@/app/utils/types";
+import type { cartItem, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
 
 type purchaseOptions = {
   paymentMethods: PaymentMethod[];
   shippingMethods: shippingMethod[];
+  giftOptions: GiftOption[];
 }
-
-type registerSaleFunction = (cart: cartItem[], clientData: any) => Promise<appResponse>;
 
 interface CartContextType {
   cart: cartItem[];

@@ -8,4 +8,5 @@ export interface ProductService {
   updateProduct(product: productProps): Promise<appResponse>;
   getCartConfigs(): Promise<appResponse>;
   registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse>;
+  migrateDB?(): Promise<appResponse>; // Optional method for debugging purposes
 }

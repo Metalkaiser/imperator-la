@@ -9,6 +9,7 @@ import { QuantitySelector } from "../Quantityselector";
 import { plusIcon, minusIcon, getShoppingCartIcon } from "@/app/utils/svgItems";
 import { getDiscountedPrice } from "@/app/utils/functions";
 import { useCart } from "../context/Cartcontext";
+import { storagePath } from "@/app/utils/utils";
 import unavailableImage from "@P/misc/other/forbidden.png";
 
 export default function Modelselect ({product}:{product:productProps}) {
@@ -84,7 +85,7 @@ export default function Modelselect ({product}:{product:productProps}) {
     window.location.href = `/${locale}/cart/direct`;
   }
 
-  const iconSize = 80;
+  const iconSize = 40;
 
   return (
   <>
@@ -114,7 +115,7 @@ export default function Modelselect ({product}:{product:productProps}) {
               className={`rounded-full object-cover absolute top-0 left-0 ${!variant.stock.reduce((sum, v) => sum + v.quantity, 0) ? "opacity-80" : "opacity-0"}`}
             />
             <Image 
-              src={variant.image}
+              src={`${storagePath}${variant.image}`}
               alt={variant.sku}
               width={iconSize}
               height={iconSize}
@@ -151,13 +152,13 @@ export default function Modelselect ({product}:{product:productProps}) {
             ))
             return (
             <div className="flex flex-col gap-5">
-              <div>{skuText}</div>
+              <div id={!enabled ? "onlysku" : ""}>{skuText}</div>
               <div className="flex flex-col gap-2 justify-center items-center">
                 <h2 className="text-sm">{cartTranslations("size")}s:</h2>
                 <div className="flex gap-2">{selector}</div>
               </div>
               {selectedItem.size && (
-                <div className={`flex flex-col gap-2 justify-center items-center ${enabled ? "" : "hidden"}`}>
+                <div className="flex flex-col gap-2 justify-center items-center">
                   <h2 className="text-sm">{cartTranslations("quantity")}:</h2>
                   <div className="flex gap-5">
                     <QuantitySelector
@@ -178,7 +179,7 @@ export default function Modelselect ({product}:{product:productProps}) {
       </div>
     )}
   </div>
-  <div className={`flex flex-col gap-2 mt-5 ${enabled ? "" : "hidden"}`}>
+  <div className={`flex flex-col gap-2 mt-5 ${!enabled ? "hidden" : ""}`}>
     <button
       onClick={addToCart}
       disabled={!selectedItem.qt}>

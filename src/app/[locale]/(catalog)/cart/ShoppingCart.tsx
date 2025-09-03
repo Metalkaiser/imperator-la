@@ -9,7 +9,6 @@ import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import Methodrender from "../components/shoppingcart/Methodsrender";
 import GiftOptions from "../components/shoppingcart/Giftoptions";
 import Carttotal from "../components/shoppingcart/Carttotal";
-import { giftOptions } from "@/app/utils/mockinfo";
 
 import Cartitem from "../components/Cartitem";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
@@ -39,7 +38,8 @@ export default function ShoppingCart() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: parseInt(value) }));
+    console.log(name, value);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   useEffect(() => {
@@ -93,8 +93,8 @@ export default function ShoppingCart() {
   };
 
   const getActiveGiftOptions = (): GiftOption[] => {
-    if (!Array.isArray(giftOptions)) return [];
-    return giftOptions.filter((gift) => {
+    if (!Array.isArray(purchaseOptions.giftOptions)) return [];
+    return purchaseOptions.giftOptions.filter((gift) => {
       if (!gift.available) return false;
       if (!gift.exclusiveToProducts?.length) return true;
       return cart.some((item) =>
@@ -135,7 +135,7 @@ export default function ShoppingCart() {
 
   const total = subtotal + giftTotal + shippingFee + paymentFee;
   const isPurchaseReady =
-    total > 0 && formData.payment > 0 && formData.shipping > 0;
+    total > 0 && formData.payment && formData.shipping;
 
   const activeGiftOptions = getActiveGiftOptions();
 
@@ -211,7 +211,7 @@ export default function ShoppingCart() {
         fees={{paymentFee, shippingFee}}
         amounts={{giftTotal, subtotal, total}}
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
-        purchaseParams={{item: cart, exchangeRate, isPurchaseReady}} 
+        purchaseParams={{item: cart, exchangeRate, isPurchaseReady: !!isPurchaseReady}} 
         currencyConversion={currencyConversion}
         functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart, refreshProducts}} />
     </div>

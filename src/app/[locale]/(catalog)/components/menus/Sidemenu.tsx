@@ -1,3 +1,5 @@
+"use client"
+
 import Closebtn from "./Closebtn";
 import Cartcontent from "./Cartcontent";
 import Catmenu from "./Catmenu";

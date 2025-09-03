@@ -3,8 +3,6 @@
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { PaymentMethod, shippingMethod, cartItem, GiftOption, saleData } from "@/app/utils/types";
-import { phoneNumber } from "@/app/utils/utils";
-import { giftOptions } from "@/app/utils/mockinfo";
 
 const MySwal = withReactContent(Swal);
 

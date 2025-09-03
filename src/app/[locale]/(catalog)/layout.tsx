@@ -52,6 +52,7 @@ export default async function CatalogLayout({
 
   if (products.status === 200) {
     const catIndexes = Array.from(new Set((products.response as productProps[]).map(item => item.category)));
+    catIndexes.sort((a, b) => a - b);
     const subCatIndexes: number[][] = catIndexes.map(index => {
       const subcategories = (products.response as productProps[])
         .filter(item => item.category === index)

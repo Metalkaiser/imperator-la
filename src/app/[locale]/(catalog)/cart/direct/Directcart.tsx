@@ -5,11 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCart } from "../../components/context/Cartcontext";
 import { useCatalogContext } from "../../components/context/CatalogContext";
 import { cartItem, GiftOption, } from "@/app/utils/types";
+import { storagePath } from "@/app/utils/utils";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import Methodrender from "../../components/shoppingcart/Methodsrender";
 import GiftOptions from "../../components/shoppingcart/Giftoptions";
 import Carttotal from "../../components/shoppingcart/Carttotal";
-import { giftOptions } from "@/app/utils/mockinfo";
+import Image from "next/image";
 
 import { useRouter } from "next/navigation";
 import LoadingPage from "../../components/LoadingPage";
@@ -73,7 +74,7 @@ export default function DirectBuyPage() {
   }, []);
 
   const activeGiftOptions = getActiveGiftOptions(
-    giftOptions,
+    purchaseOptions.giftOptions,
     product ? [product] : []
   );
   const subtotal = product ? product.price * product.qt : 0;
@@ -129,7 +130,13 @@ export default function DirectBuyPage() {
         <div className="flex flex-col md:flex-row gap-10 justify-evenly w-full">
         <div className="flex flex-col gap-5 justify-around">
           <div className="flex gap-4 items-center">
-            <img src={product.image} alt={product.name} width={120} />
+            <Image
+              src={`${storagePath}${product.image}`}
+              alt={product.name}
+              width={120}
+              height={120}
+              className="rounded-lg object-cover"
+            />
             <div>
               <h2 className="text-lg">{product.name}</h2>
               <p>SKU: {product.sku}</p>

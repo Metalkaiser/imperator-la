@@ -60,7 +60,7 @@ export function getShoppingCartConfig(locale: string): { shoppingCart: ShoppingC
       enabled: true,
       type: "api",
       fixedRate: 0,
-      mainCurrency: "US$",
+      mainCurrency: "$",
       exchangeCurrency: "Bs",
       targetExchangeCurrency: "promedio",
       apiUrl: "https://ve.dolarapi.com/v1/dolares/oficial",
