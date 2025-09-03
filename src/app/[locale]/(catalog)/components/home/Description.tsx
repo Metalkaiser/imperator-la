@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { descriptionImages } from "@/app/utils/svgItems";
 
 export default function Descr() {
-  const t = useTranslations("homeDescription");
+  const t = useTranslations("home");
 
   return(
     <section className="h-[200px] md:h-[250px] flex justify-evenly items-center">

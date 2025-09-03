@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { QuantitySelector } from "./Quantityselector";
 import { trashCan, plusIcon, minusIcon } from "@/app/utils/svgItems";
 import { cartItem } from "@/app/utils/types";
+import { storagePath } from "@/app/utils/utils";
 
 type Props = {
   item: cartItem;
@@ -35,6 +36,7 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
       title: t("deleteItem"),
       text: `${t("deleteItemText")} ${item.name}`,
       icon: "warning",
+      theme: "auto",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
@@ -64,9 +66,9 @@ export default function Cartitem({ item, index, mainCurrency, updateCart }: Prop
   }, [qt, item.price]);
 
   return (
-    <div key={index} className="flex gap-2 items-center">
+    <div key={index} className="flex gap-2 md:gap-10 items-center">
       <input type="checkbox" name={item.sku} id={item.sku} checked={checked} onChange={(e) => handleCheckboxChange(e.target.checked)} />
-      <Image src={`https://imperator-next.web.app/thumbnails/${item.mainSku}.webp`} alt={item.mainSku} height={0} width={70}></Image>
+      <Image src={`${storagePath}${item.image}`} alt={item.mainSku} height={0} width={70}></Image>
       <div className="flex flex-col justify-between">
         <h2 className="max-w-full text-nowrap overflow-hidden text-ellipsis cartitemname">{item.name}</h2>
         <p className="cartdetailstext">SKU: {item.sku}</p>

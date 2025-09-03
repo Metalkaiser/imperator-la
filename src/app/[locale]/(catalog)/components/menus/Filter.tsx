@@ -12,7 +12,7 @@ export default function CategoryFilter(categories: { category: string, subcatego
   const { category, subcategory } = categories;
   const t = useTranslations("products");
   const { categoryIndex, subcategoryIndex } = getCategoryIndexes(category, subcategory);
-  const { catIndexes, subCatIndexes } = useCatalogContext();
+  const { subCatIndexes } = useCatalogContext();
   const { activeCategory } = getActiveCategoryWithSubcategories(categoryIndex, locale);
 
   return(

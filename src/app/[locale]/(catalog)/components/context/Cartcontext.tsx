@@ -1,21 +1,40 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { cartItem } from "@/app/utils/types";
+import type { cartItem, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
 
-// shape of our context
+type purchaseOptions = {
+  paymentMethods: PaymentMethod[];
+  shippingMethods: shippingMethod[];
+  giftOptions: GiftOption[];
+}
+
 interface CartContextType {
   cart: cartItem[];
   addOrUpdateItem: (item: cartItem) => void;
   removeItem: (sku: string, size?: string | number) => void;
   clearCart: () => void;
+  purchaseOptions: purchaseOptions;
+  enabled: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<cartItem[]>([]);
+export function CartProvider({ children, purchaseOptions, enabled }:
+  { children: React.ReactNode, purchaseOptions: purchaseOptions, enabled: boolean }) {
+  const [cart, setCart] = useState<cartItem[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem(sessionCartName);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        sessionStorage.removeItem(sessionCartName);
+        return [];
+      }
+    }
+    return [];
+  });
 
   // on mount, load from sessionStorage
   useEffect(() => {
@@ -35,6 +54,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart]);
 
   // add new item or update existing (matching sku+size)
+  // Consider a syncronization strategy among multiple tabs using debounced updates
   const addOrUpdateItem = (item: cartItem) => {
     setCart((prev) => {
       const idx = prev.findIndex(
@@ -57,11 +77,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setCart([]);
+    sessionStorage.removeItem(sessionCartName);
   };
 
   return (
     <CartContext.Provider
-      value={{ cart, addOrUpdateItem, removeItem, clearCart }}
+      value={{ cart, addOrUpdateItem, removeItem, clearCart, purchaseOptions, enabled }}
     >
       {children}
     </CartContext.Provider>

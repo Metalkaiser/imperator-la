@@ -26,9 +26,9 @@ export default function ProductList(props:viewData){
 
   const locale = useLocale();
   const cartConfig = getShoppingCartConfig(locale);
-  const { enabled, currencyConversion } = cartConfig.shoppingCart;
+  const { currencyConversion } = cartConfig.shoppingCart;
   const t = useTranslations("products");
-  const {catIndexes, products, topProducts} = useCatalogContext();
+  const { products } = useCatalogContext();
 
   const determineProductsToLoad = useCallback(() => {
     const width = window.innerWidth;
@@ -57,7 +57,7 @@ export default function ProductList(props:viewData){
   const loadMoreProducts = async () => {
     if (hasMoreProducts && !isLoading) {
       let prodList = [];
-      let { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
+      const { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
       switch (props.items.length) {
         case 1:
           prodList = products.filter((prod) => prod.category === categoryIndex);
@@ -80,7 +80,7 @@ export default function ProductList(props:viewData){
                   {product.discount && (<p className='absolute py-2 px-4 text-white font-bold right-0 discount-indicator-list z-10'>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
-                      src={storagePath + product.images[0]}
+                      src={storagePath + product.thumbnail}
                       alt={product.name}
                       fill
                       className="object-cover"

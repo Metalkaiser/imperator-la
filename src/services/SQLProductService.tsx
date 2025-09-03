@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, topProductsProps } from '@/app/utils/types';
+import { productProps, appResponse } from '@/app/utils/types';
 import { prisma } from '@/config/prisma';
 
 export class SQLProductService implements ProductService {
@@ -36,9 +36,22 @@ export class SQLProductService implements ProductService {
           // Add other fields as necessary
         },
       });
-      return {code: "success", response: product , status: 200};
+      return {code: "success", response: updatedProduct , status: 200};
     } catch (error) {
+      console.error(error)
       return {code: "unknown", response: null, status: 500};
     }
+  }
+
+  async getCartConfigs(): Promise<appResponse> {
+    const payment = await prisma.payment.findMany();
+    const shipping = await prisma.shipping.findMany();
+
+    const response = {
+      paymentMethods: payment,
+      shippingMethods: shipping
+    }
+
+    return {code: "success", response: response , status: 200};
   }
 }

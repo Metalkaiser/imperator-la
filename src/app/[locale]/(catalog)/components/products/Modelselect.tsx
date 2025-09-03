@@ -1,22 +1,27 @@
 "use client"
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import Image from "next/image";
 import Swal from "sweetalert2";
 import { productProps, cartItem } from "@/app/utils/types";
 import { QuantitySelector } from "../Quantityselector";
 import { plusIcon, minusIcon, getShoppingCartIcon } from "@/app/utils/svgItems";
 import { getDiscountedPrice } from "@/app/utils/functions";
 import { useCart } from "../context/Cartcontext";
+import { storagePath } from "@/app/utils/utils";
+import unavailableImage from "@P/misc/other/forbidden.png";
 
 export default function Modelselect ({product}:{product:productProps}) {
-  const { addOrUpdateItem } = useCart();
+  const locale = useLocale();
+  const { addOrUpdateItem, enabled } = useCart();
   const currentPrice = product.discount ? parseFloat(getDiscountedPrice(product.price,product.discount)) : product.price;
   const defaultItemProps = {
     id: product.id,
     name: product.name,
     mainSku: product.mainSku,
     sku: (product.variants && product.variants.length === 1) ? product.mainSku : "",
+    image: (product.variants && product.variants.length === 1) ? product.variants[0].image : "",
     qt: 0,
     max: 1,
     price: currentPrice
@@ -32,6 +37,7 @@ export default function Modelselect ({product}:{product:productProps}) {
       case "sku":
         item = { ...defaultItemProps };
         item.sku = String(value);
+        item.image = product.variants.find(variant => variant.sku === String(value))?.image || "";
         break;
       case "qt":
         item.qt = Number(value);
@@ -56,38 +62,73 @@ export default function Modelselect ({product}:{product:productProps}) {
     addOrUpdateItem(selectedItem);
     Swal.fire({
       text: `${selectedItem.name} (${selectedItem.sku}) ${cartTranslations("itemadded")}`,
+      theme: "auto",
       icon: "success",
       timer: 2500,
-      timerProgressBar: true
-    })
-    addOrUpdateItem(selectedItem);
+      timerProgressBar: true,
+      showCloseButton: true,
+      showConfirmButton: true,
+      confirmButtonText: cartTranslations("confirmBtn"),
+      showCancelButton: true,
+      cancelButtonText: cartTranslations("closeBtn")
+    }).then((res) => {
+      if (res.isConfirmed) {
+        window.location.href = `/${locale}/cart`;
+      }
+    });
   }
+
+  const buyProduct = () => {
+    if (!selectedItem || !selectedItem.sku) return;
+
+    sessionStorage.setItem("directBuyProduct", JSON.stringify(selectedItem));
+    window.location.href = `/${locale}/cart/direct`;
+  }
+
+  const iconSize = 40;
 
   return (
   <>
-  <div className={`${product.variants && product.variants?.length > 1 ? "" : "hidden"} flex gap-5 my-5`}>
+  <div className={`${product.variants.length > 1 ? "" : "hidden"} flex flex-col md:flex-row items-center gap-5 my-5`}>
     {product.variants && (<p className="text-center dark:text-white">{t("models")}:</p>)}
+    <div className="flex gap-5 justify-center items-center">
     {product.variants && (
       Object.values(product.variants).map((variant) => (
-        <label key={variant.sku}>
+        <label key={variant.sku} className={!variant.stock.reduce((sum, v) => sum + v.quantity, 0) ? "cursor-not-allowed" : "cursor-pointer"}>
           <input
-            defaultChecked={product.variants && product.variants?.length > 1 ? false : true}
+            defaultChecked={product.variants.length > 1 ? false : true}
             type="radio"
             name="model"
             className="peer hidden"
-            onClick={() => changeItemProps("sku", variant.sku)} />
+            onClick={() => changeItemProps("sku", variant.sku)}
+            disabled={!variant.stock.reduce((sum, v) => sum + v.quantity, 0)} />
           <div
             id={variant.sku}
             style={{background: variant.color}}
-            className="border-gray dark:border-white border-solid border-2 w-[30px] h-[30px] rounded-full cursor-pointer peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-gray-700 peer-checked:dark:outline-gray-200"
+            className={`relative border-gray-500 dark:border-white border-solid border-2 size-[${iconSize}px] rounded-full peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-gray-700 peer-checked:dark:outline-gray-200`}
           >
+            <Image 
+              src={unavailableImage}
+              alt={variant.sku}
+              width={iconSize}
+              height={iconSize}
+              className={`rounded-full object-cover absolute top-0 left-0 ${!variant.stock.reduce((sum, v) => sum + v.quantity, 0) ? "opacity-80" : "opacity-0"}`}
+            />
+            <Image 
+              src={`${storagePath}${variant.image}`}
+              alt={variant.sku}
+              width={iconSize}
+              height={iconSize}
+              className="rounded-full object-cover"
+            />
           </div>
         </label>
       ))
     )}
+    </div>
   </div>
   <div>
-    {(selectedItem.sku && product.variants && product.variants.find(variant => variant.sku === selectedItem.sku)) && (
+    {(selectedItem.sku && product.variants.find(variant => variant.sku === selectedItem.sku)) && (
       <div>
         {(() => {
           const variant = product.variants.find(variant => variant.sku === selectedItem.sku);
@@ -111,13 +152,13 @@ export default function Modelselect ({product}:{product:productProps}) {
             ))
             return (
             <div className="flex flex-col gap-5">
-              <div>{skuText}</div>
-              <div className="flex flex-col gap-2">
+              <div id={!enabled ? "onlysku" : ""}>{skuText}</div>
+              <div className="flex flex-col gap-2 justify-center items-center">
                 <h2 className="text-sm">{cartTranslations("size")}s:</h2>
                 <div className="flex gap-2">{selector}</div>
               </div>
               {selectedItem.size && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 justify-center items-center">
                   <h2 className="text-sm">{cartTranslations("quantity")}:</h2>
                   <div className="flex gap-5">
                     <QuantitySelector
@@ -138,7 +179,7 @@ export default function Modelselect ({product}:{product:productProps}) {
       </div>
     )}
   </div>
-  <div className="flex flex-col gap-2 mt-5">
+  <div className={`flex flex-col gap-2 mt-5 ${!enabled ? "hidden" : ""}`}>
     <button
       onClick={addToCart}
       disabled={!selectedItem.qt}>
@@ -148,7 +189,7 @@ export default function Modelselect ({product}:{product:productProps}) {
       </div>
     </button>
     <button
-      onClick={addToCart}
+      onClick={buyProduct}
       disabled={!selectedItem.qt}>
       <div className={`${selectedItem.qt ? "purchase cursor-pointer" : "disabledcart cursor-not-allowed"} flex relative justify-evenly justify-items-stretch items-center w-5/6 p-5 rounded-lg shadow-lg text-center mx-auto`}>
         <p className="text-white text-md md:text-lg">{cartTranslations("purchase")}</p>

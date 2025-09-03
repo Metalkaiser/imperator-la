@@ -1,4 +1,4 @@
-import { productProps, appResponse } from "@/app/utils/types";
+import { productProps, appResponse, cartItem, saleData } from "@/app/utils/types";
 
 export interface ProductService {
   getAllProducts(): Promise<appResponse>;
@@ -6,4 +6,7 @@ export interface ProductService {
   getTopProducts(): Promise<appResponse>;
   getProductById(id: string): Promise<appResponse>;
   updateProduct(product: productProps): Promise<appResponse>;
+  getCartConfigs(): Promise<appResponse>;
+  registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse>;
+  migrateDB?(): Promise<appResponse>; // Optional method for debugging purposes
 }

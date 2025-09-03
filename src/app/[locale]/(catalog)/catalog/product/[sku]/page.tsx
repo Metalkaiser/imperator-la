@@ -7,10 +7,7 @@ type Props = {
   params: { sku: string } 
 };
 
-export async function generateMetadata(
-  { params }: Props,
-): Promise<Metadata> {
-  //const page = (await params).sku;
+export async function generateMetadata(): Promise<Metadata> {
   const tPromise = await getTranslations("products");
   return {
     title: `${webAppProps.name} - ${tPromise("productDetails")}`

@@ -9,6 +9,8 @@ import { getActiveCategory } from '@/config/websiteConfig/categoryConfig';
 import brandLight from "@P/brand/logo_poster_light.webp";
 import brandDark from "@P/brand/logo_poster_dark.webp";
 
+import RouterLogger from './test/RouterLogger';
+
 export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
   const home = useTranslations("home");
 
@@ -20,6 +22,7 @@ export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
 
   return (
     <header className="flex flex-col my-4 gap-5">
+      <RouterLogger />
       <div className="flex justify-between items-center mx-5">
         <Topbtn purpose='Menu' />
         <Image src={brandLight}  height={30} alt={webAppProps.name}  className={`dark:hidden ${imgBannerClass}`}></Image>

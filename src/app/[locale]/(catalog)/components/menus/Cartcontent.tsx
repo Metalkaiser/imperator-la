@@ -5,11 +5,10 @@ import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { shoppingCartImg } from "@/app/utils/svgItems";
 import { cartItem } from "@/app/utils/types";
-import { sessionCartName } from "@/app/utils/utils";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import Cartitem from "../Cartitem";
 import { useCart } from "../context/Cartcontext";
-//import { cartItems } from "@/app/utils/mockinfo"; //Cart mock info
+import { sideMenu } from "@/app/utils/functions";
 
 export default function Cartcontent () {
   const { cart, addOrUpdateItem, removeItem } = useCart();
@@ -20,7 +19,13 @@ export default function Cartcontent () {
   const t = useTranslations("shoppingCart");
 
   const updateCart = (item: cartItem) => {
-    item.price ? addOrUpdateItem(item) : item.size ? removeItem(item.sku, item.size) : removeItem(item.sku);
+    if (item.price) {
+      addOrUpdateItem(item);
+    } else if (item.size) {
+      removeItem(item.sku, item.size);
+    } else {
+      removeItem(item.sku);
+    }
   }
 
   const fetchExchangeRate = async () => {
@@ -64,7 +69,7 @@ export default function Cartcontent () {
     cart.reduce((sum, item) => sum + item.price * item.qt, 0)
   ), [cart]);
 
-  if (!enabled) return null;
+  if (!cartConfig.shoppingCart.enabled) return null;
 
   return (
     <div className="flex flex-col my-5 justify-between items-center h-full w-full">
@@ -75,7 +80,7 @@ export default function Cartcontent () {
           <p>{cart.length} items</p>
           <hr className="h-[2px] my-5 bg-gray-200 border-0 dark:bg-gray-700 w-full" />
 
-          <div className="overflow-auto touch-auto max-w-full max-h-[40dvh] pb-5">
+          <div className="overflow-auto touch-auto max-w-full max-h-[60dvh] pb-5">
             <div className="flex flex-col gap-5 items-center w-max">
               {cart.map((item, index) => (
                 <Cartitem
@@ -101,7 +106,7 @@ export default function Cartcontent () {
               )}
             </div>
             {total > 0 ? (
-              <Link href="#" className="block text-center p-3 actionbtn rounded-xl">
+              <Link href="/cart" className="block text-center p-3 actionbtn rounded-xl" onClick={() => sideMenu("Carrito")}>
                 {t("actionBtnOrder")}
               </Link>
             ) : (

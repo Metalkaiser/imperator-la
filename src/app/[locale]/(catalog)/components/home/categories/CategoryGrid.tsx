@@ -8,7 +8,7 @@ import { useLocale } from "next-intl";
 export default function CategoryGrid() {
   const locale = useLocale();
   const categories = getAllCategories(locale);
-  const { catIndexes, subCatIndexes } = useCatalogContext();
+  const { catIndexes } = useCatalogContext();
   return (
     <section className={`grid grid-cols-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-${catIndexes.length} gap-6 justify-items-center p-4`}>
       {categories.map((cat, index) => (

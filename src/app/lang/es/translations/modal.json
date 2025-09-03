@@ -1,0 +1,16 @@
+{
+  "data": "Datos",
+  "enterData": "Ingresa los siguientes datos después de pagar",
+  "size": "Talla",
+  "quantity": "Cantidad",
+  "price": "Precio",
+  "noGift": "Sin regalo",
+  "newPurchase": "Nuevo pedido desde la tienda",
+  "products": "Productos",
+  "payment": "Método de pago",
+  "shipping": "Método de envío",
+  "gift": "Regalo",
+  "clientData": "Datos del cliente",
+  "purchaseFinish": "Muchas gracias por su compra",
+  "confirmBtn": "Cerrar"
+}
