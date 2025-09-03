@@ -3,6 +3,7 @@
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { PaymentMethod, shippingMethod, cartItem, GiftOption, saleData } from "@/app/utils/types";
+import { phoneNumber } from "@/app/utils/utils";
 
 const MySwal = withReactContent(Swal);
 
@@ -120,13 +121,13 @@ export default async function showCheckoutModal({
       `🛒 ${tModal("newPurchase")}:\n\n${tModal("products")}:\n${productList}\n\n${tModal("payment")}: ${payment.name}\n${tModal("shipping")}: ${shipping.name}\n${tModal("gift")}: ${gifts}\nTotal: ${mainCurrency}${total.toFixed(2)}\n\n${tModal("clientData")}:\n${userInputs}`
     );
     sessionStorage.removeItem("directBuyProduct");
-    //window.open(`https://wa.me/${phoneNumber}?text=${msg}`, "_blank");
-    const clientDataPayment = payment.userData?.reduce((acc: Record<string, any>, field: string, index: number) => {
+    window.open(`https://wa.me/${phoneNumber}?text=${msg}`, "_blank");
+    const clientDataPayment = payment.userData?.reduce((acc: Record<string, string | number>, field: string, index: number) => {
       acc[field] = formValues[index];
       return acc;
     }, {}) || {};
 
-    const clientDataShipping = shipping.data?.reduce((acc: Record<string, any>, field: string, index: number) => {
+    const clientDataShipping = shipping.data?.reduce((acc: Record<string, string | number>, field: string, index: number) => {
       acc[field] = formValues[index + (payment.userData?.length || 0)];
       return acc;
     }, {}) || {};

@@ -6,7 +6,6 @@ import {
   mockSales as mutableSales,
   paymentMethods as mutablePays,
   shippingMethods as mutableShips,
-  paymentMethods
 } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
 

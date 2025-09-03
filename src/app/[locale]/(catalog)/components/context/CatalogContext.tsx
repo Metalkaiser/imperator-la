@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState } from "react";
-import { productProps } from "@/app/utils/types";
+import { productProps, topProductsProps } from "@/app/utils/types";
 
 interface CatalogContextType {
   catIndexes: number[];
@@ -67,7 +67,7 @@ export default function CatalogProvider({
 
         // recomponer topProducts igual que en layout
         const topProductsIds = body.topProductsIds?.response ?? [];
-        const newTopProducts = topProductsIds.map((item: any) => {
+        const newTopProducts = topProductsIds.map((item: topProductsProps) => {
           const product = prods.find(p => p.id === item.productId);
           return product ? { ...item, ...product } : item;
         });

@@ -3,6 +3,7 @@
 import GiftOptions from "./Giftoptions";
 import Methodrender from "./Methodsrender";
 import Carttotal from "./Carttotal";
+import Image from "next/image";
 import { useCartSummary } from "@/app/utils/useCartSummary";
 import { cartItem, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
@@ -19,10 +20,10 @@ type Props = {
   giftTotal: number;
   total: number;
   formData: {
-    payment: number;
-    shipping: number;
+    payment: number | string;
+    shipping: number | string;
   };
-  setFormData: React.Dispatch<React.SetStateAction<{ payment: number; shipping: number }>>;
+  setFormData: React.Dispatch<React.SetStateAction<{ payment: number | string; shipping: number | string }>>;
   selectedGifts: GiftOption[];
   toggleGift: (gift: GiftOption) => void;
   selectedPayment?: PaymentMethod;
@@ -68,16 +69,16 @@ export function CartView({
 }: Props) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: parseInt(value) }));
+    setFormData((prev: { payment: number | string; shipping: number | string }) => ({ ...prev, [name]: parseInt(value) }));
   };
 
-  const { enabled, currencyConversion } = getShoppingCartConfig(useLocale()).shoppingCart;
+  const { currencyConversion } = getShoppingCartConfig(useLocale()).shoppingCart;
   const { refreshProducts } = useCatalogContext();
   const { calcFees } = useCartSummary(items);
 
   const fees = calcFees(
-    purchaseOptions.paymentMethods.find((m) => m.id === formData.payment),
-    purchaseOptions.shippingMethods.find((m) => m.id === formData.shipping)
+    purchaseOptions.paymentMethods.find((m) => m.id === formData.payment)?.fee,
+    purchaseOptions.shippingMethods.find((m) => m.id === formData.shipping)?.fee
   );
 
   return (
@@ -86,7 +87,10 @@ export function CartView({
         <div className="flex flex-col gap-5 justify-around">
           {items.map((product: cartItem, idx: number) => (
             <div key={idx} className="flex gap-4 items-center">
-              <img src={product.image} alt={product.name} width={120} />
+              <Image
+                src={product.image}
+                alt={product.name}
+                width={120} />
               <div>
                 <h2 className="text-lg">{product.name}</h2>
                 <p>SKU: {product.sku}</p>
@@ -132,7 +136,7 @@ export function CartView({
       <Carttotal
         title={t("purchase")}
         modalWidth={modalWidth}
-        fees={}
+        fees={{paymentFee: fees.payment, shippingFee: fees.shipping}}
         amounts={{giftTotal, subtotal, total}}
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
         purchaseParams={{item: items, exchangeRate, isPurchaseReady}} 

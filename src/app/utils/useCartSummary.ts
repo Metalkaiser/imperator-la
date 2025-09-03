@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
-import { cartItem, GiftOption } from "@/app/utils/types";
+import { cartItem, GiftOption, PaymentMethod, shippingMethod } from "@/app/utils/types";
 
 export function useCartSummary(cart: cartItem[]) {
   const locale = useLocale();
@@ -46,7 +46,7 @@ export function useCartSummary(cart: cartItem[]) {
     return parseFloat((fixed + percent).toFixed(2));
   };
 
-  const calcFees = (paymentFee?: any, shippingFee?: any) => {
+  const calcFees = (paymentFee?: PaymentMethod["fee"], shippingFee?: shippingMethod["fee"]) => {
     const shipping = shippingFee?.status
       ? getFeeValue(shippingFee, subtotal)
       : 0;

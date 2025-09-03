@@ -4,7 +4,7 @@ import { db } from '@/config/fbConfig';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, addDoc } from "firebase/firestore";
 import { dbCollections } from '@/app/utils/utils';
 import { handleFirebase } from './helpers/Firebase/firebaseWrapper';
-import { firebaseProductsList, mockTopProds, paymentMethods, shippingMethods, giftOptions } from '@/app/utils/mockinfo';
+//import { firebaseProductsList, mockTopProds, paymentMethods, shippingMethods, giftOptions } from '@/app/utils/mockinfo';
 
 const catalogCollection = collection(db, dbCollections.products);
 const topProductsCollection = collection(db, dbCollections.topProducts);
@@ -110,30 +110,30 @@ export class FirebaseProductService implements ProductService {
     });
   }
 
-  async migrateDB(): Promise<appResponse> {
+  /*async migrateDB(): Promise<appResponse> {
     return handleFirebase(async () => {
       firebaseProductsList.forEach( async (product) => {
-        let { id, ...productNoId } = product;
+        const { id, ...productNoId } = product;
         await addDoc(catalogCollection, productNoId);
       });
       mockTopProds.forEach( async (topProd) => {
-        let { id, ...top } = topProd;
+        const { id, ...top } = topProd;
         await addDoc(topProductsCollection, top);
       });
       paymentMethods.forEach( async (pay) => {
-        let { id, ...payNoId } = pay;
+        const { id, ...payNoId } = pay;
         await addDoc(paymentCollection, payNoId);
       });
       shippingMethods.forEach( async (ship) => {
-        let { id, ...shipNoId } = ship;
+        const { id, ...shipNoId } = ship;
         await addDoc(shippingCollection, shipNoId);
       });
       giftOptions.forEach( async (gift) => {
-        let { id, ...giftNoId } = gift;
+        const { id, ...giftNoId } = gift;
         await addDoc(collection(db, dbCollections.giftOptions), giftNoId);
       });
 
       return { message: "Database migration completed" };
     });
-  }
+  }*/
 }

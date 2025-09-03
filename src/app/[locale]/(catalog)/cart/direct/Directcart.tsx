@@ -43,7 +43,8 @@ export default function DirectBuyPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: parseInt(value) }));
+    console.log(selectedPayment, selectedShipping);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   useEffect(() => {
@@ -121,7 +122,7 @@ export default function DirectBuyPage() {
   }, [subtotal, giftTotal, paymentFee, shippingFee]);
 
   const isPurchaseReady =
-    total > 0 && formData.payment > 0 && formData.shipping > 0;
+    total > 0 && formData.payment && formData.shipping;
 
   if (!product) return <LoadingPage />;
 
@@ -181,7 +182,7 @@ export default function DirectBuyPage() {
         fees={{paymentFee, shippingFee}}
         amounts={{giftTotal, subtotal, total}}
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
-        purchaseParams={{item: [product], exchangeRate, isPurchaseReady}} 
+        purchaseParams={{item: [product], exchangeRate, isPurchaseReady: !!isPurchaseReady}} 
         currencyConversion={currencyConversion}
         functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart, refreshProducts }} />
     </div>
