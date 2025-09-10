@@ -11,11 +11,13 @@ export const dbCollections = {
   products: "products",
   topProducts: "top_products",
   clients: "clients",
-  movements: "movements",
+  activity_logs: "activity_logs",
   orders: "orders",
   shipping: "shipping_methods",
   payment: "payment_methods",
-  giftOptions: "gift_options"
+  giftOptions: "gift_options",
+  users: "users",
+  settings: "settings"
 }
 
 // Firebase storage path for product images

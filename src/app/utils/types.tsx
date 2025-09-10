@@ -151,3 +151,28 @@ export type sale = {
   notes?: string;
   date: string;
 }
+
+export type User = {
+  uid: string | number;
+  name: string;
+  image?: string;
+  email: string;
+  role: string;
+  isDeleted?: boolean;
+  lastLogin?: string | null;
+  createdAt: number | null;
+  updatedAt: number | null;
+  deletedAt: number | null;
+}
+
+export type currentUser = {
+  uid: string | number;
+  name: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  lastLogin?: string | null;
+  image?: string;
+}
+
+export type authResult = { success: boolean; message: string; user?: User };
