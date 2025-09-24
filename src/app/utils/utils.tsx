@@ -87,3 +87,45 @@ export const sessionItemName = "imperator_products_data";   // Name of the sessi
 export const sessionExpirationTime = 2 * 60 * 60 * 1000;    // Session expiration time in milliseconds (2 hours)
 export const sessionCartName = "imperator_cart";            // Name of the session storage item for the shopping cart
 export const phoneNumber = "584267835498";                  // Phone number for contact, used in the footer and other places
+
+export const orderStatuses = new Map<string, string>([
+  ["placed", "Pedido realizado"],
+  ["shipped", "Enviado"],
+  ["canceled", "Cancelado"],
+  ["completed", "Completado"],
+  ["reviewed", "Reseñado"],
+]);
+
+export const actionLabels = new Map<string, { label: string; color: string; badgeClass: string }>([
+  ["order_placed",    { label: "Orden creada",                 color: "amber-500",  badgeClass: "bg-amber-500 text-white" }],
+  ["order_shipping",  { label: "Orden enviada",                 color: "blue-500",   badgeClass: "bg-blue-500 text-white" }],
+  ["order_completed", { label: "Orden completada",              color: "green-500",  badgeClass: "bg-green-500 text-white" }],
+  ["order_canceled",  { label: "Orden cancelada",              color: "red-500",    badgeClass: "bg-rose-500 text-white" }],
+
+  ["user_created",    { label: "Usuario creado",               color: "teal-500",   badgeClass: "bg-teal-500 text-white" }],
+  ["user_deleted",    { label: "Usuario eliminado",             color: "stone-600",  badgeClass: "bg-stone-600 text-white" }],
+  ["user_edited",     { label: "Usuario modificado",           color: "indigo-500", badgeClass: "bg-indigo-500 text-white" }],
+
+  ["login_success",   { label: "Inicio de sesión",             color: "gray-500",   badgeClass: "bg-gray-500 text-white" }],
+  ["login_failure",   { label: "Intento de login fallido",     color: "orange-600", badgeClass: "bg-orange-600 text-white" }],
+
+  ["product_created", { label: "Producto creado",              color: "emerald-500", badgeClass: "bg-emerald-500 text-white" }],
+  ["product_deleted", { label: "Producto eliminado",           color: "rose-500",    badgeClass: "bg-rose-500 text-white" }],
+  ["product_edited",  { label: "Producto editado",             color: "violet-500",  badgeClass: "bg-violet-500 text-white" }],
+  ["product_bulk",    { label: "Productos editados (bulk)",    color: "purple-500",  badgeClass: "bg-purple-500 text-white" }],
+
+  ["payment_added",   { label: "Pago agregado",                color: "green-600",  badgeClass: "bg-green-600 text-white" }],
+  ["payment_deleted", { label: "Pago eliminado",               color: "red-600",    badgeClass: "bg-rose-600 text-white" }],
+  ["payment_edited",  { label: "Pago modificado",             color: "amber-600",  badgeClass: "bg-amber-600 text-white" }],
+
+  ["shipping_added",  { label: "Envío agregado",               color: "sky-500",    badgeClass: "bg-sky-500 text-white" }],
+  ["shipping_deleted",{ label: "Envío eliminado",              color: "red-500",    badgeClass: "bg-rose-500 text-white" }],
+  ["shipping_edited", { label: "Envío modificado",            color: "sky-600",    badgeClass: "bg-sky-600 text-white" }],
+
+  ["gift_added",      { label: "Regalo agregado",              color: "pink-500",   badgeClass: "bg-pink-500 text-white" }],
+  ["gift_deleted",    { label: "Regalo eliminado",             color: "rose-500",   badgeClass: "bg-rose-500 text-white" }],
+  ["gift_edited",     { label: "Regalo modificado",           color: "pink-600",   badgeClass: "bg-pink-600 text-white" }],
+
+  ["topProducts_edited",{ label: "Productos top modificados",  color: "lime-500",   badgeClass: "bg-lime-500 text-white" }],
+]);
+

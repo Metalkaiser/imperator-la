@@ -10,6 +10,7 @@ if (!admin.apps.length) {
       credential = admin.credential.cert(parsed);
     } catch (e) {
       // si no es JSON, fallback a applicationDefault (usará GOOGLE_APPLICATION_CREDENTIALS)
+      console.warn(e);
       credential = admin.credential.applicationDefault();
     }
   } else {

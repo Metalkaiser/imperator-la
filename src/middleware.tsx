@@ -23,7 +23,7 @@ async function verifyJwtEdge(token: string | null) {
     await jose.jwtVerify(token, secret);
     return true;
   } catch (err) {
-    // console.warn("JWT verify failed:", err);
+    console.warn("JWT verify failed:", err);
     return false;
   }
 }

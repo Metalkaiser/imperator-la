@@ -61,7 +61,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Inicializar sesión al montar (no leak de cookie httpOnly — el endpoint lo lee en el servidor)
-    refreshSession();
+    refreshSession().then(res => {
+      if (!res.success) logout();
+    });
   }, []);
 
   const login = async (email: string, password: string) => {

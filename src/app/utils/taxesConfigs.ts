@@ -1,4 +1,4 @@
-// ===== Catálogos base =====
+/*/ ===== Catálogos base =====
 type ID = string;
 
 // ISO
@@ -65,7 +65,7 @@ interface NumberingSequence {
 }
 
 // ---------- Moneda y FX ----------
-interface ExchangeRate {
+/*interface ExchangeRate {
   id: ID;
   baseCurrency: CurrencyCode;       // p.ej. "USD"
   quoteCurrency: CurrencyCode;      // p.ej. "CLP"
@@ -78,7 +78,7 @@ interface ExchangeRate {
 // ---------- Impuestos, jurisdicciones y reglas ----------
 type TaxScope = 'FEDERAL'|'STATE'|'PROVINCIAL'|'MUNICIPAL'|'SPECIAL_ZONE'|'CROSS_BORDER';
 
-interface TaxJurisdiction {
+/*interface TaxJurisdiction {
   id: ID;
   country: CountryCode;
   name: string;                   // p.ej. "Bavaria", "Tokyo Metropolis", "RM"
@@ -89,7 +89,7 @@ interface TaxJurisdiction {
 
 type TaxCalcMethod = 'PRICE_INCLUSIVE'|'PRICE_EXCLUSIVE'|'FIXED_AMOUNT'|'WITHHOLDING';
 
-interface TaxRate {
+/*interface TaxRate {
   id: ID;
   code: string;                   // p.ej. "VAT_STD_DE", "GST_10_JP", "IVA_RED_CL"
   displayName: string;            // nombre amigable
@@ -208,7 +208,7 @@ interface AttachmentRef {
 // ---------- Pagos y conciliación ----------
 type PaymentMethodCode = 'CASH'|'CARD'|'BANK_TRANSFER'|'WALLET'|'CHECK'|'OTHER';
 
-interface Payment {
+/*interface Payment {
   id: ID;
   payerId: ID;                 // normalmente buyerId
   payeeId: ID;                 // normalmente sellerId
@@ -250,7 +250,7 @@ interface SalesLedgerEntry { // “Libro de Ventas” genérico
 // ---------- Auditoría (inmutable) ----------
 type AuditAction = 'INSERT'|'UPDATE'|'DELETE'|'ISSUE'|'CANCEL'|'PAY'|'REFUND'|'ANNUL';
 
-interface AuditTrail {
+/*interface AuditTrail {
   id: ID;
   timestamp: string;
   userId?: ID;
@@ -277,7 +277,7 @@ interface ActivityLog {
   entityId?: ID;
   status?: 'success'|'failure';
   details?: Record<string, any>;
-}
+}*/
 
 /*
  * Por qué este modelo funciona “en cualquier país”

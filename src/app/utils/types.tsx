@@ -29,9 +29,10 @@ export type productProps = {
   position?: number;
   numReviews?: number;
   rating?: number;
-  createdAt?: number | null;
-  updatedAt?: number | null;
-  deletedAt?: number | null;
+  isDeleted?: boolean;
+  createdAt?: string | number | null;
+  updatedAt?: string | number | null;
+  deletedAt?: string | number | null;
 }
 
 export type topProductsProps = {
@@ -51,7 +52,7 @@ export type movementsProps = {
   description: string;
   amount: number;
   status: number;
-  createdAt?: string;
+  createdAt?: string | number;
   updatedAt?: string;
   clientId?: string | number;
   orderId?:  string | number;
@@ -149,7 +150,7 @@ export type sale = {
   status: string;
   items: cartItem[];
   notes?: string;
-  date: string;
+  createdAt: string | number;
 }
 
 export type User = {
@@ -160,9 +161,9 @@ export type User = {
   role: string;
   isDeleted?: boolean;
   lastLogin?: string | null;
-  createdAt: number | null;
-  updatedAt: number | null;
-  deletedAt: number | null;
+  createdAt: string | number | null;
+  updatedAt: string | number | null;
+  deletedAt: string | number | null;
 }
 
 export type currentUser = {
@@ -174,5 +175,17 @@ export type currentUser = {
   lastLogin?: string | null;
   image?: string;
 }
+
+export type activity_logs = {
+  id: string | number;
+  timestamp: number;
+  userId: User["uid"];
+  username: string;
+  action: string;
+  target?: {collection: string, item: string | number};
+  diff?: {item: string, oldValue: string | number | boolean, newValue: string | number | boolean}[];
+}
+
+export type NewActivityLog = Omit<activity_logs, "id" | "timestamp">;
 
 export type authResult = { success: boolean; message: string; user?: User };

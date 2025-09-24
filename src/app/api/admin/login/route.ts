@@ -1,26 +1,14 @@
 // src/app/api/admin/login/route.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getAuthService } from "@/config/auth/authServiceInstance";
 import admin from "@/app/utils/firebaseAdmin"; // tu inicializador de firebase-admin (server-only)
 import { authConfigs } from "@/config/websiteConfig/authConfig";
 import jwt from "jsonwebtoken";
-//import bcrypt from "bcryptjs"; // si usas bcrypt para passwords en DB
 
 // Helpers (ajusta según tu proyecto)
 const COOKIE_NAME = authConfigs.cookieName || "imperator_admin_session";
 const IS_PROD = process.env.NODE_ENV === "production";
 const sessionExpiration = Number(authConfigs.jwtExpirationMs);
-
-// Ejemplo simplificado: función que verifica credenciales en DB (reemplaza por tu impl)
-async function verifyUser(email: string, password: string) {
-  const authService = await getAuthService();
-  const userData = await authService.getCurrentUser();
-
-  if (!userData) return null;
-  
-  return null;
-}
 
 export async function POST(req: NextRequest) {
   const { idToken } = await req.json();

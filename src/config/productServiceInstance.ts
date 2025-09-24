@@ -13,8 +13,6 @@ function getProviderName(): Provider {
   throw new Error(`DATA_PROVIDER inválido: "${process.env.DATA_PROVIDER}". Valores válidos: firebase | mongo | sql | mock`);
 }
 
-const provider = process.env.DATA_PROVIDER?.toLowerCase();
-
 async function getProductService(): Promise<ProductService> {
   // Si ya estamos inicializando/tenemos la instancia, devolverla (evita race conditions)
   if (instancePromise) return instancePromise;
