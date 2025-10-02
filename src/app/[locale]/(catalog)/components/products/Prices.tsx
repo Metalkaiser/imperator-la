@@ -49,21 +49,21 @@ export default function Prices({prices, view}: {prices: prices, view: string}) {
       {discount && (
         <div className="flex-flex-col gap-5">
           <div className='flex w-fit justify-center text-red-600 font-bold'>
-            <p className={textmid}>{`${exchCurrency} ${exchPriceArr.join(".")}`}</p>
+            <p className={textmid}>{`${exchCurrency} ${exchDiscountArr.join(".")}`}</p>
           </div>
           <div className='flex w-fit justify-center text-neutral-600 font-bold'>
-            <p className={textsm}>{`${currency} ${priceInteger}`}</p>
-            <p className={textsm}>.{priceDecimal}</p>
+            <p className={textsm}>{`${currency} ${discountPriceInteger}`}</p>
+            <p className={textsm}>.{discountPriceDecimal}</p>
           </div>
         </div>
       )}
       <div className="flex-flex-col gap-5">
         <div className='flex w-fit content-center dark:text-white line-through'>
-          <p className={textmid}>{`${exchCurrency} ${exchDiscountArr.join(".")}`}</p>
+          <p className={textmid}>{`${exchCurrency} ${exchPriceArr.join(".")}`}</p>
         </div>
         <div className='flex w-fit content-center dark:text-white line-through'>
-          <p className={textsm}>{`${currency} ${discountPriceInteger}`}</p>
-          <p className={textsm}>.{discountPriceDecimal}</p>
+          <p className={textsm}>{`${currency} ${priceInteger}`}</p>
+          <p className={textsm}>.{priceDecimal}</p>
         </div>
       </div>
     </div>
