@@ -1,8 +1,10 @@
 import { ProductService } from './ProductService';
-import { appResponse, productProps, topProductsProps, PaymentMethod } from '@/app/utils/types';
+import { appResponse, productProps, topProductsProps, PaymentMethod, cartItem, saleData, NewActivityLog, activity_logs } from '@/app/utils/types';
 import { getDb } from '@/config/mongoClient';
 import { dbCollections, noProductError } from '@/app/utils/utils';
 import { MongoError } from 'mongodb';
+
+const notImplemented = {code: "not-implemented", response: null , status: 403}
 
 export class MongoProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
@@ -102,5 +104,33 @@ export class MongoProductService implements ProductService {
       console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
+  }
+
+  async deleteProduct(id: string | number): Promise<appResponse> {
+    console.log(id);
+    return notImplemented;
+  }
+
+  async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
+    console.log(cart, clientData)
+    return notImplemented;
+  }
+
+  async getOrders(): Promise<appResponse> {
+    return notImplemented;
+  }
+
+  async getUsers(): Promise<appResponse> {
+    return notImplemented;
+  }
+
+  async getActivityLogs(options?: { limit?: number; startAfterId?: string; from?: number; to?: number; }): Promise<appResponse> {
+    console.log(options);
+    return notImplemented;
+  }
+
+  async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
+    console.log(data);
+    return {} as activity_logs;
   }
 }

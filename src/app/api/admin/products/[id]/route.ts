@@ -226,9 +226,9 @@ function validateVariants(
 }
 
 /* --------------- PATCH handler --------------- */
-export async function PATCH(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function PATCH(req: NextRequest, ctx: any) {
   try {
-    const id = await params?.id;
+    const id = ctx?.params?.id as string | undefined;
     if (!id) return NextResponse.json({ status: 400, message: "Missing product id" }, { status: 400 });
 
     const { uid, username } = await verifyAdminFromReq(req);
@@ -349,9 +349,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id?: strin
 }
 
 /* --------------- DELETE handler --------------- */
-export async function DELETE(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function DELETE(req: NextRequest, ctx: any) {
   try {
-    const id = params?.id;
+    const id = ctx?.params?.id as string | undefined;
     if (!id) return NextResponse.json({ status: 400, message: "Missing product id" }, { status: 400 });
 
     const { uid, username } = await verifyAdminFromReq(req);

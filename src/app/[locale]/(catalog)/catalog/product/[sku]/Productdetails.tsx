@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { useCatalogContext } from "../../../components/context/CatalogContext";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
+import { usePathname } from "next/navigation";
 import Prices from "../../../components/products/Prices";
 import ProductCarousel from "../../../components/home/ProductCarousel";
 import Modelselect from "../../../components/products/Modelselect";
@@ -12,7 +13,10 @@ import WaProduct from "../../../components/products/Waproduct";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 
 
-export default function ProductDetails({ sku }: { sku:string }) {
+export default function ProductDetails() {
+  const nav = usePathname();
+  const sku = nav.split("/").at(-1);
+  
   const { products } = useCatalogContext();
   const product = products.find(item => item.mainSku === sku);
   const t = useTranslations("products");
