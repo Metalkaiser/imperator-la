@@ -1,11 +1,102 @@
-import createMiddleware from 'next-intl/middleware';
-import {routing} from './i18n/routing';
- 
-export default createMiddleware(routing);
- 
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import createMiddleware from "next-intl/middleware";
+import { routing } from "./i18n/routing";
+import { authConfigs } from "./config/websiteConfig/authConfig";
+
+const nextIntlMiddleware = createMiddleware(routing);
+
+// helper to extract cookie value
+function getCookieValue(cookieHeader: string | null, name: string) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function verifyJwtEdge(token: string | null) {
+  if (!token) return false;
+  try {
+    // dynamic import para evitar bundling cuando no se usa
+    const jose = await import("jose");
+    const secret = new TextEncoder().encode(process.env.AUTH_JWT_SECRET ?? "");
+    // Asegúrate que JWT_ALG coincide (HS256 en este ejemplo)
+    await jose.jwtVerify(token, secret);
+    return true;
+  } catch (err) {
+    console.warn("JWT verify failed:", err);
+    return false;
+  }
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // 0) Passthrough rápido para assets/infra (no ejecutar lógica)
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/trpc") ||
+    pathname.startsWith("/_vercel") ||
+    pathname.startsWith("/static") ||
+    pathname === "/favicon.ico" ||
+    /\.[^/]+$/.test(pathname)
+  ) {
+    return NextResponse.next();
+  }
+
+  // 1) Rutas admin
+  if (pathname.startsWith("/admin")) {
+    const cookieHeader = req.headers.get("cookie");
+    const token = getCookieValue(cookieHeader, authConfigs.cookieName);
+
+    // Si usas provider 'custom' y quieres verificación en Edge -> verifica JWT aquí
+    if (authConfigs.source === "custom") {
+      const isValid = await verifyJwtEdge(token ?? null);
+      // comportamiento para /admin/login
+      if (pathname === "/admin/login" || pathname === "/admin/login/") {
+        if (isValid) return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+        return NextResponse.next();
+      }
+
+      // otras rutas dentro de /admin/*
+      if (!isValid) return NextResponse.redirect(new URL("/admin/login", req.url));
+      return NextResponse.next();
+    }
+
+    // Para firebase (u otros providers que no verifiques en Edge),
+    // solo comprueba existencia de cookie y delega verificación real al servidor.
+    if (authConfigs.source === "firebase" || authConfigs.source === "mock" || !authConfigs.source) {
+      // /admin/login -> si tiene cookie, redirigir al dashboard (optimista)
+      if (pathname === "/admin/login" || pathname === "/admin/login/") {
+        if (token) {
+          return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+        }
+        return NextResponse.next();
+      }
+
+      // /admin or /admin/ -> similar
+      if (pathname === "/admin" || pathname === "/admin/") {
+        if (token) return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+        return NextResponse.redirect(new URL("/admin/login", req.url));
+      }
+
+      // Para cualquier otra ruta en /admin/* -> si no hay cookie, forzar login
+      if (!token) {
+        return NextResponse.redirect(new URL("/admin/login", req.url));
+      }
+
+      // si hay cookie, permitir (verificación real en servidor)
+      return NextResponse.next();
+    }
+
+    // fallback: permitir
+    return NextResponse.next();
+  }
+
+  // 2) Resto: intl
+  return nextIntlMiddleware(req);
+}
+
 export const config = {
-  // Match all pathnames except for
-  // - … if they start with `/api`, `/trpc`, `/_next` or `/_vercel`
-  // - … the ones containing a dot (e.g. `favicon.ico`)
-  matcher: '/((?!api|trpc|_next|_vercel|.*\\..*).*)'
+  matcher: "/((?!api|trpc|_next|_vercel|.*\\..*).*)",
 };

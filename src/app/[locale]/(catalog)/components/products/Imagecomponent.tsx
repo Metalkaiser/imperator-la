@@ -36,11 +36,11 @@ export default function ImageComponent ({product}:{product:productProps}) {
         <div key={product.mainSku + "-" + i} className={image === activeImg ? "mb-3 hover:cursor-pointer border-gray dark:border-white border-solid border-2" : "mb-3 hover:cursor-pointer"} onClick={() => setImage(image)}><Image src={storagePath + image} width={100} height={0} alt={product.name}></Image></div>
       ))}
       </div>
-      {product.discount && (<p className='absolute md:hidden z-50 py-2 px-4 text-white font-bold bg-gray-700/25 rounded-3xl text-center w-2/6 left-5'>-{`${product.discount.value}${product.discount.type === 0 ? "%" : cartConfig.shoppingCart.currencyConversion.mainCurrency}`}</p>)}
+      {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute md:hidden z-50 py-1 px-2 m-2 text-white font-bold bg-gray-700/25 rounded-3xl text-center w-2/6 left-5`}>-{`${product.discount.value}${product.discount.type === 0 ? "%" : cartConfig.shoppingCart.currencyConversion.mainCurrency}`}</p>)}
       <Carousel images={product.images}></Carousel>
     </div>
     <div className="hidden md:flex justify-center relative md:w-3/6">
-      {product.discount && (<p className='absolute py-2 px-4 text-white font-bold bg-gray-700/25 rounded-3xl text-center w-2/6 right-[18%]'>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartConfig.shoppingCart.currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
+      {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-2 px-4 text-white font-bold bg-gray-700/25 rounded-3xl text-center w-2/6 right-[18%]`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartConfig.shoppingCart.currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
       <Image className="block dark:hidden absolute w-5/6 max-w-[500px] max-h-[500px] m-auto loadingImage" src={logo_image_light} alt="Cargando imagen" height={0} width={500}></Image>
       <Image className="hidden dark:block absolute w-5/6 max-w-[500px] max-h-[500px] m-auto loadingImage" src={logo_image_dark} alt="Cargando imagen" height={0} width={500}></Image>
       <ChangeMainImage src={activeImg} />

@@ -27,6 +27,7 @@ src/app/utils/mockinfo.tsx
 public/misc/other/*
 public/misc/test-thumbnails
 src/app/utils/mockProducts.json
+src/app/testComponents
 
 # debug
 npm-debug.log*
@@ -43,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#firebase
+firebase_service.json
