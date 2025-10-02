@@ -7,14 +7,14 @@ import { cartItem, GiftOption } from "./types";
  * Fetches the current exchange rate for currency conversion based on the shopping cart configuration.
  * 
  * If a fixed conversion rate is configured, it returns that rate.
- * Otherwise, it attempts to retrieve a cached exchange rate from sessionStorage.
+ * Otherwise, it attempts to retrieve a cached exchange rate from localStorage.
  * If the cached rate is not from yesterday, it returns the cached rate.
  * If not cached or outdated, it fetches the latest rate from the configured API,
  * caches it with a timestamp, and returns the new rate.
  * 
  * @returns {number} The exchange rate as a number, or undefined if conversion is disabled.
  */
-export const fetchExchangeRate = async (locale:string): Promise<number> => {
+export const fetchExchangeRate = async (locale:string)/*: Promise<string> */=> {
   const { shoppingCart } = getShoppingCartConfig(locale)
   const conversion = shoppingCart.currencyConversion;
 
@@ -22,8 +22,8 @@ export const fetchExchangeRate = async (locale:string): Promise<number> => {
     return conversion.fixedRate;
   }
 
-  const cached = sessionStorage.getItem("ExchangeRate");
   const now = Date.now();
+  const cached = localStorage.getItem("ExchangeRate");
 
   if (cached) {
     const { exchangeRate, timestamp } = JSON.parse(cached);
@@ -41,8 +41,8 @@ export const fetchExchangeRate = async (locale:string): Promise<number> => {
   try {
     const response = await fetch(conversion.apiUrl);
     const data = await response.json();
-    const rate = Number(data[conversion.targetExchangeCurrency]);
-    sessionStorage.setItem("ExchangeRate", JSON.stringify({ exchangeRate: rate, timestamp: now }));
+    const rate = Number(data[conversion.targetExchangeCurrency]["VES"]);
+    localStorage.setItem("ExchangeRate", JSON.stringify({ exchangeRate: rate, timestamp: now }));
     return rate;
   } catch (err) {
     console.error("Error fetching exchange rate:", err);

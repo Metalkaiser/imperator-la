@@ -77,7 +77,7 @@ export default function ProductList(props:viewData){
             <div key={"product-" + product.mainSku} className='flex flex-col items-center gap-2 size-full'>
               <Link href={"/catalog/product/" + product.mainSku} className="m-1 pb-3 size-11/12">
                 <div className='relative grow-1'>
-                  {product.discount && (<p className='absolute py-2 px-4 text-white font-bold right-0 discount-indicator-list z-10'>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
+                  {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
                       src={storagePath + product.thumbnail}

@@ -51,10 +51,11 @@ export default async function CatalogLayout({
   const topProductsIds = productsResponse.topProductsIds
 
   if (products.status === 200) {
-    const catIndexes = Array.from(new Set((products.response as productProps[]).map(item => item.category)));
+    const productos: productProps[] = [...(products.response as productProps[])].sort((a, b) => a.category - b.category);
+    const catIndexes = Array.from(new Set((productos).map(item => item.category)));
     catIndexes.sort((a, b) => a - b);
     const subCatIndexes: number[][] = catIndexes.map(index => {
-      const subcategories = (products.response as productProps[])
+      const subcategories = (productos)
         .filter(item => item.category === index)
         .map(item => item.subcategory)
         .filter((subcat): subcat is number => typeof subcat === 'number')
@@ -63,7 +64,7 @@ export default async function CatalogLayout({
     });
 
     const topProducts = topProductsIds.response.map((item: topProductsProps) => {
-      const product = (products.response as productProps[]).find(p => p.id === item.productId);
+      const product = (productos).find(p => p.id === item.productId);
       return product ? {...item, ...product} : item;
     });
 
@@ -75,7 +76,7 @@ export default async function CatalogLayout({
         <CatalogProvider
           catIndexes={catIndexes}
           subCatIndexes={subCatIndexes}
-          products={products.response as productProps[]}
+          products={productos}
           topProducts={topProducts}
           locale={locale}>
           {children}

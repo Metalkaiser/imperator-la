@@ -161,9 +161,9 @@ export type User = {
   role: string;
   isDeleted?: boolean;
   lastLogin?: string | null;
-  createdAt: string | number | null;
-  updatedAt: string | number | null;
-  deletedAt: string | number | null;
+  createdAt?: string | number | null;
+  updatedAt?: string | number | null;
+  deletedAt?: string | number | null;
 }
 
 export type currentUser = {

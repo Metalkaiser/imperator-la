@@ -131,6 +131,8 @@ export class FirebaseProductService implements ProductService {
         }
       })
 
+      console.log(newOrderId);
+
       // Registrar la venta
       const newOrder = await addDoc(ordersCollection, {
         cart,
@@ -197,6 +199,16 @@ export class FirebaseProductService implements ProductService {
       ...data,
       timestamp,
     };
+  }
+
+  async deleteProduct(id: string): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const docRef = doc(db, dbCollections.products, id);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) throw new Error("Product not found");
+      updateDoc(docRef, {isDeleted: true, status: 2});
+      return { id: docSnap.id, ...docSnap.data() };
+    });
   }
 
   /*async migrateDB(): Promise<appResponse> {

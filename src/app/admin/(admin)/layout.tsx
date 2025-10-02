@@ -1,7 +1,6 @@
 import Header from "../components/menus/Header";
 import AdminSideMenu from "../components/menus/Sidemenu";
 import { DBProvider } from "../components/context/dbContext";
-import getProductService from "@/config/productServiceInstance";
 
 export default function AdminMainLayout({
   children,

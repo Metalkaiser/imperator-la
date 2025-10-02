@@ -1,6 +1,6 @@
 type CurrencyConversionType = "api" | "fixed";  // Type for currency conversion, can be "api" or "fixed"
 
-interface ShoppingCartConfig {
+export interface ShoppingCartConfig {
   enabled: boolean;                   // Indicates if the shopping cart is enabled
   currencyConversion: {
     enabled: boolean;                 // Indicates if currency conversion is enabled
@@ -55,15 +55,15 @@ export const getPaymentFee = (feeInfo:{status: boolean, percentage?: number, fix
  */
 export function getShoppingCartConfig(locale: string): { shoppingCart: ShoppingCartConfig } {
   const baseConfig: ShoppingCartConfig = {
-    enabled: true,
+    enabled: false,
     currencyConversion: {
       enabled: true,
       type: "api",
       fixedRate: 0,
-      mainCurrency: "$",
+      mainCurrency: "USDT",
       exchangeCurrency: "Bs",
-      targetExchangeCurrency: "promedio",
-      apiUrl: "https://ve.dolarapi.com/v1/dolares/oficial",
+      targetExchangeCurrency: "USD",
+      apiUrl: "https://api.yadio.io/exrates/USD",
       exchangeExpirationTime: 24,
     },
   };

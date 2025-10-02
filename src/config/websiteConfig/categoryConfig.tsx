@@ -11,7 +11,7 @@ export type CategoryDefinition = {
   subcategories?: SubcategoryDefinition[];
 };
 
-const defaultLocale = "es"; // Default locale for fallback
+export const defaultLocale = "es"; // Default locale for fallback
 
 /**
  * The base structure of the product catalog, defining all available categories and their subcategories.

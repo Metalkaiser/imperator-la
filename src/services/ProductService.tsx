@@ -6,6 +6,7 @@ export interface ProductService {
   getTopProducts(): Promise<appResponse>;
   getProductById(id: string): Promise<appResponse>;
   updateProduct(product: productProps): Promise<appResponse>;
+  deleteProduct(id: string | number): Promise<appResponse>;
   getCartConfigs(): Promise<appResponse>;
   registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse>;
   getOrders(): Promise<appResponse>;

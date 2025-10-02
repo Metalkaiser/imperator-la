@@ -208,3 +208,8 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
   walk(a, b, "", 0);
   return diffs;
 }
+
+export function checkMime(file: File) {
+  if (file.type !== "image/webp") return false;
+  return true;
+}
