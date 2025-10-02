@@ -23,8 +23,6 @@
 # misc
 .DS_Store
 *.pem
-src/app/utils/mockinfo.tsx
-public/misc/other/*
 public/misc/test-thumbnails
 src/app/utils/mockProducts.json
 src/app/testComponents

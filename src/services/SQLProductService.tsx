@@ -1,6 +1,8 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, activity_logs, NewActivityLog } from '@/app/utils/types';
 import { prisma } from '@/config/prisma';
+
+const notImplemented = {code: "not-implemented", response: null , status: 403}
 
 export class SQLProductService implements ProductService {
   async getAllProducts(): Promise<appResponse> {
@@ -53,5 +55,33 @@ export class SQLProductService implements ProductService {
     }
 
     return {code: "success", response: response , status: 200};
+  }
+
+  async deleteProduct(id: string | number): Promise<appResponse> {
+    console.log(id);
+    return notImplemented;
+  }
+
+  async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
+    console.log(cart, clientData);
+    return notImplemented;
+  }
+
+  async getOrders(): Promise<appResponse> {
+    return notImplemented;
+  }
+
+  async getUsers(): Promise<appResponse> {
+    return notImplemented;  
+  }
+
+  async getActivityLogs(options?: { limit?: number; startAfterId?: string; from?: number; to?: number; }): Promise<appResponse> {
+    console.log(options);
+    return notImplemented;
+  }
+
+  async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
+    console.log(data);
+    return {} as activity_logs;
   }
 }

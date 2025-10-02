@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, sale } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, sale, activity_logs, NewActivityLog } from '@/app/utils/types';
 import { 
   firebaseProductsList as mutableProducts,
   mockTopProds as mutableTop,
@@ -8,6 +8,8 @@ import {
   shippingMethods as mutableShips,
 } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
+
+const notImplemented = {code: "not-implemented", response: null , status: 403}
 
 export class MockProductService implements ProductService {
 
@@ -110,7 +112,7 @@ export class MockProductService implements ProductService {
         items: cart,
         status: "placed",
         notes: clientData.notes || "",
-        date: new Date().toISOString()
+        createdAt: new Date().toISOString()
       };
 
       mutableSales.push(newSale);
@@ -127,5 +129,27 @@ export class MockProductService implements ProductService {
       return { code: "mock-error", response: err, status: 500 };
     }
   }
+  
+  async deleteProduct(id: string | number): Promise<appResponse> {
+    console.log(id);
+    return notImplemented;
+  }
 
+  async getOrders(): Promise<appResponse> {
+    return notImplemented;
+  }
+
+  async getUsers(): Promise<appResponse> {
+    return notImplemented;
+  }
+
+  async getActivityLogs(options?: { limit?: number; startAfterId?: string; from?: number; to?: number; }): Promise<appResponse> {
+    console.log(options);
+    return notImplemented;
+  }
+
+  async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
+    console.log(data)
+    return {} as activity_logs;
+  }
 }

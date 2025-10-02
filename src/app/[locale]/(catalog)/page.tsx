@@ -6,8 +6,7 @@ import ProductCarousel from './components/home/ProductCarousel';
 import ProductList from './components/products/Productlist';
 import { webAppProps } from '@/app/utils/utils';
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const { locale } = await params;
+export async function generateMetadata(): Promise<Metadata> {
   const title = `${webAppProps.name} - Catálogo de productos`;
   const description = webAppProps.catalogDescription;
   const keywords = webAppProps.catalogKeywords;
@@ -22,12 +21,6 @@ export async function generateMetadata({ params }: { params: { locale: string } 
 
   return {
     title,
-    alternates: {
-      canonical: `/${locale}`,
-      languages: {
-        'es': `/${locale}`
-      }
-    },
     description,
     keywords,
     openGraph: {

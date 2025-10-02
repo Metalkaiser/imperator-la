@@ -4,9 +4,8 @@ import { getTranslations } from "next-intl/server";
 import CartTitle from "../components/shoppingcart/Carttitle";
 import ShoppingCart from "./ShoppingCart";
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("shoppingCart");
-  const { locale } = await params;
   const title = `${webAppProps.name} - ${t("title")}`;
   const description = webAppProps.catalogDescription;
   const keywords = webAppProps.catalogKeywords;
@@ -21,12 +20,6 @@ export async function generateMetadata({ params }: { params: { locale: string } 
 
   return {
     title,
-    alternates: {
-      canonical: `/${locale}`,
-      languages: {
-        'es': `/${locale}`
-      }
-    },
     description,
     keywords,
     openGraph: {
