@@ -15,7 +15,7 @@ export function useCartSummary(cart: cartItem[]) {
 
   useEffect(() => {
     if (!enabled || !currencyConversion.enabled) return;
-    fetchExchangeRate(locale).then((rate) => rate && setExchangeRate(rate));
+    fetchExchangeRate(locale, currencyConversion.type).then((rate) => rate && setExchangeRate(rate));
   }, [enabled, currencyConversion, locale]);
 
   const subtotal = useMemo(

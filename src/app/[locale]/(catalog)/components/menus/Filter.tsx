@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { useCatalogContext } from "../context/CatalogContext";
 import { getActiveCategoryWithSubcategories, getCategoryIndexes } from "@/config/websiteConfig/categoryConfig";
-import { useLocale } from "next-intl";
 import { capitalize } from "@/app/utils/functions";
 import { useTranslations } from "next-intl";
 
 export default function CategoryFilter(categories: { category: string, subcategory?: string }) {
-  const locale = useLocale();
+  const { subCatIndexes, locale } = useCatalogContext();
   const { category, subcategory } = categories;
   const t = useTranslations("products");
   const { categoryIndex, subcategoryIndex } = getCategoryIndexes(category, subcategory);
-  const { subCatIndexes } = useCatalogContext();
   const { activeCategory } = getActiveCategoryWithSubcategories(categoryIndex, locale);
 
   return(

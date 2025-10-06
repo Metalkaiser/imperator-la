@@ -1,12 +1,12 @@
 "use client"
 
-import { useLocale } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
 import { capitalize, sideMenu } from "@/app/utils/functions";
+import { useCatalogContext } from "../context/CatalogContext";
 
 interface CatmenuProps {
   catIndexes: number[];
@@ -14,7 +14,7 @@ interface CatmenuProps {
 }
 
 export default function Catmenu({ catIndexes, subCatIndexes }: CatmenuProps) {
-  const locale = useLocale();
+  const { locale } = useCatalogContext();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const allCategories = useMemo(() => getCategoriesWithSubcategories(locale), [locale]);

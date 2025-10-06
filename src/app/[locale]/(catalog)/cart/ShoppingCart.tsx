@@ -1,17 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useCart } from "../components/context/Cartcontext";
+import { useTranslations } from "next-intl";
 import { useCatalogContext } from "../components/context/CatalogContext";
+import { useCart } from "../components/context/Cartcontext";
 import { cartItem, GiftOption, } from "@/app/utils/types";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import Methodrender from "../components/shoppingcart/Methodsrender";
 import GiftOptions from "../components/shoppingcart/Giftoptions";
 import Carttotal from "../components/shoppingcart/Carttotal";
-
 import Cartitem from "../components/Cartitem";
-import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import { shoppingCartImg } from "@/app/utils/svgItems";
 
 export default function ShoppingCart() {
@@ -22,8 +20,6 @@ export default function ShoppingCart() {
   const tPay = useTranslations("paydata");
   const tShip = useTranslations("shipdata");
   const tModal = useTranslations("modal");
-  const { refreshProducts } = useCatalogContext();
-  const locale = useLocale();
   
   const [exchangeRate, setExchangeRate] = useState(0);
   const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
@@ -32,9 +28,7 @@ export default function ShoppingCart() {
   const { purchaseOptions, cart, addOrUpdateItem, removeItem, clearCart } = useCart();
   const [modalWidth, setWidth] = useState('60vw'); // valor por defecto para escritorio
 
-  const { enabled, currencyConversion } =
-    getShoppingCartConfig(locale).shoppingCart;
-  const mainCurrency = currencyConversion.mainCurrency;
+  const { cartSettings, locale } = useCatalogContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,9 +36,9 @@ export default function ShoppingCart() {
   };
 
   useEffect(() => {
-    if (!enabled || !currencyConversion.enabled) return;
-    fetchExchangeRate(locale).then((rate) => rate && setExchangeRate(rate));
-  }, [enabled, currencyConversion, locale]);
+    if (!cartSettings.enabled || !cartSettings.exchangeRateEnabled) return;
+    fetchExchangeRate(locale, cartSettings.exchangeRateType).then((rate) => rate && setExchangeRate(rate));
+  }, [cartSettings.enabled, cartSettings.exchangeRateEnabled, locale]);
 
   const toggleGift = (gift: GiftOption) => {
     setSelectedGifts((prev) =>
@@ -165,7 +159,7 @@ export default function ShoppingCart() {
                 key={idx}
                 item={item}
                 index={idx}
-                mainCurrency={mainCurrency}
+                mainCurrency={cartSettings.mainCurrency}
                 updateCart={updateCart}
               />
             ))}
@@ -177,7 +171,7 @@ export default function ShoppingCart() {
               activeGiftOptions={activeGiftOptions}
               selectedGifts={selectedGifts}
               toggleGift={toggleGift}
-              mainCurrency={mainCurrency}
+              mainCurrency={cartSettings.mainCurrency}
             />
           )}
         </div>
@@ -187,7 +181,7 @@ export default function ShoppingCart() {
           {purchaseOptions.paymentMethods.length > 0 && (
             <Methodrender
               method="payment"
-              mainCurrency={mainCurrency}
+              mainCurrency={cartSettings.mainCurrency}
               paynshipT={paynshipT}
               feesT={feesT}
               handleChange={handleChange} />
@@ -195,7 +189,7 @@ export default function ShoppingCart() {
           {purchaseOptions.shippingMethods.length > 0 && (
             <Methodrender
               method="shipping"
-              mainCurrency={mainCurrency}
+              mainCurrency={cartSettings.mainCurrency}
               paynshipT={paynshipT}
               feesT={feesT}
               handleChange={handleChange} />
@@ -210,9 +204,8 @@ export default function ShoppingCart() {
         fees={{paymentFee, shippingFee}}
         amounts={{giftTotal, subtotal, total}}
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
-        purchaseParams={{item: cart, exchangeRate, isPurchaseReady: !!isPurchaseReady}} 
-        currencyConversion={currencyConversion}
-        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart, refreshProducts}} />
+        purchaseParams={{item: cart, exchangeRate, isPurchaseReady: !!isPurchaseReady}}
+        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart}} />
     </div>
   );
 }

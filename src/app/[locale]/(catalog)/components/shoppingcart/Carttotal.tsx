@@ -2,6 +2,7 @@
 
 import Swal from "sweetalert2";
 import showCheckoutModal from "../../cart/checkoutModal";
+import { useCatalogContext } from "../context/CatalogContext";
 import { PaymentMethod, shippingMethod, GiftOption, cartItem, saleData } from "@/app/utils/types";
 
 interface Props {
@@ -26,23 +27,12 @@ interface Props {
     exchangeRate: number;
     isPurchaseReady: boolean;
   }
-  currencyConversion: {
-    enabled: boolean;
-    type: "api" | "fixed";
-    fixedRate: number;
-    mainCurrency: string;
-    exchangeCurrency: string;
-    targetExchangeCurrency: string;
-    apiUrl: string;
-    exchangeExpirationTime: number;
-  }
   functions: {
     feesT: (key: string) => string;
     tPay: (key: string) => string;
     tShip: (key: string) => string;
     tModal: (key: string) => string;
     clearCartFunction: () => void;
-    refreshProducts: () => Promise<void>;
   }
 }
 
@@ -60,20 +50,19 @@ export default function Carttotal ({
   fees,
   selectedParams,
   purchaseParams,
-  currencyConversion,
   functions
 }: Props) {
+  const { cartSettings } = useCatalogContext();
   const handleClick = async () => {
     const wasConfirmed = await showCheckoutModal({
+      cart: purchaseParams.item,
       payment: selectedParams.selectedPayment!,
       shipping: selectedParams.selectedShipping!,
-      cart: purchaseParams.item,
       modalWidth: modalWidth,
-      mainCurrency: currencyConversion.mainCurrency,
-      exchangeCurrency: currencyConversion.exchangeCurrency,
       exchangeRate: purchaseParams.exchangeRate,
       total: amounts.total,
       selectedGifts: selectedParams.selectedGifts,
+      mainCurrency: cartSettings.mainCurrency,
       tPay: functions.tPay,
       tShip: functions.tShip,
       tModal: functions.tModal,
@@ -92,10 +81,8 @@ export default function Carttotal ({
         }),
       });
       if (response.status === 200) {
-        const resData = await response.json();
+        //const resData = await response.json();
         functions.clearCartFunction();
-        await functions.refreshProducts();
-        console.log(resData);
       } else {
         console.error("❌ Error al registrar la venta:", response.statusText);
       }
@@ -120,27 +107,27 @@ export default function Carttotal ({
       <div className="flex flex-col gap-5 items-end">
         <div className="flex flex-col gap-1 items-end">
           <p className="text-xs font-light">
-            Subtotal: {currencyConversion.mainCurrency}
+            Subtotal: {cartSettings.mainCurrency}
             {amounts.subtotal.toFixed(2)}
           </p>
           {fees.paymentFee > 0 && (
-            feeComp(functions.feesT("paymentFee"), fees.paymentFee, currencyConversion.mainCurrency)
+            feeComp(functions.feesT("paymentFee"), fees.paymentFee, cartSettings.mainCurrency)
           )}
           {fees.shippingFee > 0 && (
-            feeComp(functions.feesT("shippingFee"), fees.shippingFee, currencyConversion.mainCurrency)
+            feeComp(functions.feesT("shippingFee"), fees.shippingFee, cartSettings.mainCurrency)
           )}
           {amounts.giftTotal > 0 && (
-            feeComp(functions.feesT("giftFee"), amounts.giftTotal, currencyConversion.mainCurrency)
+            feeComp(functions.feesT("giftFee"), amounts.giftTotal, cartSettings.mainCurrency)
           )}
         </div>
         <div className="flex flex-col items-end">
           <h2 className="carttitle">
-            Total: {currencyConversion.mainCurrency}
+            Total: {cartSettings.mainCurrency}
             {amounts.total.toFixed(2)}
           </h2>
           {purchaseParams.exchangeRate > 0 && (
             <p className="text-sm font-thin">
-              {currencyConversion.exchangeCurrency}.
+              {cartSettings.exchangeCurrency}.
               {(amounts.total * purchaseParams.exchangeRate).toFixed(2)}
             </p>
           )}

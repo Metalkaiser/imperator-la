@@ -1,9 +1,22 @@
 "use client";
+
 import { createContext, useContext, useState, useEffect } from "react";
+import LoadingPage from "../LoadingPage";
 import { productProps, topProductsProps } from "@/app/utils/types";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import type { ShoppingCartConfig } from "@/config/shoppingCartConfig";
+import { useLocale } from "next-intl";
+
+interface shoppinCartSettings {
+  enabled: boolean;
+  expirationDays: string;
+  sessionName: string;
+  mainCurrency: string;
+  exchangeCurrency: string;
+  exchangeRateEnabled: boolean;
+  exchangeRateType: string;
+}
 
 interface CatalogContextType {
   catIndexes: number[];
@@ -12,18 +25,16 @@ interface CatalogContextType {
   topProducts: productProps[];
   exchangeRate: number;
   cartConfig: ShoppingCartConfig;
+  cartSettings: shoppinCartSettings;
   loading: boolean;
+  locale: string;
   refreshProducts: () => Promise<void>;
 }
 
-type CatalogProviderProps = {
+interface providerProps {
   children: React.ReactNode;
-  catIndexes: number[];
-  subCatIndexes: number[][];
-  products: productProps[];
-  topProducts?: productProps[];
-  locale: string;
-};
+  shoppinCartSettings: shoppinCartSettings;
+}
 
 const emptyCartConfig: ShoppingCartConfig = {
   enabled: false,
@@ -39,6 +50,16 @@ const emptyCartConfig: ShoppingCartConfig = {
   }
 }
 
+const initCartSettings: shoppinCartSettings = {
+  enabled: false,
+  expirationDays: "",
+  sessionName: "",
+  mainCurrency: "",
+  exchangeCurrency: "",
+  exchangeRateEnabled: false,
+  exchangeRateType: ""
+}
+
 export const CatalogContext = createContext<CatalogContextType>({
   catIndexes: [],
   subCatIndexes: [],
@@ -46,24 +67,24 @@ export const CatalogContext = createContext<CatalogContextType>({
   topProducts: [],
   exchangeRate: 0,
   cartConfig: emptyCartConfig,
+  cartSettings: initCartSettings,
   loading: true,
+  locale: "",
   refreshProducts: async () => {}
 });
 
-export default function CatalogProvider({
-  children,
-  catIndexes: initialCatIndexes,
-  subCatIndexes: initialSubCatIndexes,
-  products: initialProducts,
-  topProducts: initialTopProducts,
-  locale
-}: CatalogProviderProps) {
-  const [catIndexes, setCatIndexes] = useState<number[]>(initialCatIndexes);
-  const [subCatIndexes, setSubCatIndexes] = useState<number[][]>(initialSubCatIndexes);
-  const [products, setProducts] = useState<productProps[]>(initialProducts);
-  const [topProducts, setTopProducts] = useState<productProps[]>(initialTopProducts ?? []);
+export default function CatalogProvider({ children, shoppinCartSettings }: providerProps) {
+  const [catIndexes, setCatIndexes] = useState<number[]>([]);
+  const [subCatIndexes, setSubCatIndexes] = useState<number[][]>([]);
+  const [products, setProducts] = useState<productProps[]>([]);
+  const [topProducts, setTopProducts] = useState<productProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [exchangeRate, setExchangeRate] = useState(0);
+  const [render, setRender] = useState<React.ReactNode>(<LoadingPage />)
+
+  const locale = useLocale();
+
+  const cartConfig = getShoppingCartConfig(locale);
 
   const fetchProducts = async () => {
     try {
@@ -111,23 +132,28 @@ export default function CatalogProvider({
       try {
         setLoading(true);
         // obtener tasa de cambio
-        try {
-          const rate = await fetchExchangeRate(locale);
-          if (mounted && typeof rate === "number" && !Number.isNaN(rate)) {
-            setExchangeRate(rate);
-          } else {
-            // fallback si fetchExchangeRate devuelve algo inesperado
-            if (mounted) setExchangeRate(0);
+        if (shoppinCartSettings.exchangeRateEnabled && shoppinCartSettings.exchangeRateType) {
+          try {
+            const rate = await fetchExchangeRate(locale, shoppinCartSettings.exchangeRateType);
+            if (mounted && typeof rate === "number" && !Number.isNaN(rate)) {
+              setExchangeRate(rate);
+            } else {
+              // fallback si fetchExchangeRate devuelve algo inesperado
+              if (mounted) setExchangeRate(0);
+            }
+          } catch (err) {
+            console.error("fetchExchangeRate error:", err);
+            if (mounted) setExchangeRate(0); // fallback
           }
-        } catch (err) {
-          console.error("fetchExchangeRate error:", err);
-          if (mounted) setExchangeRate(0); // fallback
         }
 
         // cargar productos
         await fetchProducts();
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setRender(children)
+        }
       }
     };
 
@@ -146,11 +172,13 @@ export default function CatalogProvider({
       products,
       topProducts,
       loading,
-      cartConfig: getShoppingCartConfig(locale).shoppingCart,
+      cartConfig: cartConfig.shoppingCart,
+      cartSettings: shoppinCartSettings,
       exchangeRate,
+      locale,
       refreshProducts: fetchProducts
     }}>
-      {children}
+      {render}
     </CatalogContext.Provider>
   );
 }

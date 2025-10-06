@@ -1,20 +1,22 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { shoppingCartImg } from "@/app/utils/svgItems";
 import { cartItem } from "@/app/utils/types";
 import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import Cartitem from "../Cartitem";
+import { useCatalogContext } from "../context/CatalogContext";
 import { useCart } from "../context/Cartcontext";
 import { sideMenu } from "@/app/utils/functions";
 
 export default function Cartcontent () {
   const { cart, addOrUpdateItem, removeItem } = useCart();
-  const locale = useLocale();
+  const { cartSettings, locale } = useCatalogContext();
   const cartConfig = getShoppingCartConfig(locale);
-  const { enabled, currencyConversion } = cartConfig.shoppingCart;
+  const { currencyConversion } = cartConfig.shoppingCart;
+  
   const [exchangeRate, setExchangeRate] = useState<number>(0);
   const t = useTranslations("shoppingCart");
 
@@ -29,7 +31,7 @@ export default function Cartcontent () {
   }
 
   const fetchExchangeRate = async () => {
-    if (!currencyConversion.enabled) return;
+    if (!cartSettings.enabled) return;
 
     if (currencyConversion.type === "fixed") {
       setExchangeRate(currencyConversion.fixedRate);
@@ -61,15 +63,15 @@ export default function Cartcontent () {
   };
 
   useEffect(() => {
-    if (!enabled || !currencyConversion.enabled) return;
+    if (!cartSettings.enabled || !currencyConversion.enabled) return;
     fetchExchangeRate();
-  }, [enabled, currencyConversion]);
+  }, [cartSettings.enabled, currencyConversion]);
 
   const total = useMemo(() => (
     cart.reduce((sum, item) => sum + item.price * item.qt, 0)
   ), [cart]);
 
-  if (!cartConfig.shoppingCart.enabled) return null;
+  if (!cartSettings.enabled) return null;
 
   return (
     <div className="flex flex-col my-5 justify-between items-center h-full w-full">
@@ -97,11 +99,11 @@ export default function Cartcontent () {
           <div className="w-full flex justify-between items-center">
             <div className="flex flex-col gap-2 items-center">
               <h2 className="carttitle">
-                Total: {currencyConversion.mainCurrency}{total}
+                Total: {cartSettings.mainCurrency}{total}
               </h2>
               {exchangeRate > 0 && (
                 <p className="text-sm font-thin">
-                  {currencyConversion.exchangeCurrency}.{(total * exchangeRate).toFixed(2)}
+                  {cartSettings.exchangeCurrency}.{(total * exchangeRate).toFixed(2)}
                 </p>
               )}
             </div>
