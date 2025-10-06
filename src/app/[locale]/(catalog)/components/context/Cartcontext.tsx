@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { cartItem, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
 import { sessionCartName } from "@/app/utils/utils";
+import { useCatalogContext } from "./CatalogContext";
 
 type purchaseOptions = {
   paymentMethods: PaymentMethod[];
@@ -21,8 +22,11 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children, purchaseOptions, enabled }:
-  { children: React.ReactNode, purchaseOptions: purchaseOptions, enabled: boolean }) {
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  
+  const { cartSettings } = useCatalogContext();
+  const enabled = cartSettings.enabled
+
   const [cart, setCart] = useState<cartItem[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -35,17 +39,41 @@ export function CartProvider({ children, purchaseOptions, enabled }:
     }
     return [];
   });
+  const [purchaseOptions, setPurchaseOptions] = useState<purchaseOptions>({
+    paymentMethods: [],
+    shippingMethods: [],
+    giftOptions: []
+  });
 
   // on mount, load from sessionStorage
   useEffect(() => {
-    const raw = sessionStorage.getItem(sessionCartName);
-    if (raw) {
-      try {
-        setCart(JSON.parse(raw));
-      } catch {
-        sessionStorage.removeItem(sessionCartName);
+    let mounted = true;
+
+    if (enabled) {
+      const raw = sessionStorage.getItem(sessionCartName);
+      if (raw) {
+        try {
+          setCart(JSON.parse(raw));
+        } catch {
+          sessionStorage.removeItem(sessionCartName);
+        }
       }
+
+      const init = async () => {
+        try {
+          const cartDetails = (await fetch(`/api/cart-config`).then(r => r.json()));
+          if (mounted) setPurchaseOptions(cartDetails);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+
+      init();
     }
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // whenever cart changes, write back

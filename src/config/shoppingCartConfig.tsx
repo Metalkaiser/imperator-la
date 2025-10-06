@@ -63,7 +63,7 @@ export function getShoppingCartConfig(locale: string): { shoppingCart: ShoppingC
       mainCurrency: "USDT",
       exchangeCurrency: "Bs",
       targetExchangeCurrency: "USD",
-      apiUrl: "https://api.yadio.io/exrates/USD",
+      apiUrl: "https://ve.dolarapi.com/v1/dolares/oficial",
       exchangeExpirationTime: 24,
     },
   };

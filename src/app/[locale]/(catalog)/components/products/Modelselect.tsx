@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Swal from "sweetalert2";
 import { productProps, cartItem } from "@/app/utils/types";
@@ -9,11 +9,12 @@ import { QuantitySelector } from "../Quantityselector";
 import { plusIcon, minusIcon, getShoppingCartIcon } from "@/app/utils/svgItems";
 import { getDiscountedPrice } from "@/app/utils/functions";
 import { useCart } from "../context/Cartcontext";
+import { useCatalogContext } from "../context/CatalogContext";
 import { storagePath } from "@/app/utils/utils";
 import unavailableImage from "@P/misc/other/forbidden.png";
 
 export default function Modelselect ({product}:{product:productProps}) {
-  const locale = useLocale();
+  const { locale } = useCatalogContext();
   const { addOrUpdateItem, enabled } = useCart();
   const currentPrice = product.discount ? parseFloat(getDiscountedPrice(product.price,product.discount)) : product.price;
   const defaultItemProps = {

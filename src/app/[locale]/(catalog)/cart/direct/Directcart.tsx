@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useCart } from "../../components/context/Cartcontext";
+import { useTranslations } from "next-intl";
 import { useCatalogContext } from "../../components/context/CatalogContext";
+import { useCart } from "../../components/context/Cartcontext";
 import { cartItem, GiftOption, } from "@/app/utils/types";
 import { storagePath } from "@/app/utils/utils";
 import { fetchExchangeRate } from "@/app/utils/clientFunctions";
@@ -25,8 +25,8 @@ export default function DirectBuyPage() {
   const tPay = useTranslations("paydata");
   const tShip = useTranslations("shipdata");
   const tModal = useTranslations("modal");
-  const { refreshProducts } = useCatalogContext();
-  const locale = useLocale();
+
+  const { cartSettings, locale } = useCatalogContext();
 
   const [exchangeRate, setExchangeRate] = useState(0);
   const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
@@ -36,10 +36,7 @@ export default function DirectBuyPage() {
   const { purchaseOptions, clearCart } = useCart();
   const router = useRouter();
 
-  const { enabled, currencyConversion } =
-    getShoppingCartConfig(locale).shoppingCart;
-  const mainCurrency = currencyConversion.mainCurrency;
-  
+  const { currencyConversion } = getShoppingCartConfig(locale).shoppingCart;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,9 +45,9 @@ export default function DirectBuyPage() {
   };
 
   useEffect(() => {
-    if (!enabled || !currencyConversion.enabled) return;
-    fetchExchangeRate(locale).then((rate) => rate && setExchangeRate(rate));
-  }, [enabled, currencyConversion, locale]);
+    if (!cartSettings.enabled || !currencyConversion.enabled) return;
+    fetchExchangeRate(locale,cartSettings.exchangeRateType).then((rate) => rate && setExchangeRate(rate));
+  }, [cartSettings.enabled, currencyConversion, locale]);
 
   const toggleGift = (gift: GiftOption) => {
     setSelectedGifts((prev) =>
@@ -153,7 +150,7 @@ export default function DirectBuyPage() {
               activeGiftOptions={activeGiftOptions}
               selectedGifts={selectedGifts}
               toggleGift={toggleGift}
-              mainCurrency={mainCurrency}
+              mainCurrency={cartSettings.mainCurrency}
             />
           )}
         </div>
@@ -161,7 +158,7 @@ export default function DirectBuyPage() {
           {purchaseOptions.paymentMethods.length > 0 && (
             <Methodrender
               method="payment"
-              mainCurrency={mainCurrency}
+              mainCurrency={cartSettings.mainCurrency}
               paynshipT={paynshipT}
               feesT={feesT}
               handleChange={handleChange} />
@@ -169,7 +166,7 @@ export default function DirectBuyPage() {
           {purchaseOptions.shippingMethods.length > 0 && (
             <Methodrender
               method="shipping"
-              mainCurrency={mainCurrency}
+              mainCurrency={cartSettings.mainCurrency}
               paynshipT={paynshipT}
               feesT={feesT}
               handleChange={handleChange} />
@@ -182,9 +179,8 @@ export default function DirectBuyPage() {
         fees={{paymentFee, shippingFee}}
         amounts={{giftTotal, subtotal, total}}
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
-        purchaseParams={{item: [product], exchangeRate, isPurchaseReady: !!isPurchaseReady}} 
-        currencyConversion={currencyConversion}
-        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart, refreshProducts }} />
+        purchaseParams={{item: [product], exchangeRate, isPurchaseReady: !!isPurchaseReady}}
+        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart }} />
     </div>
   );
 }

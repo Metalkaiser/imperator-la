@@ -5,7 +5,6 @@ import { useCatalogContext } from "../context/CatalogContext";
 
 type prices = {
   price:number;
-  currency:string;
   discount?:{
     type: number;
     value: number;
@@ -13,9 +12,11 @@ type prices = {
 }
 
 export default function Prices({prices, view}: {prices: prices, view: string}) {
-  const { price, currency, discount } = prices;
-  const { exchangeRate, cartConfig } = useCatalogContext();
-  const exchCurrency = cartConfig.currencyConversion.exchangeCurrency;
+  const { price, discount } = prices;
+  const { exchangeRate, cartSettings } = useCatalogContext();
+  const exchEnabled = cartSettings.exchangeRateEnabled;
+  const exchCurrency = cartSettings.exchangeCurrency;
+  const currency = cartSettings.mainCurrency;
   let priceString = "";
   let priceDiscountString = "";
   let textmid = "";
@@ -49,33 +50,34 @@ export default function Prices({prices, view}: {prices: prices, view: string}) {
       {discount && (
         <div className="flex-flex-col gap-5">
           <div className='flex w-fit justify-center text-red-600 font-bold'>
-            <p className={textmid}>{`${exchCurrency} ${exchDiscountArr.join(".")}`}</p>
+            <p className={textmid}>{`${currency} ${discountPriceInteger}`}</p>
+            <p className={textmid}>.{discountPriceDecimal}</p>
           </div>
-          <div className='flex w-fit justify-center text-neutral-600 font-bold'>
-            <p className={textsm}>{`${currency} ${discountPriceInteger}`}</p>
-            <p className={textsm}>.{discountPriceDecimal}</p>
-          </div>
+          {exchEnabled && <div className='flex w-fit justify-center text-neutral-600 font-bold'>
+            <p className={textsm}>{`${exchCurrency} ${exchDiscountArr.join(".")}`}</p>
+          </div>}
         </div>
       )}
       <div className="flex-flex-col gap-5">
         <div className='flex w-fit content-center dark:text-white line-through'>
-          <p className={textmid}>{`${exchCurrency} ${exchPriceArr.join(".")}`}</p>
+          <p className={textmid}>{`${currency} ${priceInteger}`}</p>
+          <p className={textmid}>.{priceDecimal}</p>
+          
         </div>
-        <div className='flex w-fit content-center dark:text-white line-through'>
-          <p className={textsm}>{`${currency} ${priceInteger}`}</p>
-          <p className={textsm}>.{priceDecimal}</p>
-        </div>
+        {exchEnabled && <div className='flex w-fit content-center dark:text-white line-through'>
+          <p className={textsm}>{`${exchCurrency} ${exchPriceArr.join(".")}`}</p>
+        </div>}
       </div>
     </div>
   } else {
     render = <div className="flex-flex-col gap-5">
       <div className='flex w-fit justify-center dark:text-white'>
-        <p className={textmid}>{`${exchCurrency} ${exchPriceArr.join(".")}`}</p>
+        <p className={textmid}>{`${currency} ${priceInteger}`}</p>
+        <p className={textmid}>.{priceDecimal}</p>
       </div>
-      <div className='flex w-fit justify-center dark:text-white'>
-        <p className={textsm}>{`${currency} ${priceInteger}`}</p>
-        <p className={textsm}>.{priceDecimal}</p>
-      </div>
+      {exchEnabled && <div className='flex w-fit justify-center dark:text-white'>
+        <p className={textsm}>{`${exchCurrency} ${exchPriceArr.join(".")}`}</p>
+      </div>}
     </div>
   }
   return render;

@@ -6,9 +6,6 @@ import Carttotal from "./Carttotal";
 import Image from "next/image";
 import { useCartSummary } from "@/app/utils/useCartSummary";
 import { cartItem, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
-import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
-import { useLocale } from "next-intl";
-import { useCatalogContext } from "../context/CatalogContext";
 
 type Props = {
   items: cartItem[];
@@ -72,8 +69,6 @@ export function CartView({
     setFormData((prev: { payment: number | string; shipping: number | string }) => ({ ...prev, [name]: parseInt(value) }));
   };
 
-  const { currencyConversion } = getShoppingCartConfig(useLocale()).shoppingCart;
-  const { refreshProducts } = useCatalogContext();
   const { calcFees } = useCartSummary(items);
 
   const fees = calcFees(
@@ -139,9 +134,8 @@ export function CartView({
         fees={{paymentFee: fees.payment, shippingFee: fees.shipping}}
         amounts={{giftTotal, subtotal, total}}
         selectedParams={{selectedPayment, selectedShipping, selectedGifts}}
-        purchaseParams={{item: items, exchangeRate, isPurchaseReady}} 
-        currencyConversion={currencyConversion}
-        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart, refreshProducts}} />
+        purchaseParams={{item: items, exchangeRate, isPurchaseReady}}
+        functions={{feesT, tPay, tShip, tModal, clearCartFunction: clearCart}} />
     </div>
   );
 }

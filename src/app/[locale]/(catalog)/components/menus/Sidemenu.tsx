@@ -1,22 +1,18 @@
 "use client"
 
+import { useCatalogContext } from "../context/CatalogContext";
 import Closebtn from "./Closebtn";
 import Cartcontent from "./Cartcontent";
 import Catmenu from "./Catmenu";
 
-type catsType = {
-  catIndexes: number[];
-  subCatIndexes?: number[][];
-}
+export default function Sidemenu ({type}: {type:string}) {
 
-export default function Sidemenu ({type, cats}: {type:string, cats?: catsType}) {
+  const { catIndexes, subCatIndexes} = useCatalogContext();
   let content = <></>;
   const location = type === "Menu" ? "-left-full" : "-right-full";
 
   if (type === "Menu") {
-    if (cats) {
-      content = <Catmenu catIndexes={cats.catIndexes} subCatIndexes={cats.subCatIndexes} />;
-    }
+    content = <Catmenu catIndexes={catIndexes} subCatIndexes={subCatIndexes} />;
   } else {
     content = <Cartcontent />
   }

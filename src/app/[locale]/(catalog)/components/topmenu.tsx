@@ -1,21 +1,21 @@
-import {useLocale, useTranslations} from 'next-intl';
+"use client"
+
+import {useTranslations} from 'next-intl';
 import Link from "next/link";
 import Image from "next/image";
 import Topbtn from './menus/Topbtn';
 import { capitalize } from "@/app/utils/functions";
 import { webAppProps } from "@/app/utils/utils";
-import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
+import { useCatalogContext } from './context/CatalogContext';
 import { getActiveCategory } from '@/config/websiteConfig/categoryConfig';
 import brandLight from "@P/brand/logo_poster_light.webp";
 import brandDark from "@P/brand/logo_poster_dark.webp";
 
 import RouterLogger from './test/RouterLogger';
 
-export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
+export default function Topmenu() {
   const home = useTranslations("home");
-
-  const locale = useLocale();
-  const cartConfig = getShoppingCartConfig(locale);
+  const { cartSettings, locale, catIndexes } = useCatalogContext();
   const { categories, categoryLinks } = getActiveCategory(catIndexes, locale);
 
   const imgBannerClass = " w-auto max-w-1/2 md:max-w-auto h-[30px]";
@@ -27,7 +27,7 @@ export default function Topmenu({catIndexes}: {catIndexes:number[]}) {
         <Topbtn purpose='Menu' />
         <Image src={brandLight}  height={30} alt={webAppProps.name}  className={`dark:hidden ${imgBannerClass}`}></Image>
         <Image src={brandDark} alt={webAppProps.name} className={`hidden dark:block ${imgBannerClass}`}></Image>
-        {cartConfig.shoppingCart.enabled ? <Topbtn purpose='Carrito' /> : <div className="w-[30px]"></div>}
+        {cartSettings.enabled ? <Topbtn purpose='Carrito' /> : <div className="w-[30px]"></div>}
       </div>
       <nav className='flex flex-nowrap overflow-x-scroll pt-4 touch-pan-x whitespace-nowrap w-screen no-scrollbar md:justify-center'>
         <div className="flex gap-10 mx-5">

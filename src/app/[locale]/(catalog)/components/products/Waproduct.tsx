@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { phoneNumber } from "@/app/utils/utils";
 import { getDiscountedPrice } from "@/app/utils/functions";
+import { useCatalogContext } from "../context/CatalogContext";
 
 
 type wap = {
@@ -13,11 +14,11 @@ type wap = {
     type: number;
     value: number;
   };
-  currency:string;
 }
 
-export default function WaProduct ({ link, price, discount, currency } : wap) {
+export default function WaProduct ({ link, price, discount } : wap) {
   const t = useTranslations("actionDetailsButtons");
+  const { cartSettings } = useCatalogContext();
 
   let displayPrice = price;
 
@@ -25,7 +26,7 @@ export default function WaProduct ({ link, price, discount, currency } : wap) {
     displayPrice = parseFloat(getDiscountedPrice(price,discount));
   }
   
-  const waLink = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${t('waLink')}${link}%20(${currency}%20${displayPrice})`;
+  const waLink = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${t('waLink')}${link}%20(${cartSettings.mainCurrency}%20${displayPrice})`;
 
   return (
     <Link href={waLink} target="_blank">

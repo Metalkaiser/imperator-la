@@ -3,9 +3,8 @@ import { useEffect, useState, useCallback, JSX } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import Prices from './Prices';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { storagePath } from '@/app/utils/utils';
-import { getShoppingCartConfig } from '@/config/shoppingCartConfig';
 import { useCatalogContext } from '../context/CatalogContext';
 import { getCategoryIndexes } from "@/config/websiteConfig/categoryConfig";
 
@@ -24,11 +23,8 @@ export default function ProductList(props:viewData){
   const [productsToLoad, setProductsToLoad] = useState(0);
   const [hasMoreProducts, setHasMoreProducts] = useState(true);
 
-  const locale = useLocale();
-  const cartConfig = getShoppingCartConfig(locale);
-  const { currencyConversion } = cartConfig.shoppingCart;
   const t = useTranslations("products");
-  const { products } = useCatalogContext();
+  const { products, cartSettings } = useCatalogContext();
 
   const determineProductsToLoad = useCallback(() => {
     const width = window.innerWidth;
@@ -77,7 +73,7 @@ export default function ProductList(props:viewData){
             <div key={"product-" + product.mainSku} className='flex flex-col items-center gap-2 size-full'>
               <Link href={"/catalog/product/" + product.mainSku} className="m-1 pb-3 size-11/12">
                 <div className='relative grow-1'>
-                  {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${currencyConversion.mainCurrency}. ${product.discount.value}`}`}</p>)}
+                  {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartSettings.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
                       src={storagePath + product.thumbnail}
@@ -92,7 +88,7 @@ export default function ProductList(props:viewData){
                   </div>
                 </div>
                 <h2 className="max-w-full name-list mt-1 truncate dark:text-white">{product.name}</h2>
-                <Prices prices={{price: product.price, currency: currencyConversion.mainCurrency, discount: product.discount}} view='list'/>
+                <Prices prices={{price: product.price, discount: product.discount}} view='list'/>
               </Link>
             </div>
           ));
