@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useCatalogContext } from "../components/context/CatalogContext";
 import { useCart } from "../components/context/Cartcontext";
 import { cartItem, GiftOption, } from "@/app/utils/types";
-import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import Methodrender from "../components/shoppingcart/Methodsrender";
 import GiftOptions from "../components/shoppingcart/Giftoptions";
 import Carttotal from "../components/shoppingcart/Carttotal";
@@ -21,24 +20,18 @@ export default function ShoppingCart() {
   const tShip = useTranslations("shipdata");
   const tModal = useTranslations("modal");
   
-  const [exchangeRate, setExchangeRate] = useState(0);
   const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
   const [selectedGifts, setSelectedGifts] = useState<GiftOption[]>([]);
 
   const { purchaseOptions, cart, addOrUpdateItem, removeItem, clearCart } = useCart();
   const [modalWidth, setWidth] = useState('60vw'); // valor por defecto para escritorio
 
-  const { cartSettings, locale } = useCatalogContext();
+  const { cartSettings, exchangeRate } = useCatalogContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  useEffect(() => {
-    if (!cartSettings.enabled || !cartSettings.exchangeRateEnabled) return;
-    fetchExchangeRate(locale, cartSettings.exchangeRateType).then((rate) => rate && setExchangeRate(rate));
-  }, [cartSettings.enabled, cartSettings.exchangeRateEnabled, locale]);
 
   const toggleGift = (gift: GiftOption) => {
     setSelectedGifts((prev) =>

@@ -1,22 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocale } from "next-intl";
-import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
-import { fetchExchangeRate } from "@/app/utils/clientFunctions";
+"use client";
+
+import { useMemo, useState } from "react";
+import { useCatalogContext } from "../[locale]/(catalog)/components/context/CatalogContext";
 import { cartItem, GiftOption, PaymentMethod, shippingMethod } from "@/app/utils/types";
 
 export function useCartSummary(cart: cartItem[]) {
-  const locale = useLocale();
-  const { enabled, currencyConversion } = getShoppingCartConfig(locale).shoppingCart;
-  const mainCurrency = currencyConversion.mainCurrency;
 
-  const [exchangeRate, setExchangeRate] = useState(0);
+  const { exchangeRate, cartSettings } = useCatalogContext();
+  const mainCurrency = cartSettings.mainCurrency;
+
   const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
   const [selectedGifts, setSelectedGifts] = useState<GiftOption[]>([]);
-
-  useEffect(() => {
-    if (!enabled || !currencyConversion.enabled) return;
-    fetchExchangeRate(locale, currencyConversion.type).then((rate) => rate && setExchangeRate(rate));
-  }, [enabled, currencyConversion, locale]);
 
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qt, 0),

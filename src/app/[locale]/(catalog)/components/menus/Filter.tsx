@@ -28,4 +28,6 @@ export default function CategoryFilter(categories: { category: string, subcatego
       </div>
     </div>
   );
+  return (<></>
+  );
 }

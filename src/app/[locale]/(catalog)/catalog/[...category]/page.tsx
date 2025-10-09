@@ -27,9 +27,8 @@ export async function generateMetadata(
   }
 }
 
-export default async function CategoryPage ({ params }: Props) {
-  const {category} = await params;
+export default function CategoryPage () {
   return (
-    <Category category={category[0]} subcategory={category.length > 1 ? category[1] : undefined} />
+    <Category />
   )
 }

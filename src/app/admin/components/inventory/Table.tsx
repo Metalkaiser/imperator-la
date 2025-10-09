@@ -635,6 +635,7 @@ const exportPDF = () => {
             <tr className="text-left">
               <th className="p-2">
                 <input
+                  className="size-5"
                   type="checkbox"
                   checked={paginated.every((p) => selectedIds.has(String(p.id))) && paginated.length > 0}
                   onChange={(e) => {
@@ -676,6 +677,7 @@ const exportPDF = () => {
                   <tr key={String(p.id)} className="border-t">
                     <td className="p-2">
                       <input
+                        className="size-5"
                         type="checkbox"
                         checked={selectedIds.has(String(p.id))}
                         onChange={() => toggleSelect(p.id)}

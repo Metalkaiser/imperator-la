@@ -1,11 +1,12 @@
 import { ProductService } from './ProductService';
 import { productProps, appResponse, cartItem, saleData, sale, activity_logs, NewActivityLog } from '@/app/utils/types';
 import { 
-  firebaseProductsList as mutableProducts,
+  mockProductList as mutableProducts,
   mockTopProds as mutableTop,
   mockSales as mutableSales,
   paymentMethods as mutablePays,
   shippingMethods as mutableShips,
+  mockActivity as mutableActivity
 } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
 
@@ -144,8 +145,29 @@ export class MockProductService implements ProductService {
   }
 
   async getActivityLogs(options?: { limit?: number; startAfterId?: string; from?: number; to?: number; }): Promise<appResponse> {
-    console.log(options);
-    return notImplemented;
+    let logs = mutableActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    if (options) {
+      const { limit, startAfterId, from, to } = options;
+
+      if (from !== undefined) {
+        logs = logs.filter(log => new Date(log.timestamp).getTime() >= from);
+      }
+      if (to !== undefined) {
+        logs = logs.filter(log => new Date(log.timestamp).getTime() <= to);
+      }
+      if (startAfterId) {
+        const startIndex = logs.findIndex(log => log.id === startAfterId);
+        if (startIndex !== -1) {
+          logs = logs.slice(startIndex + 1);
+        }
+      }
+      if (limit !== undefined && limit > 0) {
+        logs = logs.slice(0, limit);
+      }
+    }
+
+    return { code: "success", response: logs, status: 200 };
   }
 
   async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
