@@ -11,6 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function Page() {
+export default function Page() {
   return <ProductDetails />;
 }

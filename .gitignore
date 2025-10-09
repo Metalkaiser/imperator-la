@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 public/misc/test-thumbnails
+public/misc/test-images
 src/app/utils/mockProducts.json
 src/app/testComponents
 

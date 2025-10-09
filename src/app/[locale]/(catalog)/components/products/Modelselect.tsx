@@ -14,7 +14,8 @@ import { storagePath } from "@/app/utils/utils";
 import unavailableImage from "@P/misc/other/forbidden.png";
 
 export default function Modelselect ({product}:{product:productProps}) {
-  const { locale } = useCatalogContext();
+  const { locale, cartSettings } = useCatalogContext();
+  const url = cartSettings.dbSource === "mock" ? "" : storagePath;
   const { addOrUpdateItem, enabled } = useCart();
   const currentPrice = product.discount ? parseFloat(getDiscountedPrice(product.price,product.discount)) : product.price;
   const defaultItemProps = {
@@ -116,7 +117,7 @@ export default function Modelselect ({product}:{product:productProps}) {
               className={`rounded-full object-cover absolute top-0 left-0 ${!variant.stock.reduce((sum, v) => sum + v.quantity, 0) ? "opacity-80" : "opacity-0"}`}
             />
             <Image 
-              src={`${storagePath}${variant.image}`}
+              src={`${url}${variant.image}`}
               alt={variant.sku}
               width={iconSize}
               height={iconSize}

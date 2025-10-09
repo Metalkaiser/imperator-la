@@ -17,6 +17,8 @@ export default function ImageComponent ({product}:{product:productProps}) {
   const [activeImg, setImage] = useState(product.images[0]);
   const { cartSettings } = useCatalogContext();
 
+   const url = cartSettings.dbSource === "mock" ? "" : storagePath;
+
 
   const hideLoadingImage = () => {
     const  loadingImages = document.getElementsByClassName("loadingImage") as HTMLCollectionOf<HTMLElement>;
@@ -25,14 +27,14 @@ export default function ImageComponent ({product}:{product:productProps}) {
   }
 
   const ChangeMainImage = ({src}:ImageItem) => (
-    <Image onLoad={hideLoadingImage} className="w-5/6 max-w-[500px] max-h-[500px]" src={storagePath + src} alt="Imagen grande" height={0} width={500}></Image>
+    <Image onLoad={hideLoadingImage} className="w-5/6 max-w-[500px] max-h-[500px]" src={url + src} alt="Imagen grande" height={0} width={500}></Image>
   );
   return (
     <>
     <div className="flex flex-col md:w-1/6 items-center">
       <div className="hidden md:flex flex-col">
       {product.images.map((image,i) => (
-        <div key={product.mainSku + "-" + i} className={image === activeImg ? "mb-3 hover:cursor-pointer border-gray dark:border-white border-solid border-2" : "mb-3 hover:cursor-pointer"} onClick={() => setImage(image)}><Image src={storagePath + image} width={100} height={0} alt={product.name}></Image></div>
+        <div key={product.mainSku + "-" + i} className={image === activeImg ? "mb-3 hover:cursor-pointer border-gray dark:border-white border-solid border-2" : "mb-3 hover:cursor-pointer"} onClick={() => setImage(image)}><Image src={url + image} width={100} height={0} alt={product.name}></Image></div>
       ))}
       </div>
       {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute md:hidden z-50 py-1 px-2 m-2 text-white font-bold bg-gray-700/25 rounded-3xl text-center w-2/6 left-5`}>-{`${product.discount.value}${product.discount.type === 0 ? "%" : cartSettings.mainCurrency}`}</p>)}

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState, useCallback, JSX } from 'react';
 import Link from "next/link";
 import Image from "next/image";
@@ -25,6 +26,8 @@ export default function ProductList(props:viewData){
 
   const t = useTranslations("products");
   const { products, cartSettings } = useCatalogContext();
+
+  const url = cartSettings.dbSource === "mock" ? "" : storagePath;
 
   const determineProductsToLoad = useCallback(() => {
     const width = window.innerWidth;
@@ -76,7 +79,7 @@ export default function ProductList(props:viewData){
                   {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartSettings.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
-                      src={storagePath + product.thumbnail}
+                      src={url + product.thumbnail}
                       alt={product.name}
                       fill
                       className="object-cover"

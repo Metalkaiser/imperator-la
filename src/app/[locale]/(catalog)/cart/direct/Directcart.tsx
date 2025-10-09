@@ -6,7 +6,6 @@ import { useCatalogContext } from "../../components/context/CatalogContext";
 import { useCart } from "../../components/context/Cartcontext";
 import { cartItem, GiftOption, } from "@/app/utils/types";
 import { storagePath } from "@/app/utils/utils";
-import { fetchExchangeRate } from "@/app/utils/clientFunctions";
 import Methodrender from "../../components/shoppingcart/Methodsrender";
 import GiftOptions from "../../components/shoppingcart/Giftoptions";
 import Carttotal from "../../components/shoppingcart/Carttotal";
@@ -14,7 +13,6 @@ import Image from "next/image";
 
 import { useRouter } from "next/navigation";
 import LoadingPage from "../../components/LoadingPage";
-import { getShoppingCartConfig } from "@/config/shoppingCartConfig";
 import { getActiveGiftOptions } from "@/app/utils/clientFunctions";
 
 export default function DirectBuyPage() {
@@ -26,9 +24,8 @@ export default function DirectBuyPage() {
   const tShip = useTranslations("shipdata");
   const tModal = useTranslations("modal");
 
-  const { cartSettings, locale } = useCatalogContext();
+  const { cartSettings, exchangeRate } = useCatalogContext();
 
-  const [exchangeRate, setExchangeRate] = useState(0);
   const [formData, setFormData] = useState({ payment: 0, shipping: 0 });
   const [selectedGifts, setSelectedGifts] = useState<GiftOption[]>([]);
 
@@ -36,18 +33,11 @@ export default function DirectBuyPage() {
   const { purchaseOptions, clearCart } = useCart();
   const router = useRouter();
 
-  const { currencyConversion } = getShoppingCartConfig(locale).shoppingCart;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     console.log(selectedPayment, selectedShipping);
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  useEffect(() => {
-    if (!cartSettings.enabled || !currencyConversion.enabled) return;
-    fetchExchangeRate(locale,cartSettings.exchangeRateType).then((rate) => rate && setExchangeRate(rate));
-  }, [cartSettings.enabled, currencyConversion, locale]);
 
   const toggleGift = (gift: GiftOption) => {
     setSelectedGifts((prev) =>

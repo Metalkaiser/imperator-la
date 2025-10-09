@@ -22,18 +22,17 @@ export const fetchExchangeRate = async (locale:string, type:string): Promise<num
     return conversion.fixedRate;
   }
 
-  const now = Date.now();
+  const now = new Date();
   const cached = localStorage.getItem("ExchangeRate");
 
   if (cached) {
     const { exchangeRate, timestamp } = JSON.parse(cached);
-    const yesterday = new Date(now - 24 * 60 * 60 * 1000);
     const timestampDate = new Date(timestamp);
-    const isSameDayAsYesterday =
-      timestampDate.getFullYear() === yesterday.getFullYear() &&
-      timestampDate.getMonth() === yesterday.getMonth() &&
-      timestampDate.getDate() === yesterday.getDate();
-    if (!isSameDayAsYesterday) {
+    const isToday =
+      timestampDate.getFullYear() === now.getFullYear() &&
+      timestampDate.getMonth() === now.getMonth() &&
+      timestampDate.getDate() === now.getDate();
+    if (isToday) {
       return exchangeRate;
     }
   }
