@@ -13,10 +13,8 @@ import { getRandomItems } from '@/app/utils/functions';
 
 export default function ProductCarousel({ title, type }: { title: string; type?: number[] }) {
   const t = useTranslations('productCarousel');
-  const { products, topProducts, cartSettings } = useCatalogContext();
+  const { products, topProducts } = useCatalogContext();
   const pathname = usePathname().split('/').pop();
-
-  const url = cartSettings.dbSource === "mock" ? "" : storagePath;
 
   // store your actual products here
   const [renderArray, setRenderArray] = useState<productProps[]>([]);
@@ -75,7 +73,8 @@ export default function ProductCarousel({ title, type }: { title: string; type?:
             className="min-w-[180px] max-w-[200px] md:min-w-[220px] md:max-w-[240px] topproduct rounded-md shadow-md flex flex-col items-center flex-shrink-0"
           >
             <Image
-              src={url + product.thumbnail}
+              unoptimized
+              src={storagePath + product.thumbnail}
               alt={product.name}
               width={240}
               height={180}

@@ -98,38 +98,43 @@ export default function CatalogProvider({ children, shoppinCartSettings }: provi
   const fetchProducts = async () => {
 
     const localStorageData = localStorage.getItem(localStorageKey);
+    const TTL_MS = 1000 * 60 * 10;
     let payload = {isInLocalStorage: false, data: {} as fetchProductsPayload};
     
     try {
       if (localStorageData) {
         console.log("Found products in localStorage, checking validity...");
         const parsedData = JSON.parse(localStorageData);
-        const checkLastActivity = await fetch(`/api/last-activity`, {
-          cache: "no-store"
-        });
-        const activityBody = await checkLastActivity.json();
-        if (activityBody.lastActivity?.status === 200 && activityBody.lastActivity.response.length) {
-          const lastActivity = activityBody.lastActivity.response[0];
-          const lastSaved = new Date(parsedData.timestamp);
-          const lastUpdated = new Date(lastActivity.timestamp);
-          // si la última actividad es posterior a la guardada, no usar localStorage
-          if (lastUpdated > lastSaved) {
-            localStorage.removeItem(localStorageKey);
-            payload = {isInLocalStorage: false, data: {} as fetchProductsPayload};
-          } else {
-            payload = {isInLocalStorage: true, data: parsedData.data};
-          }
+        const lastSaved = new Date(parsedData.timestamp).getTime();
+        const now = Date.now();
+
+        if (now - lastSaved <= TTL_MS) {
+          payload = { isInLocalStorage: true, data: parsedData.data };
         } else {
-          // si no hay actividad, asumir que los datos están vigentes
-          payload = {isInLocalStorage: true, data: parsedData.products};
+          console.log("Activity expired, checking for updates...");
+          const checkLastActivity = await fetch(`/api/last-activity`);
+          const activityBody = await checkLastActivity.json();
+          if (activityBody.lastActivity?.status === 200 && activityBody.lastActivity.response.length) {
+            const lastActivity = activityBody.lastActivity.response[0];
+            const lastSaved = new Date(parsedData.timestamp);
+            const lastUpdated = new Date(lastActivity.timestamp);
+            // si la última actividad es posterior a la guardada, no usar localStorage
+            if (lastUpdated > lastSaved) {
+              localStorage.removeItem(localStorageKey);
+              payload = {isInLocalStorage: false, data: {} as fetchProductsPayload};
+            } else {
+              payload = {isInLocalStorage: true, data: parsedData.data};
+            }
+          } else {
+            // si no hay actividad, asumir que los datos están vigentes
+            payload = {isInLocalStorage: true, data: parsedData.products};
+          }
         }
       }
       
       if (!payload.isInLocalStorage) {
         console.log("Fetching products from API...");
-        const res = await fetch(`/api/products?locale=${locale}`, {
-          cache: "no-store"
-        });
+        const res = await fetch(`/api/products?locale=${locale}`);
         if (res.ok) {
           const body = await res.json();
           if (body.products?.status === 200 && body.products.response) {

@@ -27,8 +27,6 @@ export default function ProductList(props:viewData){
   const t = useTranslations("products");
   const { products, cartSettings } = useCatalogContext();
 
-  const url = cartSettings.dbSource === "mock" ? "" : storagePath;
-
   const determineProductsToLoad = useCallback(() => {
     const width = window.innerWidth;
     if (width <= 767) return 7;
@@ -74,12 +72,12 @@ export default function ProductList(props:viewData){
         if (nextProducts.length > 0 && hasMoreProducts || currentIndex == 0) {
           const initProducts = nextProducts.map((product) => (
             <div key={"product-" + product.mainSku} className='flex flex-col items-center gap-2 size-full'>
-              <Link href={"/catalog/product/" + product.mainSku} className="m-1 pb-3 size-11/12">
+              <Link href={"/catalog/product/" + product.mainSku} prefetch={false} className="m-1 pb-3 size-11/12">
                 <div className='relative grow-1'>
                   {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartSettings.mainCurrency}. ${product.discount.value}`}`}</p>)}
                   <div className="relative w-full aspect-square overflow-hidden rounded-sm">
                     <Image
-                      src={url + product.thumbnail}
+                      src={storagePath + product.thumbnail}
                       alt={product.name}
                       fill
                       className="object-cover"

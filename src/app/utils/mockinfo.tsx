@@ -44,6 +44,10 @@ export const mockSales: sale[] = [
   
 ];
 
+export const mockSpecials: sale[] = [
+  
+];
+
 export const mockActivity: activity_logs[] = [
   {
     id: "id_1",

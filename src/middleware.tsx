@@ -28,6 +28,29 @@ async function verifyJwtEdge(token: string | null) {
   }
 }
 
+// Helper para inspeccionar si una Response proviene de rewrite (varios headers posibles)
+function isRewriteResponse(res: Response | NextResponse | null) {
+  if (!res) return false;
+  try {
+    // distintos nombres que Next/edge puede añadir — revisa cuales aparecen en tu entorno
+    const headers = (res as any).headers;
+    if (!headers) return false;
+    const candidates = [
+      'x-middleware-rewrite',
+      'x-nextjs-rewrite',
+      'x-middleware-subrequest',
+      'x-nextjs-cache'
+    ];
+    for (const h of candidates) {
+      if (typeof headers.get === 'function' && headers.get(h)) return true;
+      if ((headers as any)[h]) return true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -94,7 +117,21 @@ export async function middleware(req: NextRequest) {
   }
 
   // 2) Resto: intl
-  return nextIntlMiddleware(req);
+
+  const locales = Array.isArray((routing as any).locales) ? (routing as any).locales : ['en','es'];
+
+  const hasLocalePrefix = locales.some((l: string) =>
+    pathname === `/${l}` || pathname.startsWith(`/${l}/`)
+  );
+
+  if (hasLocalePrefix) {
+    // ya está localizada — no necesitamos que next-intl haga rewrites
+    return NextResponse.next();
+  }
+  
+  const res = await nextIntlMiddleware(req);
+
+  return res;
 }
 
 export const config = {

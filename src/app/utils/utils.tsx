@@ -17,7 +17,8 @@ export const dbCollections = {
   payment: "payment_methods",
   giftOptions: "gift_options",
   users: "users",
-  settings: "settings"
+  settings: "settings",
+  productsSpecials: "products_specials"
 }
 
 // Firebase storage path for product images
