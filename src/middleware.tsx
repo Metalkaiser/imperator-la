@@ -28,29 +28,6 @@ async function verifyJwtEdge(token: string | null) {
   }
 }
 
-// Helper para inspeccionar si una Response proviene de rewrite (varios headers posibles)
-function isRewriteResponse(res: Response | NextResponse | null) {
-  if (!res) return false;
-  try {
-    // distintos nombres que Next/edge puede añadir — revisa cuales aparecen en tu entorno
-    const headers = (res as any).headers;
-    if (!headers) return false;
-    const candidates = [
-      'x-middleware-rewrite',
-      'x-nextjs-rewrite',
-      'x-middleware-subrequest',
-      'x-nextjs-cache'
-    ];
-    for (const h of candidates) {
-      if (typeof headers.get === 'function' && headers.get(h)) return true;
-      if ((headers as any)[h]) return true;
-    }
-  } catch (e) {
-    // ignore
-  }
-  return false;
-}
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 

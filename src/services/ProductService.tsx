@@ -4,7 +4,6 @@ export interface ProductService {
   getAllProducts(): Promise<appResponse>;
   getActiveProducts(): Promise<appResponse>;
   getTopProducts(): Promise<appResponse>;
-  getProductSpecials(): Promise<appResponse>;
   getProductById(id: string): Promise<appResponse>;
   updateProduct(product: productProps): Promise<appResponse>;
   deleteProduct(id: string | number): Promise<appResponse>;

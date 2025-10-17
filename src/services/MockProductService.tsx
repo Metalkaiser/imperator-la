@@ -6,8 +6,7 @@ import {
   mockSales as mutableSales,
   paymentMethods as mutablePays,
   shippingMethods as mutableShips,
-  mockActivity as mutableActivity,
-  mockSpecials as mutableSpecials,
+  mockActivity as mutableActivity
 } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
 
@@ -31,10 +30,6 @@ export class MockProductService implements ProductService {
     return activeProds.length ?
     {code: "success", response: activeProds , status: 200} :
     {code: "conection-failed", response: null , status: 503}
-  }
-
-  async getProductSpecials(): Promise<appResponse> {
-    return {code: "success", response: mutableSpecials, status: 200}
   }
 
   async getTopProducts(): Promise<appResponse> {
