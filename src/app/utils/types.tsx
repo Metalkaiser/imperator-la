@@ -189,3 +189,5 @@ export type activity_logs = {
 export type NewActivityLog = Omit<activity_logs, "id" | "timestamp">;
 
 export type authResult = { success: boolean; message: string; user?: User };
+
+export type NewProduct = Omit<productProps, "id">;

@@ -1,5 +1,7 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, activity_logs, NewActivityLog } from '@/app/utils/types';
+import {v4 as uuidv4} from 'uuid';
+import admin from '@/app/utils/firebaseAdmin';
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
 import {
   collection,
@@ -9,11 +11,9 @@ import {
   orderBy,
   doc,
   getDoc,
-  updateDoc,
   addDoc,
   limit as limitFn,
   runTransaction,
-  serverTimestamp,
   startAfter
 } from "firebase/firestore";
 import { dbCollections } from '@/app/utils/utils';
@@ -26,7 +26,6 @@ const paymentCollection = collection(db, dbCollections.payment);
 const shippingCollection = collection(db, dbCollections.shipping);
 const ordersCollection = collection(db, dbCollections.orders);
 const giftOptionsCollection = collection(db, dbCollections.giftOptions);
-const usersCollection = collection(db, dbCollections.users);
 const logsCollection = collection(db, dbCollections.activity_logs);
 
 export class FirebaseProductService implements ProductService {
@@ -51,20 +50,25 @@ export class FirebaseProductService implements ProductService {
     });
   }
 
-  async getProductById(id: string): Promise<appResponse> {
+  async getItemById(id: string, collection: string): Promise<appResponse> {
     return handleFirebase(async () => {
-      const docRef = doc(db, dbCollections.products, id);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) throw new Error("Product not found");
+      const col = admin.firestore().collection(collection);
+      const docRef = col.doc(id);
+      const docSnap = await docRef.get();
+      if (!docSnap.exists) throw new Error("Item not found");
       return { id: docSnap.id, ...docSnap.data() };
     });
   }
 
-  async updateProduct(product: productProps): Promise<appResponse> {
+  async updateProduct(id: string | number, product: Partial<productProps>): Promise<appResponse> {
     return handleFirebase(async () => {
-      const productDocRef = doc(db, dbCollections.products, product.id as string);
-      await updateDoc(productDocRef, { ...product });
-      return product;
+      const productsCol = admin.firestore().collection(dbCollections.products);
+      const docRef = productsCol.doc(id.toString());
+      const docSnap = await docRef.get();
+      const now = Date.now();
+      if (!docSnap.exists) throw new Error("Product not found");
+      await docRef.set({ ...product, updatedAt: now });
+      return { id: docSnap.id, ...docSnap.data() };
     });
   }
 
@@ -148,15 +152,17 @@ export class FirebaseProductService implements ProductService {
 
   async getOrders(): Promise<appResponse> {
     return handleFirebase(async () => {
-      const querySnapshot = await getDocs(ordersCollection);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const ordersCol = admin.firestore().collection(dbCollections.orders);
+      const snap = await ordersCol.get();
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     });
   }
 
   async getUsers(): Promise<appResponse> {
     return handleFirebase(async () => {
-      const querySnapshot = await getDocs(usersCollection);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const usersCol = admin.firestore().collection(dbCollections.users);
+      const snap = await usersCol.get();
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     });
   }
 
@@ -184,30 +190,69 @@ export class FirebaseProductService implements ProductService {
     });
   }
 
-  async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
+  async setActivityLog(data: NewActivityLog): Promise<appResponse> {
     const timestamp = Date.now();
+    const newLog = { ...data, timestamp: timestamp };
 
-    const colRef = collection(db, dbCollections.activity_logs);
-    const docRef = await addDoc(colRef, {
-      ...data,
-      timestamp,                  // epoch ms
-      serverTimestamp: serverTimestamp(), // opcional
+    return handleFirebase(async () => {
+      const logsCol = admin.firestore().collection(dbCollections.activity_logs);
+      const docRef = await logsCol.add({
+        ...newLog
+      });
+      return { id: docRef.id, ...newLog };
     });
-
-    return {
-      id: docRef.id,
-      ...data,
-      timestamp,
-    };
   }
 
   async deleteProduct(id: string): Promise<appResponse> {
     return handleFirebase(async () => {
-      const docRef = doc(db, dbCollections.products, id);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) throw new Error("Product not found");
-      updateDoc(docRef, {isDeleted: true, status: 2});
+      const productsCol = admin.firestore().collection(dbCollections.products);
+      const docRef = productsCol.doc(id);
+      const docSnap = await docRef.get();
+      if (!docSnap.exists) throw new Error("Product not found");
+      await docRef.update({ isDeleted: true, status: 2 });
       return { id: docSnap.id, ...docSnap.data() };
+    });
+  }
+
+  async uploadImage(file: File, destPath: string): Promise<{ok: boolean; url?: string; error?: string}> {
+    try {
+      // 1) convertir File -> Buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+  
+      // 2) obtener bucket y file handle
+      const bucket = admin.storage().bucket(); // usa storageBucket configurado en admin.initializeApp
+      const remoteFile = bucket.file(destPath); // sin slash inicial
+  
+      // 3) generar token para url de descarga pública estilo firebase
+      const token = uuidv4();
+  
+      // 4) subir (save) y setear metadata con token
+      await remoteFile.save(buffer, {
+        metadata: {
+          contentType: (file as any).type || "application/octet-stream",
+          metadata: {
+            firebaseStorageDownloadTokens: token,
+          },
+        },
+        // opcional: gzip: true
+      });
+  
+      // 5) construir la URL pública con token (igual que la que genera Firebase console)
+      const url = `${encodeURIComponent(destPath)}?alt=media&token=${token}`.replace("products", "");
+  
+      return { ok: true, url };
+    } catch (err: any) {
+      console.error("processAndUploadServer error:", err);
+      return { ok: false, error: String(err?.message ?? err) };
+    }
+  }
+
+  async createProduct(product: NewProduct): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const col = admin.firestore().collection(dbCollections.products);
+      const docRef = await col.add(product);
+      return { response: docRef.id };
     });
   }
 

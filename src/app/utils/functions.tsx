@@ -5,7 +5,7 @@
 * These functions include string manipulation, session management, and other helper functions.
 */
 
-/*
+/**
 * Function to capitalize the first letter of a string
 * This function takes a string as input and returns the string with the first letter capitalized
 * and the rest of the string in lowercase.
@@ -13,11 +13,11 @@
 * @param item - The string to be capitalized
 * @returns {string} - The capitalized string
 */
-export const capitalize = (item:string) => {
+export const capitalize = (item:string): string => {
   return item.charAt(0).toUpperCase() + item.slice(1).toLowerCase();
 }
 
-/*
+/**
 * Function to toggle the visibility of a side menu
 * This function takes a menu identifier as input and toggles the visibility of the corresponding side menu.
 * The menu can be either "Menu" or another identifier.
@@ -62,7 +62,7 @@ export function getRandomItems<T>(array: T[], count: number): T[] {
  *   - value: The discount amount (percentage or fixed value).
  * @returns The discounted price as a string with adjusted precision.
 */
-export function getDiscountedPrice(price:number, discount:{type:number; value:number}) {
+export function getDiscountedPrice(price:number, discount:{type:number; value:number}): string {
   let discountPrice = 0;
   let priceDiscountString = "";
 
@@ -81,14 +81,21 @@ export function getDiscountedPrice(price:number, discount:{type:number; value:nu
   return priceDiscountString;
 }
 
-export function capitalizeName(name:string) {
+/**
+ * 
+ * Capitalizes the first letter of each word in a given string.
+ * 
+ * @param name The string to capitalize each word
+ * @returns A string with each word capitalized
+ */
+export function capitalizeName(name:string): string {
   return name.split(" ").map((s) => capitalize(s)).join(" ");
 }
 
 export type DiffItem = {
-  path: string;      // e.g. "variants[1].stock[0].quantity"
-  a: any;            // valor en objeto A
-  b: any;            // valor en objeto B
+  item: string;      // e.g. "variants[1].stock[0].quantity"
+  oldValue: any;            // valor en objeto A
+  newValue: any;            // valor en objeto B
 };
 
 export type DiffOptions = {
@@ -109,18 +116,30 @@ function equalPrimitives(a: any, b: any) {
   return Object.is(a, b);
 }
 
+/**
+ * 
+ * Compares two objects and returns an array of differences between them.
+ * It recursively checks properties and nested objects/arrays, and records any differences found.
+ * 
+ * @param a The first object to compare
+ * @param b The second object to compare (new version)
+ * @param opts Options for diffing
+ * @returns {DiffItem[]} - An array of DiffItem representing the differences between the two objects
+ */
+
 export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] {
+  if (a === b) return []; // shortcut
   const { ignoreKeys = ["createdAt", "updatedAt", "deletedAt"], arrayKeyMap = {}, maxDepth = 50 } = opts;
   const diffs: DiffItem[] = [];
   const seen = new WeakSet<any>();
 
-  function pushDiff(path: string, va: any, vb: any) {
-    diffs.push({ path, a: va, b: vb });
+  function pushDiff(item: string, va: any, vb: any) {
+    diffs.push({ item, oldValue: va, newValue: vb });
   }
 
-  function walk(va: any, vb: any, path = "", depth = 0) {
+  function walk(va: any, vb: any, item = "", depth = 0) {
     if (depth > maxDepth) {
-      pushDiff(path || ".", va, vb);
+      pushDiff(item || ".", va, vb);
       return;
     }
 
@@ -129,7 +148,7 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
 
     // primitives
     if (isPrimitive(va) || isPrimitive(vb)) {
-      if (!equalPrimitives(va, vb)) pushDiff(path || ".", va, vb);
+      if (!equalPrimitives(va, vb)) pushDiff(item || ".", va, vb);
       return;
     }
 
@@ -137,7 +156,7 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
     if (typeof va === "object" && va !== null) {
       if (seen.has(va)) {
         // si ambos son mismos objeto circular, nada que comparar
-        if (va !== vb) pushDiff(path || ".", va, vb);
+        if (va !== vb) pushDiff(item || ".", va, vb);
         return;
       }
       seen.add(va);
@@ -150,7 +169,7 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
 
       // decide si hay key-based matching para esta ruta (path puede contener prefijo)
       // buscaremos la coincidencia por la "ruta base" (sin indices)
-      const basePath = path.replace(/\[\d+\]/g, ""); // ej "variants[0].stock" -> "variants.stock"
+      const basePath = item.replace(/\[\d+\]/g, ""); // ej "variants[0].stock" -> "variants.stock"
       const keyForThis = Object.entries(arrayKeyMap).find(([k]) => basePath.endsWith(k))?.[1];
 
       if (keyForThis) {
@@ -165,7 +184,7 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
         for (const k of allKeys) {
           const itemA = mapA.get(k);
           const itemB = mapB.get(k);
-          const subPath = path ? `${path}[${String(k)}]` : `[${String(k)}]`;
+          const subPath = item ? `${item}[${String(k)}]` : `[${String(k)}]`;
           if (itemA === undefined) pushDiff(subPath, undefined, itemB);
           else if (itemB === undefined) pushDiff(subPath, itemA, undefined);
           else walk(itemA, itemB, subPath, depth + 1);
@@ -174,7 +193,7 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
         // comparar por índice
         const length = Math.max(arrA.length, arrB.length);
         for (let i = 0; i < length; i++) {
-          const subPath = `${path}[${i}]`;
+          const subPath = `${item}[${i}]`;
           if (i >= arrA.length) pushDiff(subPath, undefined, arrB[i]);
           else if (i >= arrB.length) pushDiff(subPath, arrA[i], undefined);
           else walk(arrA[i], arrB[i], subPath, depth + 1);
@@ -187,7 +206,7 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
     const keys = new Set<string>([...Object.keys(va ?? {}), ...Object.keys(vb ?? {})]);
     for (const key of keys) {
       if (ignoreKeys.includes(key)) continue;
-      const subPath = path ? `${path}.${key}` : key;
+      const subPath = item ? `${item}.${key}` : key;
       const hasA = va !== undefined && Object.prototype.hasOwnProperty.call(va, key);
       const hasB = vb !== undefined && Object.prototype.hasOwnProperty.call(vb, key);
 
@@ -209,7 +228,144 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
   return diffs;
 }
 
-export function checkMime(file: File) {
-  if (file.type !== "image/webp") return false;
-  return true;
+/**
+ * 
+ * Checks if the MIME type of a given file is "image/webp".
+ * @param file The file to check the MIME property
+ * @returns {boolean} - True if MIME is webp. False otherwise.
+ */
+export function checkMime(file: File): boolean {
+  return file.type === "image/webp";
+}
+
+/**
+ * 
+ * Retrieves the value of a specified cookie from the provided cookie header string.
+ * @param cookieHeader The cookie header string
+ * @param name The name of the cookie to retrieve
+ * @returns The value of the specified cookie, or null if not found
+ */
+export function getCookieValue(cookieHeader: string | null, name: string) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+type VariantInput = {
+  color?: string;
+  sku?: string;
+  image?: string | null;
+  stock?: { name?: string; quantity?: number | string }[];
+};
+
+/**
+ * 
+ * Validates an array of product variants against specific rules.
+ * @param variants The array of variant objects to validate
+ * @param mainSku The main SKU to compare against
+ * @param opts Optional settings for validation
+ * @returns An object indicating whether validation passed and the parsed variants or an error message
+ */
+export function validateVariants(
+  variants: VariantInput[] | null | undefined,
+  mainSku: string,
+  opts?: {
+    skuDiffChars?: number; // cuántos chars finales pueden diferir (por defecto 1)
+    requireNonEmptyImage?: boolean; // exige image no vacío
+    disallowSuffixEqualMain?: boolean; // evita suffix igual al mainSku suffix
+  }
+): { ok: true; parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] }
+  | { ok: false; message: string } {
+  const skuDiffChars = Math.max(0, Math.floor(opts?.skuDiffChars ?? 1));
+  const requireNonEmptyImage = opts?.requireNonEmptyImage ?? true;
+  const disallowSuffixEqualMain = opts?.disallowSuffixEqualMain ?? true;
+
+  if (!mainSku || typeof mainSku !== "string" || !mainSku.trim()) {
+    return { ok: false, message: "mainSku inválido" };
+  }
+  const main = mainSku.trim();
+
+  // permitir null/undefined si no quieres obligarlo
+  if (variants === null || variants === undefined) {
+    return { ok: false, message: "Las variantes son obligatorias" };
+  }
+
+  if (!Array.isArray(variants)) {
+    return { ok: false, message: "variants debe ser un array" };
+  }
+
+  if (main.length <= skuDiffChars) {
+    return { ok: false, message: `mainSku debe tener más de ${skuDiffChars} caracteres` };
+  }
+  const prefix = main.slice(0, main.length - skuDiffChars);
+  const mainSuffix = main.slice(main.length - skuDiffChars);
+
+  const seenSuffix = new Set<string>();
+  const parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] = [];
+
+  for (let i = 0; i < variants.length; i++) {
+    const v = variants[i];
+    if (typeof v !== "object" || v === null) {
+      return { ok: false, message: `La variante en índice ${i} debe ser un objeto` };
+    }
+
+    const rawSku = String(v.sku ?? "").trim();
+    if (!rawSku) return { ok: false, message: `La variante ${i} no tiene sku` };
+
+    // verificar longitud y prefijo/suffix según regla
+    if (rawSku.length !== main.length) {
+      return { ok: false, message: `La variante ${i} sku debe tener la misma longitud que el mainSku (${main.length} caracteres)` };
+    }
+    const skuPrefix = rawSku.slice(0, rawSku.length - skuDiffChars);
+    const skuSuffix = rawSku.slice(rawSku.length - skuDiffChars);
+
+    if (skuPrefix !== prefix) {
+      return { ok: false, message: `La variante ${i} tiene prefijo distinto. Se esperaba prefijo "${prefix}"` };
+    }
+
+    // patrón simple para suffix (alfanumérico). Ajusta si necesitas solo dígitos u otro patrón.
+    if (!/^[A-Za-z0-9]+$/.test(skuSuffix)) {
+      return { ok: false, message: `La variante ${i} suffix "${skuSuffix}" no cumple el patrón permitido` };
+    }
+
+    if (disallowSuffixEqualMain && skuSuffix === mainSuffix && variants.length > 1) {
+      return { ok: false, message: `La variante ${i} no puede tener el mismo suffix que el mainSku` };
+    }
+    if (seenSuffix.has(skuSuffix)) {
+      return { ok: false, message: `Suffix duplicado "${skuSuffix}" en variante ${i}` };
+    }
+    seenSuffix.add(skuSuffix);
+
+    // image (si debe ser no vacío)
+    const image = v.image === null ? null : String(v.image ?? "");
+    if (requireNonEmptyImage && (!image || image.trim() === "")) {
+      return { ok: false, message: `La variante ${i} debe tener una miniatura (image)` };
+    }
+
+    // stock: debe ser array no vacío (según tu regla) y cada item válido
+    if (!Array.isArray(v.stock) || v.stock.length === 0) {
+      return { ok: false, message: `La variante ${i} debe tener stock declarado` };
+    }
+    const stockNormalized: { name: string; quantity: number }[] = [];
+    for (let j = 0; j < v.stock.length; j++) {
+      const st = v.stock[j] as any;
+      if (typeof st !== "object" || st === null) {
+        return { ok: false, message: `Stock inválido en variante ${i} índice ${j}` };
+      }
+      const name = String(st.name ?? "").trim();
+      if (!name) return { ok: false, message: `La variante ${i} stock[${j}] debe tener un nombre` };
+      const q = Number(st.quantity);
+      if (!Number.isFinite(q) || q < 0 || !Number.isInteger(q)) {
+        return { ok: false, message: `Formato de stock incorrecto en variante ${i} stock[${j}]` };
+      }
+      stockNormalized.push({ name, quantity: q });
+    }
+
+    // color: normalizar a string (puede quedar vacío si lo permites)
+    const color = String(v.color ?? "").trim();
+
+    parsed.push({ color, sku: rawSku, image: image === "" ? null : image, stock: stockNormalized });
+  }
+
+  return { ok: true, parsed };
 }

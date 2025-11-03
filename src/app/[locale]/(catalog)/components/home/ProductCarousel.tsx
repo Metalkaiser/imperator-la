@@ -38,7 +38,7 @@ export default function ProductCarousel({ title, type }: { title: string; type?:
 
     // now that we're *on the client*, we can safely shuffle
     setRenderArray(getRandomItems(base, 6));
-  }, [title, type, products, topProducts]);
+  }, [title, type, products, topProducts, pathname]);
 
   // …the rest remains exactly the same…
   const containerRef = useRef<HTMLDivElement>(null);

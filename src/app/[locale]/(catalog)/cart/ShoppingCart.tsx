@@ -74,7 +74,7 @@ export default function ShoppingCart() {
   ) => {
     if (!fee.status) return 0;
     const fixed = fee.fixed ?? 0;
-    const percent = fee.percentage ? (fee.percentage / 100) * base : 0;
+    const percent = fee.percentage ? (base / (1 - (fee.percentage / 100))) - base : 0;
     return parseFloat((fixed + percent).toFixed(2));
   };
 
@@ -99,10 +99,10 @@ export default function ShoppingCart() {
     [selectedGifts]
   );
   const selectedPayment = purchaseOptions.paymentMethods.find(
-    (m) => m.id === formData.payment
+      (m) => String(m.id) === String(formData.payment)
   );
   const selectedShipping = purchaseOptions.shippingMethods.find(
-    (m) => m.id === formData.shipping
+    (m) => String(m.id) === String(formData.shipping)
   );
   const shippingFee = useMemo(
     () =>

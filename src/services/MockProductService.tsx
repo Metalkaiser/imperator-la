@@ -1,11 +1,12 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, sale, activity_logs, NewActivityLog } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, sale, NewActivityLog, NewProduct } from '@/app/utils/types';
 import { 
   mockProductList as mutableProducts,
   mockTopProds as mutableTop,
   mockSales as mutableSales,
   paymentMethods as mutablePays,
   shippingMethods as mutableShips,
+  giftOptions as mutableGifts,
   mockActivity as mutableActivity
 } from '@/app/utils/mockinfo';
 import { noProductError } from '@/app/utils/utils';
@@ -37,23 +38,41 @@ export class MockProductService implements ProductService {
     return {code: "success", response: topProducts , status: 200}
   }
 
-  async getProductById(id: string | number): Promise<appResponse> {
-    const product = mutableProducts.find(p => p.id === id);
-    return product ? {code: "success", response: product , status: 200} :
-    noProductError;
+  async getItemById(id: string, collection: string): Promise<appResponse> {
+    switch (collection) {
+      case "products":
+        const product = mutableProducts.find(prod => String(prod.id) === id);
+        if (!product) return noProductError;
+        return {code: "success", response: product , status: 200}
+      default:
+        return {code: "invalid-collection", response: null , status: 400}
+    }
   }
 
-  async updateProduct(product: productProps): Promise<appResponse> {
-    return {code: "success-edit", response: product , status: 200}
+  async updateProduct(id: string | number, product: Partial<productProps>): Promise<appResponse> {
+    const existingProduct = mutableProducts.find(p => p.id === id);
+    const copyProduct = { ...existingProduct };
+    if (existingProduct === undefined) return {code: "product-not-found", response: null, status: 404}
+    
+    const index = mutableProducts.indexOf(existingProduct);
+    product.updatedAt = Date.now();
+    const updatedProduct = { ...existingProduct, ...product };
+    if (updatedProduct.status !== 2) {
+      delete updatedProduct.isDeleted;
+    }
+    if (product.discount === undefined || product.discount.value === 0) {
+      delete updatedProduct.discount;
+    }
+    mutableProducts[index] = updatedProduct;
+    return {code: "success-edit", response: copyProduct , status: 200}
   }
 
   async getCartConfigs(): Promise<appResponse> {
-    const payment = mutablePays;
-    const shipping = mutableShips;
 
     const response = {
-      paymentMethods: payment,
-      shippingMethods: shipping
+      paymentMethods: mutablePays,
+      shippingMethods: mutableShips,
+      giftOptions: mutableGifts
     }
 
     return {code: "success", response: response , status: 200}
@@ -132,12 +151,35 @@ export class MockProductService implements ProductService {
   }
   
   async deleteProduct(id: string | number): Promise<appResponse> {
-    console.log(id);
-    return notImplemented;
+    const product = mutableProducts.find(p => p.id === id);
+    if (product === undefined) return {code: "product-not-found", response: null, status: 404}
+    
+    product.status = 2;
+    product.isDeleted = true;
+    const index = mutableProducts.indexOf(product);
+    mutableProducts[index] = product;
+
+    return {code: "success", response: product, status: 200}
   }
 
   async getOrders(): Promise<appResponse> {
     return notImplemented;
+  }
+
+  async uploadImage(file: File, folder: string): Promise<{ ok: boolean; url?: string; error?: string; }> {
+    const mockUrl = `https://mockstorage.com/${folder}/${file.name}`;
+    return { ok: true, url: mockUrl };
+  }
+
+  async createProduct(product: NewProduct): Promise<appResponse> {
+    const newId = mutableProducts.length + 1;
+    const timestamp = Date.now();
+
+    const newProduct: productProps = { id: newId, ...product, createdAt: timestamp, updatedAt: timestamp };
+
+    mutableProducts.push(newProduct);
+
+    return {code: "success", response: newProduct , status: 200}
   }
 
   async getUsers(): Promise<appResponse> {
@@ -170,8 +212,18 @@ export class MockProductService implements ProductService {
     return { code: "success", response: logs, status: 200 };
   }
 
-  async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
-    console.log(data)
-    return {} as activity_logs;
+  async setActivityLog(data: NewActivityLog): Promise<appResponse> {
+    try {
+      const timestamp = Date.now();
+      const id = `log_${mutableActivity.length + 1}`;
+
+      const newLog = { ...data, timestamp: timestamp, id };
+
+      mutableActivity.push(newLog);
+
+      return {code: "success", response: newLog, status: 200}
+    } catch (error) {
+      return {code: "error", response: error, status: 500}
+    }
   }
 }

@@ -111,8 +111,8 @@ export const actionLabels = new Map<string, { label: string; color: string; badg
   ["login_failure",   { label: "Intento de login fallido",     color: "orange-600", badgeClass: "bg-orange-600 text-white" }],
 
   ["product_created", { label: "Producto creado",              color: "emerald-500", badgeClass: "bg-emerald-500 text-white" }],
-  ["product_deleted", { label: "Producto eliminado",           color: "rose-500",    badgeClass: "bg-rose-500 text-white" }],
-  ["product_edited",  { label: "Producto editado",             color: "violet-500",  badgeClass: "bg-violet-500 text-white" }],
+  ["product_delete", { label: "Producto eliminado",           color: "rose-500",    badgeClass: "bg-rose-500 text-white" }],
+  ["product_edit",  { label: "Producto editado",             color: "violet-500",  badgeClass: "bg-violet-500 text-white" }],
   ["product_bulk",    { label: "Productos editados (bulk)",    color: "purple-500",  badgeClass: "bg-purple-500 text-white" }],
 
   ["payment_added",   { label: "Pago agregado",                color: "green-600",  badgeClass: "bg-green-600 text-white" }],

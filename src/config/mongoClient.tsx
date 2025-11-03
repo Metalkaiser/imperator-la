@@ -13,8 +13,6 @@ let clientPromise: Promise<MongoClient>;
 
 // 👇 Declaramos el tipo para evitar any
 declare global {
-  // `var` porque `global` es un objeto en Node.js, no un módulo con `let`/`const`
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 

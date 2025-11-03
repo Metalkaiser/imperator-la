@@ -62,7 +62,8 @@ export const baseCatalogStructure: CategoryDefinition[] = [
     ]
   },
   { slug: "watches" },
-  { slug: "earrings" }
+  { slug: "earrings" },
+  { slug: "sets" }
 ];
 
 export const catalogLabels: {
@@ -77,7 +78,8 @@ export const catalogLabels: {
       necklaces: "collares",
       bracelets: "brazaletes",
       watches: "relojes",
-      earrings: "zarcillos"
+      earrings: "zarcillos",
+      sets: "Combos"
     },
     subcategories: {
       elegant: "elegantes",

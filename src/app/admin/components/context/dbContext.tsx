@@ -14,7 +14,7 @@ import type {
 } from "@/app/utils/types";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "../context/authContext";
-import { getShoppingCartConfig } from "@/config/shoppingCartConfig"; // ajusta import si tu ruta es distinta
+import LoadingAdmin from "../LoadingAdmin";
 
 interface AdminData {
   products: productProps[];
@@ -27,6 +27,15 @@ interface AdminData {
     shippingMethods: shippingMethod[];
     giftOptions: GiftOption[];
   };
+  cartSettings: {
+    enabled: boolean;
+    expirationDays: string;
+    sessionName: string;
+    mainCurrency: string;
+    exchangeCurrency: string;
+    exchangeRateEnabled: boolean;
+    exchangeRateType: string;
+  };
   // estados útiles
   loading: boolean;
   error?: string | null;
@@ -35,13 +44,23 @@ interface AdminData {
   // flags/permits
   canViewUsersLogs: boolean;
   canEditAll: boolean;
-  cartEnabled: boolean;
 
   // refrescos puntuales
   refreshAll: () => Promise<void>;
   refreshProducts: () => Promise<void>;
   refreshOrders: () => Promise<void>;
   refreshUsersAndLogs: () => Promise<void>;
+}
+
+interface shoppinCartSettings {
+  enabled: boolean;
+  expirationDays: string;
+  sessionName: string;
+  mainCurrency: string;
+  exchangeCurrency: string;
+  exchangeRateEnabled: boolean;
+  exchangeRateType: string;
+  dbSource: string;
 }
 
 const DBContext = createContext<AdminData | undefined>(undefined);
@@ -54,7 +73,8 @@ export const useDB = (): AdminData => {
 
 interface DBProviderProps {
   children: ReactNode;
-  locale?: string; // para decidir config de carrito,
+  locale?: string;
+  shoppinCartSettings: shoppinCartSettings;
 }
 
 /** Genéricos para respuestas de tu API */
@@ -64,7 +84,7 @@ type ProductsEndpointResponse = {
   topProductsIds: ApiResponse<topProductsProps[]>;
 };
 
-export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "default" }) => {
+export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "default", shoppinCartSettings }) => {
   const [products, setProducts] = useState<productProps[]>([]);
   const [topProducts, setTopProducts] = useState<topProductsProps[]>([]);
   const [orders, setOrders] = useState<sale[]>([]);
@@ -79,6 +99,7 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState<boolean>(false);
+  const [render, setRender] = useState<React.ReactNode>(<LoadingAdmin />);
 
   const mountedRef = useRef(true);
 
@@ -88,16 +109,6 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
   // permisos/flags basados en tus reglas:
   const canViewUsersLogs = userRole === "admin" || userRole === "viewer";
   const canEditAll = userRole === "admin";
-
-  // chequear si el carrito está activado por config
-  const cartEnabled = (() => {
-    try {
-      const cfg = getShoppingCartConfig(locale);
-      return Boolean(cfg?.shoppingCart?.enabled);
-    } catch {
-      return false;
-    }
-  })();
 
   // helper fetch genérico (usa rutas relativas)
   const fetchJson = useCallback(async <T,>(path: string): Promise<T> => {
@@ -146,7 +157,7 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
   }, [fetchProducts]);
 
   const refreshOrders = useCallback(async () => {
-    if (!cartEnabled) {
+    if (!shoppinCartSettings.enabled) {
       if (mountedRef.current) {
         setOrders([]);
         setCart({ paymentMethods: [], shippingMethods: [], giftOptions: [] });
@@ -169,9 +180,9 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
       console.error("refreshOrders error:", err);
       if (mountedRef.current) setError(String((err as FirebaseError)?.message ?? err));
     }
-  }, [cartEnabled, canEditAll, fetchCart, fetchOrders]);
+  }, [shoppinCartSettings.enabled, canEditAll, fetchCart, fetchOrders]);
 
-  // refreshUsersAndLogs: separado, evita duplicar llamadas
+    // refreshUsersAndLogs: separado, evita duplicar llamadas
   const refreshUsersAndLogs = useCallback(async () => {
     if (!canViewUsersLogs) {
       if (mountedRef.current) {
@@ -203,6 +214,7 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
 
   // refreshAll: ejecuta las tareas relevantes en paralelo, resiliente con allSettled
   const refreshAll = useCallback(async () => {
+
     setLoading(true);
     setError(null);
 
@@ -213,8 +225,8 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
       // siempre refresh products
       tasks.push(fetchProducts());
 
-      // orders/cart si cartEnabled
-      if (cartEnabled) {
+      // orders/cart si shoppinCartSettings.enabled
+      if (shoppinCartSettings.enabled) {
         tasks.push(fetchOrders());
         tasks.push(fetchCart());
       }
@@ -247,7 +259,7 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
       }
 
       // orders + cart
-      if (cartEnabled) {
+      if (shoppinCartSettings.enabled) {
         const ordersSett = results[idx++];
         const cartSett = results[idx++];
 
@@ -294,9 +306,10 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
     } finally {
       if (mountedRef.current) {
         setLoading(false);
+        setRender(children)
       }
     }
-  }, [cartEnabled, canViewUsersLogs, canEditAll, fetchProducts, fetchOrders, fetchCart, fetchLogs, fetchUsers]);
+  }, [shoppinCartSettings.enabled, canViewUsersLogs, canEditAll, fetchProducts, fetchOrders, fetchCart, fetchLogs, fetchUsers]);
 
 
   useEffect(() => {
@@ -315,17 +328,17 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
     logs,
     orders,
     cart,
+    cartSettings: shoppinCartSettings,
     loading,
     error,
     ready,
     canViewUsersLogs,
     canEditAll,
-    cartEnabled,
     refreshAll,
     refreshProducts,
     refreshOrders,
     refreshUsersAndLogs,
   };
 
-  return <DBContext.Provider value={value}>{children}</DBContext.Provider>;
+  return <DBContext.Provider value={value}>{render}</DBContext.Provider>;
 };

@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { appResponse, productProps, topProductsProps, PaymentMethod, cartItem, saleData, NewActivityLog, activity_logs } from '@/app/utils/types';
+import { appResponse, productProps, topProductsProps, PaymentMethod, cartItem, saleData, NewActivityLog, activity_logs, NewProduct } from '@/app/utils/types';
 import { getDb } from '@/config/mongoClient';
 import { dbCollections, noProductError } from '@/app/utils/utils';
 import { MongoError } from 'mongodb';
@@ -66,12 +66,27 @@ export class MongoProductService implements ProductService {
     }
   }
 
-  async updateProduct(product: productProps): Promise<appResponse> {
+  async getItemById(id: string, collection: string): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const dbCollection = db.collection(collection);
+      const item = await dbCollection.findOne({ id });
+      if (item) {
+        return {code: "success", response: item , status: 200};
+      }
+      return { code: "not-found", response: null, status: 404 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return {code: "unknown", response: null, status: 500};
+    }
+  }
+
+  async updateProduct(id: string | number, product: Partial<productProps>): Promise<appResponse> {
     try {
       const db = await getDb();
       const collection = db.collection<productProps>(dbCollections.products);
       const result = await collection.updateOne(
-        { id: product.id },
+        { id: id },
         { $set: product }
       );
 
@@ -84,6 +99,11 @@ export class MongoProductService implements ProductService {
       console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
     }
+  }
+
+  async uploadImage(file: File, folder: string): Promise<{ ok: boolean; url?: string; error?: string; }> {
+    console.log(file, folder);
+    return { ok: false, error: "Not implemented" };
   }
 
   async getCartConfigs(): Promise<appResponse> {
@@ -107,8 +127,20 @@ export class MongoProductService implements ProductService {
   }
 
   async deleteProduct(id: string | number): Promise<appResponse> {
-    console.log(id);
-    return notImplemented;
+    try {
+      const db = await getDb();
+      const collection = db.collection<productProps>(dbCollections.products);
+      const result = await collection.deleteOne({ id });
+
+      if (result.deletedCount === 0) {
+        return { code: "not-found", response: null, status: 404 };
+      }
+
+      return {code: "success", response: null , status: 200};
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return {code: "unknown", response: null, status: 500};
+    }
   }
 
   async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
@@ -124,13 +156,62 @@ export class MongoProductService implements ProductService {
     return notImplemented;
   }
 
+  async createProduct(product: NewProduct): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection(dbCollections.products);
+      const result = await collection.insertOne(product);
+
+      if (result.insertedId) {
+        return {code: "success", response: { productId: result.insertedId.toString() } , status: 200};
+      }
+
+      return {code: "insertion-failed", response: null, status: 500};
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return {code: "unknown", response: null, status: 500};
+    }
+  }
+
   async getActivityLogs(options?: { limit?: number; startAfterId?: string; from?: number; to?: number; }): Promise<appResponse> {
     console.log(options);
     return notImplemented;
   }
 
-  async setActivityLog(data: NewActivityLog): Promise<activity_logs> {
-    console.log(data);
-    return {} as activity_logs;
+  async setActivityLog(data: NewActivityLog): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection(dbCollections.activity_logs);
+      const result = await collection.insertOne({
+        ...data,
+        timestamp: Date.now()
+      });
+
+      if (result.insertedId) {
+        return {code: "success", response: { logId: result.insertedId.toString() } , status: 200};
+      }
+
+      return {code: "insertion-failed", response: null, status: 500};
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return {code: "unknown", response: null, status: 500};
+    }
+  }
+
+  async migrateDB(): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      // Example migration: ensure indexes
+      const productCollection = db.collection(dbCollections.products);
+      await productCollection.createIndex({ id: 1 }, { unique: true });
+
+      const logsCollection = db.collection<activity_logs>(dbCollections.activity_logs);
+      await logsCollection.createIndex({ timestamp: -1 });
+
+      return {code: "success", response: null , status: 200};
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return {code: "unknown", response: null, status: 500};
+    }
   }
 }
