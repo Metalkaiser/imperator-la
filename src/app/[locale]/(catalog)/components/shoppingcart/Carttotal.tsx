@@ -54,8 +54,9 @@ export default function Carttotal ({
 }: Props) {
   const { cartSettings } = useCatalogContext();
   const handleClick = async () => {
+    const cartFinal = purchaseParams.item.filter(item => item.qt > 0 );
     const wasConfirmed = await showCheckoutModal({
-      cart: purchaseParams.item,
+      cart: cartFinal,
       payment: selectedParams.selectedPayment!,
       shipping: selectedParams.selectedShipping!,
       modalWidth: modalWidth,
@@ -63,6 +64,7 @@ export default function Carttotal ({
       total: amounts.total,
       selectedGifts: selectedParams.selectedGifts,
       mainCurrency: cartSettings.mainCurrency,
+      exchangeCurrency: cartSettings.exchangeCurrency,
       tPay: functions.tPay,
       tShip: functions.tShip,
       tModal: functions.tModal,

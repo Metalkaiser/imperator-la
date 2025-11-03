@@ -7,7 +7,7 @@ import Catmenu from "./Catmenu";
 
 export default function Sidemenu ({type}: {type:string}) {
 
-  const { catIndexes, subCatIndexes} = useCatalogContext();
+  const { catIndexes, subCatIndexes } = useCatalogContext();
   let content = <></>;
   const location = type === "Menu" ? "-left-full" : "-right-full";
 

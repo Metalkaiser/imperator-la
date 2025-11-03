@@ -26,7 +26,7 @@ export default function EditProduct({ id }: { id?: string }) {
   const [mainSku, setMainSku] = useState("");
   const [price, setPrice] = useState<number | "">("");
   const [status, setStatus] = useState<number>(1);
-  const [discount, setDiscount] = useState<Discount | undefined>(undefined);
+  const [discount, setDiscount] = useState<Discount | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
 
   // resolvedId: preferimos prop `id`, luego params, luego fallback window (solo en cliente)
@@ -76,7 +76,7 @@ export default function EditProduct({ id }: { id?: string }) {
         setMainSku(found.mainSku ?? "");
         setPrice(typeof found.price !== "undefined" ? Number(found.price) : "");
         setStatus(typeof found.status !== "undefined" ? Number(found.status) : 1);
-        setDiscount(found.discount ?? undefined);
+        setDiscount(found.discount ?? null);
         setVariants(Array.isArray(found.variants) ? found.variants : []);
         setLoading(false);
       } else {
@@ -152,7 +152,7 @@ export default function EditProduct({ id }: { id?: string }) {
   const handleSave = async () => {
     if (!validate() || !resolvedId) return;
 
-    const payload: Partial<productProps> = {
+    const payload = {
       name: name.trim(),
       description: description,
       mainSku: mainSku.trim(),
@@ -176,7 +176,6 @@ export default function EditProduct({ id }: { id?: string }) {
         const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
         throw new Error(err.message || "Error al guardar");
       }
-      //const result = await res.json();
       await Swal.fire("Guardado", "Producto actualizado correctamente.", "success");
       await refreshProducts();
       router.push("/admin/inventory");
@@ -253,7 +252,7 @@ export default function EditProduct({ id }: { id?: string }) {
               }
               onChange={(e) => {
                 const v = e.target.value;
-                if (v === "") setDiscount(undefined);
+                if (v === "") setDiscount(null);
                 else setDiscount({ type: Number(v), value: discount?.value ?? 0 });
               }}
               className="border rounded px-2 py-1 w-3/5 md:w-40"
@@ -263,7 +262,7 @@ export default function EditProduct({ id }: { id?: string }) {
               <option value="1">Fijo</option>
             </select>
 
-            {discount !== undefined && (
+            {discount !== null && (
               <input
                 type="number"
                 className="border rounded px-2 py-1 w-2/5 md:w-40"

@@ -2,6 +2,8 @@ import { webAppProps } from "@/app/utils/utils";
 import LatestOrders from "../../components/dashboard/Latestorders";
 import ActivityWidget from "../../components/dashboard/Logs";
 
+const cartEnabled = process.env.NEXT_PUBLIC_CART_ENABLED?.toLocaleLowerCase() === "true";
+
 
 export default async function DashboardPage() {
 
@@ -11,9 +13,11 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold mb-4">Panel de Administración</h1>
         <p>Bienvenido al panel de administración de {webAppProps.name}. Aquí puedes gestionar el inventario y otras configuraciones.</p>
       </article>
-      <article className="flex flex-col gap-4">
-        <LatestOrders limit={5} />
-      </article>
+      {cartEnabled && (
+        <article className="flex flex-col gap-4">
+          <LatestOrders limit={5} />
+        </article>
+      )}
       <article>
         <ActivityWidget />
       </article>

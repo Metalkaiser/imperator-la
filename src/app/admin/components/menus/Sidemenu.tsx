@@ -206,11 +206,16 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 relative rounded-full overflow-hidden">
+                {displayUser?.image && (
+                  <div className="absolute inset-0 z-99">
+                    <Image src={displayUser.image} alt={displayUser.name || "User Avatar"} fill className="object-cover" />
+                  </div>
+                )}
                 <Image src={logo_light} alt="logo" fill className="object-cover dark:hidden" />
                 <Image src={logo_dark} alt="logo" fill className="object-cover hidden dark:block" />
               </div>
               <div>
-                <p className="font-bold text-sm">{displayUser?.name ?? "Administrador"}</p>
+                <p className="font-bold text-sm">{displayUser?.name ? capitalizeName(displayUser.name) : "Administrador"}</p>
                 <p className="text-xs opacity-70">{displayUser ? rolesMap[displayUser.role] : ""}</p>
               </div>
             </div>

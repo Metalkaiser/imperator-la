@@ -45,7 +45,13 @@ export default function Carousel({ images } : {images:string[]}) {
       >
         {images.map((image, index) => (
           <div key={index} className="w-full h-full flex-shrink-0 text-white">
-            <Image key={`Image ${index + 1}`} src={storagePath + image} alt={`Image ${index + 1}`} className="object-cover w-full h-full" height={0} width={500}></Image>
+            <Image
+              unoptimized
+              key={`Image ${index + 1}`}
+              src={storagePath + image}
+              alt={`Image ${index + 1}`}
+              className="object-cover w-full h-full"
+              height={0} width={500}></Image>
           </div>
         ))}
       </div>

@@ -5,55 +5,19 @@ import { authConfigs } from "@/config/websiteConfig/authConfig";
 import admin from "@/app/utils/firebaseAdmin";
 import { dbCollections } from "@/app/utils/utils";
 import getProductService from "@/config/productServiceInstance";
-import { productProps } from "@/app/utils/types";
+import { NewActivityLog, productProps } from "@/app/utils/types";
+import { diffObjects, getCookieValue, validateVariants } from "@/app/utils/functions";
 
 /** Request body type for PATCH */
 type PatchBody = Partial<productProps>
 
-type VariantInput = {
-  color?: string;
-  sku?: string;
-  image?: string | null;
-  stock?: { name?: string; quantity?: number | string }[];
-};
-
-function getCookieValue(cookieHeader: string | null, name: string) {
-  if (!cookieHeader) return null;
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-/** buildDiff que ignora timestamps (updatedAt/createdAt/deletedAt/timestamp y sufijos "At") */
-function buildDiff(oldData: any, partial: Record<string, any>) {
-  const ignoredKeyPattern = /(updatedAt|createdAt|deletedAt|timestamp)$/i;
-  const diffs: { item: string; oldValue: any; newValue: any }[] = [];
-
-  for (const key of Object.keys(partial)) {
-    if (ignoredKeyPattern.test(key) || key.toLowerCase().includes("timestamp") || key.toLowerCase().endsWith("at")) {
-      continue;
-    }
-    const oldVal = oldData?.[key];
-    const newVal = partial[key];
-    if (oldVal === undefined && newVal === undefined) continue;
-
-    let changed = false;
-    try {
-      if (typeof oldVal === "object" || typeof newVal === "object") {
-        changed = JSON.stringify(oldVal) !== JSON.stringify(newVal);
-      } else {
-        changed = oldVal !== newVal;
-      }
-    } catch {
-      changed = oldVal !== newVal;
-    }
-
-    if (changed) diffs.push({ item: key, oldValue: oldVal, newValue: newVal });
-  }
-
-  return diffs;
-}
-
-/** Verifica token y devuelve usuario (uid, role, username). Lanza Response via throw NextResponse.json */
+/**
+ * 
+ * Verifies that the request is made by an authenticated admin user.
+ * @param req The incoming NextRequest
+ * @returns An object containing uid, userRole, and username if verification is successful
+ * @throws NextResponse with appropriate status and message if verification fails
+ */
 async function verifyAdminFromReq(req: NextRequest) {
   const cookieHeader = req.headers.get("cookie");
   const token = getCookieValue(cookieHeader, authConfigs.cookieName);
@@ -121,110 +85,6 @@ async function verifyAdminFromReq(req: NextRequest) {
   return {uid, userRole, username}
 }
 
-function validateVariants(
-  variants: VariantInput[] | null | undefined,
-  mainSku: string,
-  opts?: {
-    skuDiffChars?: number; // cuántos chars finales pueden diferir (por defecto 1)
-    requireNonEmptyImage?: boolean; // exige image no vacío
-    disallowSuffixEqualMain?: boolean; // evita suffix igual al mainSku suffix
-  }
-): { ok: true; parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] }
-  | { ok: false; message: string } {
-  const skuDiffChars = Math.max(0, Math.floor(opts?.skuDiffChars ?? 1));
-  const requireNonEmptyImage = opts?.requireNonEmptyImage ?? true;
-  const disallowSuffixEqualMain = opts?.disallowSuffixEqualMain ?? true;
-
-  if (!mainSku || typeof mainSku !== "string" || !mainSku.trim()) {
-    return { ok: false, message: "mainSku inválido" };
-  }
-  const main = mainSku.trim();
-
-  // permitir null/undefined si no quieres obligarlo
-  if (variants === null || variants === undefined) {
-    return { ok: false, message: "Las variantes son obligatorias" };
-  }
-
-  if (!Array.isArray(variants)) {
-    return { ok: false, message: "variants debe ser un array" };
-  }
-
-  if (main.length <= skuDiffChars) {
-    return { ok: false, message: `mainSku debe tener más de ${skuDiffChars} caracteres` };
-  }
-  const prefix = main.slice(0, main.length - skuDiffChars);
-  const mainSuffix = main.slice(main.length - skuDiffChars);
-
-  const seenSuffix = new Set<string>();
-  const parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] = [];
-
-  for (let i = 0; i < variants.length; i++) {
-    const v = variants[i];
-    if (typeof v !== "object" || v === null) {
-      return { ok: false, message: `La variante en índice ${i} debe ser un objeto` };
-    }
-
-    const rawSku = String(v.sku ?? "").trim();
-    if (!rawSku) return { ok: false, message: `La variante ${i} no tiene sku` };
-
-    // verificar longitud y prefijo/suffix según regla
-    if (rawSku.length !== main.length) {
-      return { ok: false, message: `La variante ${i} sku debe tener la misma longitud que el mainSku (${main.length} caracteres)` };
-    }
-    const skuPrefix = rawSku.slice(0, rawSku.length - skuDiffChars);
-    const skuSuffix = rawSku.slice(rawSku.length - skuDiffChars);
-
-    if (skuPrefix !== prefix) {
-      return { ok: false, message: `La variante ${i} tiene prefijo distinto. Se esperaba prefijo "${prefix}"` };
-    }
-
-    // patrón simple para suffix (alfanumérico). Ajusta si necesitas solo dígitos u otro patrón.
-    if (!/^[A-Za-z0-9]+$/.test(skuSuffix)) {
-      return { ok: false, message: `La variante ${i} suffix "${skuSuffix}" no cumple el patrón permitido` };
-    }
-
-    if (disallowSuffixEqualMain && skuSuffix === mainSuffix && variants.length > 1) {
-      return { ok: false, message: `La variante ${i} no puede tener el mismo suffix que el mainSku` };
-    }
-    if (seenSuffix.has(skuSuffix)) {
-      return { ok: false, message: `Suffix duplicado "${skuSuffix}" en variante ${i}` };
-    }
-    seenSuffix.add(skuSuffix);
-
-    // image (si debe ser no vacío)
-    const image = v.image === null ? null : String(v.image ?? "");
-    if (requireNonEmptyImage && (!image || image.trim() === "")) {
-      return { ok: false, message: `La variante ${i} debe tener una miniatura (image)` };
-    }
-
-    // stock: debe ser array no vacío (según tu regla) y cada item válido
-    if (!Array.isArray(v.stock) || v.stock.length === 0) {
-      return { ok: false, message: `La variante ${i} debe tener stock declarado` };
-    }
-    const stockNormalized: { name: string; quantity: number }[] = [];
-    for (let j = 0; j < v.stock.length; j++) {
-      const st = v.stock[j] as any;
-      if (typeof st !== "object" || st === null) {
-        return { ok: false, message: `Stock inválido en variante ${i} índice ${j}` };
-      }
-      const name = String(st.name ?? "").trim();
-      if (!name) return { ok: false, message: `La variante ${i} stock[${j}] debe tener un nombre` };
-      const q = Number(st.quantity);
-      if (!Number.isFinite(q) || q < 0 || !Number.isInteger(q)) {
-        return { ok: false, message: `Formato de stock incorrecto en variante ${i} stock[${j}]` };
-      }
-      stockNormalized.push({ name, quantity: q });
-    }
-
-    // color: normalizar a string (puede quedar vacío si lo permites)
-    const color = String(v.color ?? "").trim();
-
-    parsed.push({ color, sku: rawSku, image: image === "" ? null : image, stock: stockNormalized });
-  }
-
-  return { ok: true, parsed };
-}
-
 /* --------------- PATCH handler --------------- */
 export async function PATCH(req: NextRequest, ctx: any) {
   try {
@@ -238,7 +98,15 @@ export async function PATCH(req: NextRequest, ctx: any) {
       return NextResponse.json({ status: 400, message: "Empty body" }, { status: 400 });
     }
 
-    const allowed: Record<string, any> = {};
+    const dbService = await getProductService();
+    const product = await dbService.getItemById(id, dbCollections.products);
+
+    if (product.status !== 200) return NextResponse.json({ status: product.status, message: product.code }, { status: product.status });
+    
+    const prodId = { ...product.response as productProps };
+
+    const allowed: Partial<productProps> = { ...prodId };
+    delete allowed.id;
 
     if (body.price !== undefined) {
       const n = Number(body.price);
@@ -251,7 +119,7 @@ export async function PATCH(req: NextRequest, ctx: any) {
     if (body.discount !== undefined) {
       const d = body.discount;
       if (d === null) {
-        allowed.discount = null;
+        delete allowed.discount;
       } else if (
         typeof d === "object" &&
         (d.type === 0 || d.type === 1) &&
@@ -265,12 +133,11 @@ export async function PATCH(req: NextRequest, ctx: any) {
           return NextResponse.json({ status: 400, message: "Discount percent cannot be > 100" }, { status: 400 });
         }
         allowed.discount = { type: Number(d.type), value: val };
-      } else {
+      } else if (body.discount.value === 0) { delete allowed.discount } else {
         return NextResponse.json({ status: 400, message: "Invalid discount object" }, { status: 400 });
       }
-    } else {
-      //Eliminar descuento
-      allowed.discount = null;
+    } else if (body.discount === null) {
+      delete allowed.discount;
     }
 
     if (body.status !== undefined) {
@@ -279,7 +146,9 @@ export async function PATCH(req: NextRequest, ctx: any) {
         return NextResponse.json({ status: 400, message: "Invalid status (allowed: 0,1,2)" }, { status: 400 });
       }
       allowed.status = s;
-      allowed.isDeleted = s === 2 ? true : false;
+      if (s === 2) allowed.isDeleted = true;
+      else delete allowed.isDeleted;
+
     } else if (typeof body.isDeleted === "boolean") {
       allowed.isDeleted = Boolean(body.isDeleted);
       if (body.isDeleted === true && allowed.status === undefined) {
@@ -311,33 +180,26 @@ export async function PATCH(req: NextRequest, ctx: any) {
       return NextResponse.json({ status: 400, message: "No allowed fields present" }, { status: 400 });
     }
 
-    
-    const productsCol = admin.firestore().collection(dbCollections.products);
-    const prodRef = productsCol.doc(String(id));
-    const prodSnap = await prodRef.get();
-    if (!prodSnap.exists) {
-      return NextResponse.json({ status: 404, message: "Product not found" }, { status: 404 });
+    const updateRes = await dbService.updateProduct(id, allowed);
+
+    if (updateRes.status !== 200) return NextResponse.json({ status: updateRes.status, message: updateRes.code }, { status: updateRes.status });
+
+    const logData: NewActivityLog = {
+      userId: uid,
+      username: username.toLowerCase(),
+      action: "product_edit",
+      target: {
+        collection: "products",
+        item: id
+      }
     }
-    const prevData = prodSnap.data() as any;
+    const diffs = diffObjects(product.response, allowed);
 
-    allowed.updatedAt = Date.now();
-    await prodRef.update(allowed);
+    if (diffs.length) logData.diff = diffs;
 
-    try {
-      const diffs = buildDiff(prevData, allowed);
-      const logsCol = admin.firestore().collection(dbCollections.activity_logs);
-      await logsCol.add({
-        timestamp: Date.now(),
-        userId: uid,
-        username: username ?? "",
-        action: "product_edited",
-        target: { collection: "products", item: String(id) },
-        diff: diffs.map((d) => ({ item: d.item, oldValue: d.oldValue, newValue: d.newValue })),
-      });
-    } catch (logErr) {
-      console.error("Failed to write activity log:", logErr);
-    }
+    const newLog = await dbService.setActivityLog(logData);
 
+    if (newLog.status !== 200) console.warn("The new activity log could not be saved in the DB");
 
     return NextResponse.json({ status: 200, response: { id, updatedFields: allowed } }, { status: 200 });
 
@@ -364,19 +226,22 @@ export async function DELETE(req: NextRequest, ctx: any) {
       return NextResponse.json({ status: 400, message: result.response ?? "Delete operation failed" }, { status: 400 });
     }
 
-    // write log
-    try {
-      const logsCol = admin.firestore().collection(dbCollections.activity_logs);
-      await logsCol.add({
-        timestamp: Date.now(),
-        userId: uid,
-        username,
-        action: "product_deleted",
-        target: { collection: "products", item: String(id) }
-      });
-    } catch (logErr) {
-      console.error("Failed to write activity log:", logErr);
+    const logData: NewActivityLog = {
+      userId: uid,
+      username: username.toLowerCase(),
+      action: "product_delete",
+      target: {
+        collection: "products",
+        item: id
+      },
+      diff: [
+        { item: "isDeleted", oldValue: false, newValue: true }
+      ]
     }
+
+    const newLog = await dbService.setActivityLog(logData);
+
+    if (newLog.status !== 200) console.warn("The new activity log could not be saved in the DB");
 
     return NextResponse.json({ status: 200, response: { id, message: result.response ?? "Deleted" } }, { status: 200 });
   } catch (err: any) {

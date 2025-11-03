@@ -25,14 +25,8 @@ import { pdfIcon, csvIcon, xlsIcon } from "@/app/utils/svgItems";
  * - Las acciones se validan en servidor (no confiar en canEditAll del cliente).
  */
 
-function formatPrice(price: number) {
-  // asume USD; ajusta si usas otra moneda
-  const nf = new Intl.NumberFormat("es-VE", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  });
-  return nf.format(price);
+function formatPrice(price: number, currency = "USD") {
+  return `${currency} ${price.toFixed(2)}`;
 }
 
 function calcDiscountedPrice(price: number, discount?: { type: number; value: number } | undefined) {
@@ -47,7 +41,7 @@ function calcDiscountedPrice(price: number, discount?: { type: number; value: nu
 }
 
 export default function Table() {
-  const { products = [], loading = false, canEditAll = false, refreshProducts } = useDB();
+  const { products = [], loading = false, canEditAll = false, cartSettings, refreshProducts } = useDB();
   const router = useRouter();
 
   // filtros / UI state
@@ -268,8 +262,6 @@ export default function Table() {
       if (r.status === "fulfilled") {
         const res = r.value as Response;
         if (res.ok) {
-          const test = await res.json();
-          console.log(test);
           successCount++;
         } else {
           let reasonMsg = undefined;
@@ -316,8 +308,6 @@ export default function Table() {
       Swal.fire("No autorizado", "No tienes permisos para eliminar productos.", "warning");
       return;
     }
-
-    console.log(id);
 
     const confirmed = await Swal.fire({
       title: "Eliminar producto",
@@ -635,6 +625,7 @@ const exportPDF = () => {
             <tr className="text-left">
               <th className="p-2">
                 <input
+                  className="size-5"
                   type="checkbox"
                   checked={paginated.every((p) => selectedIds.has(String(p.id))) && paginated.length > 0}
                   onChange={(e) => {
@@ -676,6 +667,7 @@ const exportPDF = () => {
                   <tr key={String(p.id)} className="border-t">
                     <td className="p-2">
                       <input
+                        className="size-5"
                         type="checkbox"
                         checked={selectedIds.has(String(p.id))}
                         onChange={() => toggleSelect(p.id)}
@@ -684,10 +676,6 @@ const exportPDF = () => {
                     <td className="p-2 w-20 h-20">
                       <div className="w-12 h-12 relative rounded overflow-hidden">
                         {p.thumbnail ? (
-                          // use Image if thumbnail is an URL; else show placeholder
-                          // next/image requires known domains in next.config
-                          // fallback: img tag if next/image gives issues
-                          // eslint-disable-next-line @next/next/no-img-element
                           <Image src={storagePath + p.thumbnail} alt={p.name} width={0} height={0} className="object-cover w-full h-full"></Image>
                         ) : (
                           <div className="bg-gray-100 dark:bg-gray-800 w-full h-full flex items-center justify-center text-xs text-gray-600">No image</div>
@@ -703,11 +691,11 @@ const exportPDF = () => {
                       <div>
                         {hasDiscount ? (
                           <div className="flex flex-col">
-                            <span className="text-sm text-red-600 line-through">{formatPrice(p.price ?? 0)}</span>
-                            <span className="text-sm font-semibold">{formatPrice(discounted)}</span>
+                            <span className="text-sm text-red-600 line-through">{formatPrice(p.price ?? 0, cartSettings.mainCurrency)}</span>
+                            <span className="text-sm font-semibold">{formatPrice(discounted, cartSettings.mainCurrency)}</span>
                           </div>
                         ) : (
-                          <div className="text-sm font-semibold">{formatPrice(p.price ?? 0)}</div>
+                          <div className="text-sm font-semibold">{formatPrice(p.price ?? 0, cartSettings.mainCurrency)}</div>
                         )}
                       </div>
                     </td>

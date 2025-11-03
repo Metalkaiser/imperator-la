@@ -16,6 +16,7 @@ interface shoppinCartSettings {
   exchangeCurrency: string;
   exchangeRateEnabled: boolean;
   exchangeRateType: string;
+  dbSource: string;
 }
 
 interface CatalogContextType {
@@ -34,6 +35,11 @@ interface CatalogContextType {
 interface providerProps {
   children: React.ReactNode;
   shoppinCartSettings: shoppinCartSettings;
+}
+
+interface fetchProductsPayload {
+  products: productProps[];
+  topProductsIds?: topProductsProps[];
 }
 
 const emptyCartConfig: ShoppingCartConfig = {
@@ -57,7 +63,8 @@ const initCartSettings: shoppinCartSettings = {
   mainCurrency: "",
   exchangeCurrency: "",
   exchangeRateEnabled: false,
-  exchangeRateType: ""
+  exchangeRateType: "",
+  dbSource: ""
 }
 
 export const CatalogContext = createContext<CatalogContextType>({
@@ -80,22 +87,80 @@ export default function CatalogProvider({ children, shoppinCartSettings }: provi
   const [topProducts, setTopProducts] = useState<productProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [exchangeRate, setExchangeRate] = useState(0);
-  const [render, setRender] = useState<React.ReactNode>(<LoadingPage />)
+  const [render, setRender] = useState<React.ReactNode>(<LoadingPage />);
+
+  const localStorageKey = "imperator_info";
 
   const locale = useLocale();
 
   const cartConfig = getShoppingCartConfig(locale);
 
   const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products?locale=${locale}`, {
-        cache: "no-store"
-      });
-      const body = await res.json();
 
-      if (body.products?.status === 200) {
-        const productos = body.products.response as productProps[];
-        const prods: productProps[] = [...productos].sort((a, b) => a.category - b.category);
+    const localStorageData = localStorage.getItem(localStorageKey);
+    const TTL_MS = 1000 * 60 * 10;
+    let payload = {isInLocalStorage: false, data: {} as fetchProductsPayload};
+    
+    try {
+      if (localStorageData) {
+        console.log("Found products in localStorage, checking validity...");
+        const parsedData = JSON.parse(localStorageData);
+        const lastSaved = new Date(parsedData.timestamp).getTime();
+        const now = Date.now();
+
+        if (now - lastSaved <= TTL_MS) {
+          payload = { isInLocalStorage: true, data: parsedData.data };
+        } else {
+          console.log("Activity expired, checking for updates...");
+          const checkLastActivity = await fetch(`/api/last-activity`);
+          const activityBody = await checkLastActivity.json();
+          if (activityBody.lastActivity?.status === 200 && activityBody.lastActivity.response.length) {
+            const lastActivity = activityBody.lastActivity.response[0];
+            const lastSaved = new Date(parsedData.timestamp);
+            const lastUpdated = new Date(lastActivity.timestamp);
+            // si la última actividad es posterior a la guardada, no usar localStorage
+            if (lastUpdated > lastSaved) {
+              localStorage.removeItem(localStorageKey);
+              payload = {isInLocalStorage: false, data: {} as fetchProductsPayload};
+            } else {
+              payload = {isInLocalStorage: true, data: parsedData.data};
+            }
+          } else {
+            // si no hay actividad, asumir que los datos están vigentes
+            payload = {isInLocalStorage: true, data: parsedData.products};
+          }
+        }
+      }
+      
+      if (!payload.isInLocalStorage) {
+        console.log("Fetching products from API...");
+        const res = await fetch(`/api/products?locale=${locale}`);
+        if (res.ok) {
+          const body = await res.json();
+          if (body.products?.status === 200 && body.products.response) {
+            payload = {
+              isInLocalStorage: false,
+              data: {
+                products: body.products.response,
+                topProductsIds: body.topProductsIds?.response || []
+              }};
+            // guardar en localStorage
+            const toSave = {
+              timestamp: new Date().toISOString(),
+              data: payload.data,
+            }
+            localStorage.setItem(localStorageKey, JSON.stringify(toSave));
+          } else {
+            throw new Error("Error fetching products: " + JSON.stringify(body.products?.response || "unknown error"));
+          }
+        } else {
+          throw new Error("Network response was not ok");
+        }
+      }
+
+      if (payload.data.products) {
+        const productsResponse = payload.data.products;
+        const prods: productProps[] = [...productsResponse].sort((a, b) => a.category - b.category);
         setProducts(prods);
 
         // recalcular catIndexes y subCatIndexes
@@ -113,11 +178,12 @@ export default function CatalogProvider({ children, shoppinCartSettings }: provi
         setSubCatIndexes(newSubCatIndexes);
 
         // recomponer topProducts igual que en layout
-        const topProductsIds = body.topProductsIds?.response ?? [];
+        const topProductsIds = payload.data.topProductsIds ?? [];
         const newTopProducts = topProductsIds.map((item: topProductsProps) => {
           const product = prods.find(p => p.id === item.productId);
-          return product ? { ...item, ...product } : item;
-        });
+          //return product ? { ...item, ...product } : item;
+          return product ? product : null;
+        }).filter((item): item is productProps => item !== null);
         setTopProducts(newTopProducts);
       }
     } catch (err) {

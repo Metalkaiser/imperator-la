@@ -94,7 +94,21 @@ export async function middleware(req: NextRequest) {
   }
 
   // 2) Resto: intl
-  return nextIntlMiddleware(req);
+
+  const locales = Array.isArray((routing as any).locales) ? (routing as any).locales : ['en','es'];
+
+  const hasLocalePrefix = locales.some((l: string) =>
+    pathname === `/${l}` || pathname.startsWith(`/${l}/`)
+  );
+
+  if (hasLocalePrefix) {
+    // ya está localizada — no necesitamos que next-intl haga rewrites
+    return NextResponse.next();
+  }
+  
+  const res = await nextIntlMiddleware(req);
+
+  return res;
 }
 
 export const config = {

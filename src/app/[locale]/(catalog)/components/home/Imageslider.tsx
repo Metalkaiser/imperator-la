@@ -74,7 +74,7 @@ export default function ImageSlider() {
         setIndex(totalImgs); // Último "real"
       }, 700);
     }
-  }, [index]);
+  }, [index, isAnimating]);
 
   // Reactivar la animación cuando el index cambie manualmente
   useEffect(() => {

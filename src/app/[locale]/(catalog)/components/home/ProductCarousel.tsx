@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCatalogContext } from '../context/CatalogContext';
@@ -13,6 +14,7 @@ import { getRandomItems } from '@/app/utils/functions';
 export default function ProductCarousel({ title, type }: { title: string; type?: number[] }) {
   const t = useTranslations('productCarousel');
   const { products, topProducts } = useCatalogContext();
+  const pathname = usePathname().split('/').pop();
 
   // store your actual products here
   const [renderArray, setRenderArray] = useState<productProps[]>([]);
@@ -27,8 +29,8 @@ export default function ProductCarousel({ title, type }: { title: string; type?:
     } else if (type && type.length > 0) {
       const [cat, sub] = type;
       base = products.filter(p =>
-        sub !== undefined ? p.category === cat && p.subcategory === sub
-                           : p.category === cat
+        sub !== undefined ? p.category === cat && p.subcategory === sub && p.mainSku !== pathname
+          : p.category === cat
       );
     } else {
       base = products;
@@ -36,7 +38,7 @@ export default function ProductCarousel({ title, type }: { title: string; type?:
 
     // now that we're *on the client*, we can safely shuffle
     setRenderArray(getRandomItems(base, 6));
-  }, [title, type, products, topProducts]);
+  }, [title, type, products, topProducts, pathname]);
 
   // …the rest remains exactly the same…
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,6 +73,7 @@ export default function ProductCarousel({ title, type }: { title: string; type?:
             className="min-w-[180px] max-w-[200px] md:min-w-[220px] md:max-w-[240px] topproduct rounded-md shadow-md flex flex-col items-center flex-shrink-0"
           >
             <Image
+              unoptimized
               src={storagePath + product.thumbnail}
               alt={product.name}
               width={240}

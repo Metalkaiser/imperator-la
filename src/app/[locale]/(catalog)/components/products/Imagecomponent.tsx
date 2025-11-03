@@ -17,7 +17,6 @@ export default function ImageComponent ({product}:{product:productProps}) {
   const [activeImg, setImage] = useState(product.images[0]);
   const { cartSettings } = useCatalogContext();
 
-
   const hideLoadingImage = () => {
     const  loadingImages = document.getElementsByClassName("loadingImage") as HTMLCollectionOf<HTMLElement>;
     loadingImages[0].style.display = "none";
@@ -25,7 +24,7 @@ export default function ImageComponent ({product}:{product:productProps}) {
   }
 
   const ChangeMainImage = ({src}:ImageItem) => (
-    <Image onLoad={hideLoadingImage} className="w-5/6 max-w-[500px] max-h-[500px]" src={storagePath + src} alt="Imagen grande" height={0} width={500}></Image>
+    <Image unoptimized onLoad={hideLoadingImage} className="w-5/6 max-w-[500px] max-h-[500px]" src={storagePath + src} alt="Imagen grande" height={0} width={500}></Image>
   );
   return (
     <>

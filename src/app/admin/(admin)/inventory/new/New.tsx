@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import Image from "next/image";
-//import { useDB } from "@/app/admin/components/context/dbContext";
+import { useDB } from "@/app/admin/components/context/dbContext";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
 import { capitalize, checkMime } from "@/app/utils/functions";
 
@@ -14,7 +14,7 @@ type Discount = { type: number; value: number };
 
 export default function NewProduct() {
   const router = useRouter();
-  //const { refreshProducts } = useDB();
+  const { refreshProducts } = useDB();
 
   const [saving, setSaving] = useState(false);
 
@@ -160,8 +160,8 @@ export default function NewProduct() {
         return false;
       }
     }
-    if (checkMime(thumbnailFile)) {
-      Swal.fire("Formato inválido", "La miniatura debe estar en formato WebP.", "warning");
+    if (thumbnailFile.type !== "image/webp") {
+      Swal.fire("Formato inválido", `La miniatura debe estar en formato WebP. (${thumbnailFile.type})`, "warning");
       return false;
     }
 
@@ -236,7 +236,6 @@ export default function NewProduct() {
     variantFiles.forEach((f, idx) => {
       if (f) form.append(`variant_${idx}_image`, f, f.name);
     });
-
     try {
       setSaving(true);
       Swal.fire({ title: "Creando producto...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -245,19 +244,36 @@ export default function NewProduct() {
         credentials: "include",
         body: form, // no headers: el browser setea multipart/form-data
       });
-      Swal.close();
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
+        console.log("create failed:", err);
         throw new Error(err.message || "Error al crear producto");
       }
       const json = await res.json().catch(() => ({} as any));
-      console.log(json);
+      const newId = json?.productId;
+      if (json.productId) {
+        const logRes = await fetch("/api/admin/logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            data: {
+              action: "product_created",
+              target: {
+                collection: "products",
+                item: newId.response,
+              }
+            }
+          }),
+        });
+        if (!logRes.ok) console.warn("No se pudo registrar el log de creación de producto");
+        else console.log(await logRes.json());
+      }
+      Swal.close();
       await Swal.fire("Creado", "Producto creado correctamente.", "success");
       // refrescar / redirigir según respuesta
-      //await refreshProducts?.();
-      //const newId = json?.id ?? json?._id;
-      //if (newId) router.push(`/admin/inventory/edit/${newId}`);
-      //else router.push("/admin/inventory");
+      await refreshProducts?.();
+      if (newId) router.push(`/admin/inventory`);
     } catch (err: any) {
       console.error("create error:", err);
       Swal.fire("Error", err?.message || "No se pudo crear el producto.", "error");

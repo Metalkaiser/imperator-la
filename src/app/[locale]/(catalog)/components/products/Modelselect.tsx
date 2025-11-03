@@ -109,13 +109,15 @@ export default function Modelselect ({product}:{product:productProps}) {
             className={`relative border-gray-500 dark:border-white border-solid border-2 size-[${iconSize}px] rounded-full peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-gray-700 peer-checked:dark:outline-gray-200`}
           >
             <Image 
+              unoptimized
               src={unavailableImage}
               alt={variant.sku}
               width={iconSize}
               height={iconSize}
               className={`rounded-full object-cover absolute top-0 left-0 ${!variant.stock.reduce((sum, v) => sum + v.quantity, 0) ? "opacity-80" : "opacity-0"}`}
             />
-            <Image 
+            <Image
+              unoptimized
               src={`${storagePath}${variant.image}`}
               alt={variant.sku}
               width={iconSize}
