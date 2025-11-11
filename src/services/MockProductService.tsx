@@ -64,7 +64,7 @@ export class MockProductService implements ProductService {
       delete updatedProduct.discount;
     }
     mutableProducts[index] = updatedProduct;
-    return {code: "success-edit", response: copyProduct , status: 200}
+    return {code: "success", response: copyProduct , status: 200}
   }
 
   async getCartConfigs(): Promise<appResponse> {
@@ -167,8 +167,12 @@ export class MockProductService implements ProductService {
   }
 
   async uploadImage(file: File, folder: string): Promise<{ ok: boolean; url?: string; error?: string; }> {
-    const mockUrl = `https://mockstorage.com/${folder}/${file.name}`;
+    const mockUrl = `https://mockstorage.com/${folder}`;
     return { ok: true, url: mockUrl };
+  }
+
+  async deleteImage(url: string): Promise<{ ok: boolean; message: string; }> {
+    return { ok: true, message: `Image at ${url} deleted successfully.` };
   }
 
   async createProduct(product: NewProduct): Promise<appResponse> {

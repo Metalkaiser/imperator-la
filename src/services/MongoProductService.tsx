@@ -106,6 +106,11 @@ export class MongoProductService implements ProductService {
     return { ok: false, error: "Not implemented" };
   }
 
+  async deleteImage(url: string): Promise<{ ok: boolean; message: string; }> {
+    console.log(url);
+    return { ok: false, message: "Not implemented" };
+  }
+
   async getCartConfigs(): Promise<appResponse> {
     try {
       const db = await getDb();

@@ -112,6 +112,11 @@ export class SQLProductService implements ProductService {
     return { ok: false, error: "Not implemented" };
   }
 
+  async deleteImage(url: string): Promise<{ ok: boolean; message: string; }> {
+    console.log(url);
+    return { ok: false, message: "Not implemented" };
+  }
+
   async createProduct(product: NewProduct): Promise<appResponse> {
     try {
       const newProduct = await prisma.product.create({

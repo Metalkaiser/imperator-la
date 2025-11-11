@@ -7,6 +7,8 @@ import Image from "next/image";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
 import { capitalize, checkMime } from "@/app/utils/functions";
+import { variantsColors } from "@/app/utils/utils";
+import { Plus } from "lucide-react";
 
 type StockItem = { name: string; quantity: number };
 type Variant = { color: string; sku: string; image: string; stock: StockItem[] };
@@ -270,6 +272,7 @@ export default function NewProduct() {
         else console.log(await logRes.json());
       }
       Swal.close();
+      console.log("create success:", json);
       await Swal.fire("Creado", "Producto creado correctamente.", "success");
       // refrescar / redirigir según respuesta
       await refreshProducts?.();
@@ -300,20 +303,20 @@ export default function NewProduct() {
 
         <div className="md:col-span-2">
           <label className="block text-sm font-medium">Miniatura del producto (WEBP preferido)</label>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-2 relative size-20">
             <input
-              className="mt-1 block w-1/2 md:w-1/3 border rounded px-3 py-2"
+              className="mt-1 block border rounded px-3 py-2"
               type="file"
-              accept="image/*"
+              accept="image/webp"
               onChange={(e) => handleThumbnailChange(e.target.files?.[0] ?? null)}
             />
             {thumbnailPreview && (
               <Image
                 src={thumbnailPreview}
                 alt="thumbnail preview"
-                className="w-20 h-20 object-cover rounded"
-                width={0}
-                height={0}
+                className="rounded"
+                fill
+                objectFit="cover"
                 ></Image>
             )}
           </div>
@@ -375,13 +378,15 @@ export default function NewProduct() {
           <label className="block text-sm font-medium">Imágenes adicionales (puedes seleccionar varias)</label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/webp"
             className="mt-1 block w-1/2 md:w-1/3 border rounded px-3 py-2"
             multiple
             onChange={(e) => handleImageFilesChange(e.target.files)} />
           <div className="flex gap-2 mt-2 overflow-x-auto">
             {imagePreviews.map((u, i) => (
-              <Image key={i} src={u} alt={`img-${i}`} className="w-20 h-20 object-cover rounded" width={0} height={0}></Image>
+              <div key={i} className="relative size-20 flex-shrink-0">
+                <Image src={u} alt={`img-${i}`} className="rounded" fill objectFit="cover"></Image>
+              </div>
             ))}
           </div>
         </div>
@@ -421,8 +426,8 @@ export default function NewProduct() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Variantes</h2>
             <div className="flex gap-2">
-              <button type="button" onClick={handleAddVariant} className="px-3 py-1 border rounded">
-                Añadir variante
+              <button type="button" onClick={handleAddVariant} className="inline-flex items-center gap-2 px-3 py-1 border rounded">
+                <Plus size={16} /> Añadir variante
               </button>
             </div>
           </div>
@@ -441,10 +446,20 @@ export default function NewProduct() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-xs">Color</label>
-                    <input className="mt-1 block w-full border rounded px-2 py-1" value={v.color} onChange={(e) => handleVariantChange(vi, { color: e.target.value })} />
-                  </div>
+                  {variants.length > 1 && (
+                    <div>
+                      <label className="block text-xs">Color</label>
+                      <select
+                        className="mt-1 block w-full border rounded px-2 py-1"
+                        value={v.color}
+                        onChange={(e) => handleVariantChange(vi, { color: e.target.value })}
+                      >
+                        <option value="">Sin color</option>
+                        {variantsColors.map((vc) => (
+                          <option key={vc.name} value={vc.name}>{vc.label}</option>
+                        ))}
+                      </select>
+                    </div>)}
                   <div>
                     <label className="block text-xs">SKU</label>
                     <input className="mt-1 block w-full border rounded px-2 py-1" value={v.sku} onChange={(e) => handleVariantChange(vi, { sku: e.target.value })} />
@@ -453,8 +468,8 @@ export default function NewProduct() {
                     <label className="block text-xs">Miniatura variante</label>
                     <input
                       type="file"
-                      accept="image/*"
-                      className="mt-1 block w-1/2 md:w-1/3 border rounded px-3 py-2"
+                      accept="image/webp"
+                      className="mt-1 block w-1/2 border rounded px-3 py-2"
                       onChange={(e) => handleVariantFileChange(vi, e.target.files?.[0] ?? null)}
                     />
                     {variantFiles[vi] && (
@@ -466,8 +481,8 @@ export default function NewProduct() {
                 <div className="mt-3">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium">Tallas / Stock</div>
-                    <button type="button" onClick={() => handleAddStock(vi)} className="px-2 py-1 border rounded text-sm">
-                      Añadir talla
+                    <button type="button" onClick={() => handleAddStock(vi)} className="inline-flex items-center gap-2 px-2 py-1 border rounded text-sm">
+                      <Plus size={16} /> Añadir talla
                     </button>
                   </div>
 

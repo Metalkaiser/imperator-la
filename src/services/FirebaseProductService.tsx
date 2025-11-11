@@ -248,6 +248,30 @@ export class FirebaseProductService implements ProductService {
     }
   }
 
+  async deleteImage(url: string): Promise<{ ok: boolean; message: string; }> {
+    try {
+      const bucket = admin.storage().bucket();
+      // extraer el path del archivo de la URL
+      const decodedUrl = decodeURIComponent(url);
+      const startEndIndex = decodedUrl.indexOf("/") === 0 ? 1 : 0;
+      const pathEndIndex = decodedUrl.indexOf("?alt=media");
+      const filePath = decodedUrl.substring(startEndIndex, pathEndIndex);
+  
+      const remoteFile = bucket.file(`products/${filePath}`);
+      const deleteResult = await remoteFile.delete();
+
+      if (deleteResult[0].statusCode !== 200 && deleteResult[0].statusCode !== 204) {
+        return { ok: false, message: deleteResult[0].statusMessage || `Failed to delete image at ${url}` };
+      }
+        
+      return { ok: true, message: `Image at ${url} deleted successfully.` };
+    }
+    catch (err: any) {
+      console.error("deleteImage error:", err);
+      return { ok: false, message: `Error deleting image at ${url}: ${String(err?.message ?? err)}` };
+    }
+  }
+
   async createProduct(product: NewProduct): Promise<appResponse> {
     return handleFirebase(async () => {
       const col = admin.firestore().collection(dbCollections.products);

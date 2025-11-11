@@ -18,11 +18,12 @@ import {
   QueryDocumentSnapshot
  } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
+import { getFirebaseAuthErrorMessage } from "../errorMessages/FirebaseErrors";
 
 const usersCollection = dbCollections.users;
 
 function extractErrorMessage(err: unknown): string {
-  if (err instanceof FirebaseError) return err.message ?? String(err);
+  if (err instanceof FirebaseError) return getFirebaseAuthErrorMessage(err.message) ?? String(err);
   if (err instanceof StorageError) return err.message ?? String(err);
   if (err instanceof Error) return err.message;
   if (typeof err === "string") return err;
