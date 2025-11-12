@@ -129,6 +129,9 @@ export async function PATCH(req: NextRequest, ctx: any) {
     if (productRes.status !== 200) return NextResponse.json({ status: productRes.status, message: productRes.code ?? "Product fetch failed" }, { status: productRes.status });
 
     const existingProduct = productRes.response as productProps;
+    //existingProduct but without id
+    const existingProductData = { ...existingProduct } as Omit<productProps, "id">;
+    delete (existingProductData as any).id;
 
     // -----------------------
     // Helpers / validations
@@ -281,7 +284,7 @@ export async function PATCH(req: NextRequest, ctx: any) {
     // VALIDACIONES y build allowed object
     // (se basa en tu bloque comentado — lo reuso y adapto)
     // ---------------------------------------
-    const allowed: Partial<productProps> = {};
+    const allowed: Partial<productProps> = existingProductData;
     // price
     if (body.price !== undefined) {
       const n = Number(body.price);
@@ -409,7 +412,7 @@ export async function PATCH(req: NextRequest, ctx: any) {
     
 
     // devolver actualizado
-    return NextResponse.json({ status: 200, response: { id, updatedFields: allowed } }, { status: 200 });
+    return NextResponse.json({ status: 200, response: { id, updatedFields: updateRes.response } }, { status: 200 });
   } catch (err: any) {
     console.error("PATCH /api/admin/products/[id] error:", err);
     const message = err?.message ?? "Internal server error";

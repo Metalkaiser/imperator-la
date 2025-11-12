@@ -216,8 +216,8 @@ export class FirebaseProductService implements ProductService {
 
   async uploadImage(file: File, destPath: string): Promise<{ok: boolean; url?: string; error?: string}> {
     try {
-      const now = new Date();
-      const stamp = `${now.getMonth()+1}_${now.getDate()}_${now.getFullYear()}_${now.getHours()}_${now.getMinutes()}_${now.getSeconds()}`;
+      //Fecha y hora independiente de zona horaria para evitar problemas con nombres duplicados
+      const stamp = Date.now();
       const path = `${destPath}_${stamp}.webp`;
       // 1) convertir File -> Buffer
       const arrayBuffer = await file.arrayBuffer();
@@ -242,6 +242,7 @@ export class FirebaseProductService implements ProductService {
       });
   
       // 5) construir la URL pública con token (igual que la que genera Firebase console)
+
       const url = `${encodeURIComponent(path)}?alt=media&token=${token}`.replace("products", "");
   
       return { ok: true, url };
