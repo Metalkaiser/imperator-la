@@ -216,13 +216,16 @@ export class FirebaseProductService implements ProductService {
 
   async uploadImage(file: File, destPath: string): Promise<{ok: boolean; url?: string; error?: string}> {
     try {
+      const now = new Date();
+      const stamp = `${now.getMonth()+1}_${now.getDate()}_${now.getFullYear()}_${now.getHours()}_${now.getMinutes()}_${now.getSeconds()}`;
+      const path = `${destPath}_${stamp}.webp`;
       // 1) convertir File -> Buffer
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
   
       // 2) obtener bucket y file handle
       const bucket = admin.storage().bucket(); // usa storageBucket configurado en admin.initializeApp
-      const remoteFile = bucket.file(destPath); // sin slash inicial
+      const remoteFile = bucket.file(path); // sin slash inicial
   
       // 3) generar token para url de descarga pública estilo firebase
       const token = uuidv4();
@@ -239,7 +242,7 @@ export class FirebaseProductService implements ProductService {
       });
   
       // 5) construir la URL pública con token (igual que la que genera Firebase console)
-      const url = `${encodeURIComponent(destPath)}?alt=media&token=${token}`.replace("products", "");
+      const url = `${encodeURIComponent(path)}?alt=media&token=${token}`.replace("products", "");
   
       return { ok: true, url };
     } catch (err: any) {

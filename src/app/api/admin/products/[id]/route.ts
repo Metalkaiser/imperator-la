@@ -152,9 +152,7 @@ export async function PATCH(req: NextRequest, ctx: any) {
       if (!isValidFile(thumbnailFile)) {
         return NextResponse.json({ status: 400, message: "Thumbnail inválido (size o tipo)" }, { status: 400 });
       }
-      const now = new Date();
-      const stamp = `${now.getMonth()+1}_${now.getDate()}_${now.getFullYear()}_${now.getHours()}_${now.getMinutes()}_${now.getSeconds()}`;
-      const thumbPath = `products/thumbnails/${body.mainSku ?? existingProduct.mainSku}_${stamp}.webp`;
+      const thumbPath = `products/thumbnails/${body.mainSku ?? existingProduct.mainSku}`;
       const uploadThumb = await processAndUpload(thumbnailFile, thumbPath);
       if (!uploadThumb.ok || !uploadThumb.url) {
         return NextResponse.json({ status: 500, message: `Error uploading thumbnail: ${uploadThumb.error ?? 'unknown'}` }, { status: 500 });
@@ -196,9 +194,7 @@ export async function PATCH(req: NextRequest, ctx: any) {
           }
 
           // build path and queue upload
-          const now = new Date();
-          const stamp = `${now.getMonth()+1}_${now.getDate()}_${now.getFullYear()}_${now.getHours()}_${now.getMinutes()}_${now.getSeconds()}`;
-          const path = `products/skus/${v?.sku ?? `variant_${i}`}_${stamp}.webp`;
+          const path = `products/skus/${v?.sku ?? `variant_${i}`}`;
 
           const p = (async (index: number, fileRef: File, dest: string) => {
             try {
@@ -255,9 +251,8 @@ export async function PATCH(req: NextRequest, ctx: any) {
         const subCategorySlug = (categoryObject.activeCategory.subcategories.length > 0 && existingProduct.subcategory) ?
           categoryObject.activeCategory.subcategories[existingProduct.subcategory].slug : "";
         const categoryPath = subCategorySlug ? `${categorySlug}/${subCategorySlug}` : categorySlug;
-        const now = new Date();
-        const stamp = `${now.getMonth()+1}_${now.getDate()}_${now.getFullYear()}_${now.getHours()}_${now.getMinutes()}_${now.getSeconds()}`;
-        const path = `products/${categoryPath}/${existingProduct.name}_${stamp}_${i}.webp`;const up = await processAndUpload(f as File, path);
+        const path = `products/${categoryPath}/${existingProduct.name}_${i}`;
+        const up = await processAndUpload(f as File, path);
         i++;
         if (!up.ok || !up.url) {
           return NextResponse.json({ status: 500, message: `Error uploading image ${entry}: ${up.error ?? "unknown"}` }, { status: 500 });
