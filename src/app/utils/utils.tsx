@@ -130,3 +130,13 @@ export const actionLabels = new Map<string, { label: string; color: string; badg
   ["topProducts_edited",{ label: "Productos top modificados",  color: "lime-500",   badgeClass: "bg-lime-500 text-white" }],
 ]);
 
+export const variantsColors = [
+  { name: "black", label: "Negro" },
+  { name: "gray", label: "Plateado" },
+  { name: "yellow", label: "Dorado" },
+  { name: "orange", label: "Mixto"},
+  { name: "rose", label: "Rosado" },
+  { name: "blue", label: "Azul" },
+  { name: "red", label: "Rojo" },
+  { name: "green", label: "Verde" }
+]

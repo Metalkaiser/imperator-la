@@ -1,10 +1,23 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Swal from "sweetalert2";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { productProps } from "@/app/utils/types";
+import {
+  ActionBtns,
+  ProdName,
+  ProdmainSKU,
+  ProdThumbnail,
+  ProdDesc,
+  ProdImages,
+  ProdPrice,
+  ProdStatus,
+  ProdDiscount
+} from "@/app/admin/components/formComponents/ProductForm";
+import ProdVariant from "@/app/admin/components/formComponents/ProductForm";
+import { storagePath } from "@/app/utils/utils";
 
 // Tipos (sin cambios)
 type StockItem = { name: string; quantity: number };
@@ -24,10 +37,24 @@ export default function EditProduct({ id }: { id?: string }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [mainSku, setMainSku] = useState("");
-  const [price, setPrice] = useState<number | "">("");
+  const [price, setPrice] = useState<number | string>("");
   const [status, setStatus] = useState<number>(1);
-  const [discount, setDiscount] = useState<Discount | null>(null);
+  const [discount, setDiscount] = useState<Discount | undefined>(undefined)
   const [variants, setVariants] = useState<Variant[]>([]);
+
+  // Thumbnail state
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
+
+  //Images state
+  const [imagesFiles, setImagesFiles] = useState<(File | null)[]>([]);
+  const [imagesPreviews, setImagesPreviews] = useState<string[]>([]);
+
+  // Estado para archivos de variantes y previews
+  const [variantFiles, setVariantFiles] = useState<(File | null)[]>([]);
+  const [variantPreviews, setVariantPreviews] = useState<string[]>([]);
+  // refs para objectURLs previos y limpiar
+  const variantPreviewUrlsRef = useRef<(string | null)[]>([]);
 
   // resolvedId: preferimos prop `id`, luego params, luego fallback window (solo en cliente)
   const resolvedId = useMemo(() => {
@@ -40,31 +67,66 @@ export default function EditProduct({ id }: { id?: string }) {
     return undefined;
   }, [id, params]);
 
-  // Debug logs controlados (evitar acceder a indices fijos sin comprobar longitud)
+  // Reemplaza tu useEffect actual que actualiza variantPreviews
   useEffect(() => {
-    // logs de depuración útiles y seguros
-    // console.log({ resolvedId, productsLength: products?.length ?? 0 });
-  }, [resolvedId, products]);
+    // garantizar que los arrays tengan la misma longitud que variants
+    setVariantFiles((prev) => variants.map((_, i) => prev[i] ?? null));
 
+    setVariantPreviews((prev) => {
+      // limpiar prev objectURLs que ya no usamos
+      variantPreviewUrlsRef.current.forEach((url, idx) => {
+        if (url && (!variants[idx] || prev[idx] !== url)) {
+          try { URL.revokeObjectURL(url); } catch (e) { console.warn("Revoke objectURL error:", e); }
+        }
+      });
+
+      const next: string[] = variants.map((v, i) => {
+        const file = variantFiles[i];
+        if (file) {
+          const obj = URL.createObjectURL(file);
+          variantPreviewUrlsRef.current[i] = obj;
+          return obj;
+        }
+        variantPreviewUrlsRef.current[i] = null;
+
+        // normalizar v.image
+        const img = v.image ?? "";
+        if (!img) return "";
+        //return /^%2F/i.test(img) ? `${storagePath}${img}` : img;
+        return img;
+      });
+      return next;
+    });
+  // Añadimos variantFiles a deps
+  }, [variants]);
+
+
+  // limpieza al desmontar del componente: revoke objectURLs
   useEffect(() => {
-    // esperar hasta tener id y products
+    return () => {
+      variantPreviewUrlsRef.current.forEach((u) => {
+        if (u) URL.revokeObjectURL(u);
+      });
+      variantPreviewUrlsRef.current = [];
+    };
+  }, []);
+
+  // Obtener producto desde contexto products
+  useEffect(() => {
     if (!resolvedId) {
       setLoading(false);
       return;
     }
     if (!products || products.length === 0) {
-      // si products aún no cargó, mantener loading hasta que cambie
       setLoading(true);
       return;
     }
 
     const findProduct = () => {
-      // búsqueda tolerante: compara strings, elimina espacios
       const idClean = String(resolvedId).trim();
       const found = products.find((item) => {
-        // item.id puede venir como number o string o incluso objeto; manejarlo
         const iid = item?.id ?? item?.mainSku ?? "";
-        return String(iid).trim() === idClean || iid == idClean; // second check for loose match
+        return String(iid).trim() === idClean || iid == idClean;
       });
 
       setProduct(found ?? null);
@@ -76,11 +138,33 @@ export default function EditProduct({ id }: { id?: string }) {
         setMainSku(found.mainSku ?? "");
         setPrice(typeof found.price !== "undefined" ? Number(found.price) : "");
         setStatus(typeof found.status !== "undefined" ? Number(found.status) : 1);
-        setDiscount(found.discount ?? null);
-        setVariants(Array.isArray(found.variants) ? found.variants : []);
+        setDiscount(found.discount ?? undefined);
+
+        const vars = Array.isArray(found.variants) ? found.variants : [];
+        setVariants(vars);
+        setVariantFiles(vars.map(() => null));
+        setVariantPreviews(vars.map((v) => {
+          if (!v.image) return "";
+          //return /^%2F/i.test(v.image) ? `${storagePath}${v.image}` : v.image;
+          return v.image;
+        }));
+
+        const imgs = Array.isArray(found.images) ? found.images.map((img: string) => {
+          if (!img) return "";
+          //return /^%2F/i.test(img) ? `${storagePath}${img}` : img;
+          return img;
+        }) : [];
+
+        setImagesPreviews(imgs);
+        setImagesFiles(imgs.map(() => null));
+        // thumbnail
+        const thumb = found.thumbnail ?? "";
+        //const thumbUrl = /^%2F/i.test(thumb) ? `${storagePath}${thumb}` : thumb;
+        setThumbnailPreview(thumb);
+
+        variantPreviewUrlsRef.current = vars.map(() => null);
         setLoading(false);
       } else {
-        // producto no encontrado (pero products está cargado)
         setLoading(false);
       }
     };
@@ -123,18 +207,120 @@ export default function EditProduct({ id }: { id?: string }) {
     return true;
   };
 
+  const handleThumbnailFileChange = (file: File | null) => {
+    // limpiar previa blob URL si existe
+    if (thumbnailPreview && thumbnailPreview.startsWith("blob:")) {
+      try { URL.revokeObjectURL(thumbnailPreview); } catch (e) { console.warn("Revoke objectURL error:", e);}
+    }
+
+    setThumbnailFile(file);
+    if (file) {
+      const obj = URL.createObjectURL(file);
+      setThumbnailPreview(obj);
+    } else {
+      // si se deshace, restaurar desde product.thumbnail si existe
+      const foundThumb = product?.thumbnail ?? "";
+      if (foundThumb) {
+        setThumbnailPreview(foundThumb);
+      } else {
+        setThumbnailPreview("");
+      }
+    }
+  };
+  // Manejo de archivos de variante
+  const handleVariantFileChange = (index: number, file: File | null) => {
+    setVariantFiles((prev) => {
+      const next = prev.slice();
+      next[index] = file;
+      return next;
+    });
+
+    // crear preview immediate y limpiar la anterior objectURL si existía
+    setVariantPreviews((prev) => {
+      const next = prev.slice();
+      // revocar previa si era objectURL
+      const prevUrl = variantPreviewUrlsRef.current[index];
+      if (prevUrl) {
+        try {
+          URL.revokeObjectURL(prevUrl);
+        } catch (e) { console.warn("Revoke objectURL error:", e); }
+        variantPreviewUrlsRef.current[index] = null;
+      }
+
+      if (file) {
+        const obj = URL.createObjectURL(file);
+        variantPreviewUrlsRef.current[index] = obj;
+        next[index] = obj;
+        handleVariantChange(index, { image: "" }); // limpiar image en variant
+      } else {
+        // si file es null, volver a imagen original en variants (si existe)
+        handleVariantChange(index, { image: product?.variants[index].image });
+        next[index] = variants[index]?.image ?? ""; //storagePath + (variants[index]?.image ?? "");
+      }
+      return next;
+    });
+  };
+  const handleDeleteImage = (index: number) => {
+    Swal.fire({
+      title: "¿Eliminar imagen?",
+      text: "Esta acción no se puede deshacer.",
+      imageUrl: /^%2F/i.test(imagesPreviews[index]) ? `${storagePath}${imagesPreviews[index]}` : imagesPreviews[index],
+      imageWidth: 100,
+      imageHeight: 100,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setImagesPreviews((prev) => prev.filter((_, i) => i !== index));
+        setImagesFiles((prev) => prev.filter((_, i) => i !== (index - (imagesPreviews.length - imagesFiles.length))));
+      }
+    });
+  };
+  const handleAddImages = (file: FileList| null) => {
+    if (!file) return;
+    const newFiles: (File | null)[] = [];
+    const newPreviews: string[] = [];
+    Array.from(file).forEach((f) => {
+      newFiles.push(f);
+      const obj = URL.createObjectURL(f);
+      newPreviews.push(obj);
+    });
+    setImagesFiles((prev) => [...prev, ...newFiles]);
+    setImagesPreviews((prev) => [...prev, ...newPreviews]);
+  };
+  // Control de variantes (añadir/quitar) — sincronizar files/previews
   const handleAddVariant = () => {
     setVariants((s) => [...s, { color: "", sku: "", image: "", stock: [] }]);
+    setVariantFiles((s) => [...s, null]);
+    setVariantPreviews((s) => [...s, ""]);
+    variantPreviewUrlsRef.current.push(null);
   };
   const handleRemoveVariant = (index: number) => {
     setVariants((s) => s.filter((_, i) => i !== index));
+    setVariantFiles((s) => {
+      const next = s.slice();
+      // revoke objectURL if present
+      const curUrl = variantPreviewUrlsRef.current[index];
+      if (curUrl) {
+        try { URL.revokeObjectURL(curUrl); } catch (e) { console.warn("Revoke objectURL error:", e); }
+      }
+      next.splice(index, 1);
+      variantPreviewUrlsRef.current.splice(index, 1);
+      return next;
+    });
+    setVariantPreviews((s) => {
+      const next = s.slice();
+      next.splice(index, 1);
+      return next;
+    });
   };
   const handleVariantChange = (index: number, patch: Partial<Variant>) => {
     setVariants((s) => s.map((v, i) => (i === index ? { ...v, ...patch } : v)));
   };
-
   const handleAddStock = (vIndex: number) => {
-    setVariants((s) => s.map((v, i) => (i === vIndex ? { ...v, stock: [...v.stock, { name: "default", quantity: 0 }] } : v)));
+    setVariants((s) => s.map((v, i) => (i === vIndex ? { ...v, stock: [...v.stock, { name: "", quantity: 0 }] } : v)));
   };
   const handleRemoveStock = (vIndex: number, sIndex: number) => {
     setVariants((s) => s.map((v, i) => (i === vIndex ? { ...v, stock: v.stock.filter((_, j) => j !== sIndex) } : v)));
@@ -149,12 +335,15 @@ export default function EditProduct({ id }: { id?: string }) {
     );
   };
 
+  // Guardar: si hay archivos, envio FormData con payload + variant_{i}_image
   const handleSave = async () => {
     if (!validate() || !resolvedId) return;
 
     const payload = {
       name: name.trim(),
       description: description,
+      thumbnail: thumbnailPreview,
+      images: imagesPreviews,
       mainSku: mainSku.trim(),
       price: Number(price),
       status: Number(status),
@@ -165,17 +354,54 @@ export default function EditProduct({ id }: { id?: string }) {
     try {
       setSaving(true);
       Swal.fire({ title: "Guardando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      // ¿Hay archivos? si al menos uno en variantFiles no es null -> usamos FormData
+      const hasVariantFiles = variantFiles.some((f) => f !== null);
+      const hasThumbnailFile = thumbnailFile !== null;
+      const hasImagesFiles = imagesFiles.length > 0;
+
+      const form = new FormData();
+      form.append("payload", JSON.stringify(payload));
+
+      // thumbnail
+      if (hasThumbnailFile && thumbnailFile) {
+        form.append("thumbnail", thumbnailFile, thumbnailFile.name);
+      }
+
+      // Adjuntar cada file con nombre variant_{index}_image
+      if (hasVariantFiles) {
+        variantFiles.forEach((f, i) => {
+          if (f) {
+            form.append(`variant_${i}_image`, f, (f as File).name);
+          }
+        });
+      }
+
+      // imágenes adicionales
+      if (hasImagesFiles) {
+        imagesFiles.forEach((f, i) => {
+          if (f) {
+            form.append(`image_${i}`, f, (f as File).name);
+          }
+        });
+      }
+
       const res = await fetch(`/api/admin/products/${encodeURIComponent(String(resolvedId))}`, {
         method: "PATCH",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: form,
       });
+
+
       Swal.close();
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
         throw new Error(err.message || "Error al guardar");
       }
+
+      console.log(await res.json());
+
       await Swal.fire("Guardado", "Producto actualizado correctamente.", "success");
       await refreshProducts();
       router.push("/admin/inventory");
@@ -194,150 +420,29 @@ export default function EditProduct({ id }: { id?: string }) {
   return (
     <div className="max-w-4xl mx-auto p-6 rounded shadow">
       <h1 className="text-xl font-semibold mb-4">Editar producto: {product.name} (SKU: {product.mainSku})</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium">Nombre</label>
-          <input
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">SKU principal</label>
-          <input
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={mainSku}
-            onChange={(e) => setMainSku(e.target.value)}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Descripción</label>
-          <textarea
-            className="mt-1 block w-full border rounded px-3 py-2 h-28"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Precio</label>
-          <input
-            type="number"
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={price}
-            onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))}
-            min={0}
-            step="0.01"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Estado</label>
-          <select value={String(status)} onChange={(e) => setStatus(Number(e.target.value))} className="mt-1 block w-full border rounded px-3 py-2">
-            <option value={1}>Disponible</option>
-            <option value={0}>Agotado</option>
-            <option value={2}>Eliminado</option>
-          </select>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Descuento (opcional)</label>
-          <div className="flex gap-2 items-center mt-1">
-            <select
-              value={discount ? String(discount.type) : ""
-              }
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === "") setDiscount(null);
-                else setDiscount({ type: Number(v), value: discount?.value ?? 0 });
-              }}
-              className="border rounded px-2 py-1 w-3/5 md:w-40"
-            >
-              <option value="">Sin descuento</option>
-              <option value="0">Porcentaje (%)</option>
-              <option value="1">Fijo</option>
-            </select>
-
-            {discount !== null && (
-              <input
-                type="number"
-                className="border rounded px-2 py-1 w-2/5 md:w-40"
-                value={discount.value}
-                onChange={(e) => setDiscount({ ...(discount ?? { type: 0, value: 0 }), value: Number(e.target.value) })}
-                min={0}
-                step="0.01"
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Variantes */}
-        <div className="md:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Variantes</h2>
-            <div className="flex gap-2">
-              <button type="button" onClick={handleAddVariant} className="px-3 py-1 border rounded">Añadir variante</button>
-            </div>
-          </div>
-
-          <div className="mt-3 space-y-3">
-            {variants.length === 0 && <div className="text-sm text-gray-500">Sin variantes</div>}
-            {variants.map((v, vi) => (
-              <div key={vi} className="border rounded p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium">Variante {vi + 1}</div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => handleRemoveVariant(vi)} className="px-2 py-1 border rounded text-sm">Eliminar</button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-xs">Color</label>
-                    <input className="mt-1 block w-full border rounded px-2 py-1" value={v.color} onChange={(e) => handleVariantChange(vi, { color: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="block text-xs">SKU</label>
-                    <input className="mt-1 block w-full border rounded px-2 py-1" value={v.sku} onChange={(e) => handleVariantChange(vi, { sku: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="block text-xs">Imagen (URL)</label>
-                    <input className="mt-1 block w-full border rounded px-2 py-1" value={v.image} onChange={(e) => handleVariantChange(vi, { image: e.target.value })} />
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Tallas</div>
-                    <button type="button" onClick={() => handleAddStock(vi)} className="px-2 py-1 border rounded text-sm">Añadir talla</button>
-                  </div>
-
-                  <div className="mt-2 space-y-2">
-                    {v.stock.map((st, si) => (
-                      <div key={si} className="flex gap-2 items-center">
-                        <input className="border rounded px-2 py-1 w-1/2" value={st.name} onChange={(e) => handleStockChange(vi, si, { name: e.target.value })} />
-                        <input type="number" className="border rounded px-2 py-1 w-1/2" value={st.quantity} onChange={(e) => handleStockChange(vi, si, { quantity: Number(e.target.value) })} />
-                        <button type="button" onClick={() => handleRemoveStock(vi, si)} className="px-2 py-1 border rounded text-sm">Eliminar</button>
-                      </div>
-                    ))}
-                    {v.stock.length === 0 && <div className="text-xs text-gray-500">No hay tallas</div>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <ProdThumbnail view="new" thumbnail={thumbnailPreview} setThumbnail={handleThumbnailFileChange} />
+        <ProdName name={name} nameState={setName} />
+        <ProdmainSKU mainSku={mainSku} skuState={setMainSku} />
+        <ProdDesc description={description} descState={setDescription} />
+        <ProdImages previews={imagesPreviews} addImages={handleAddImages} deleteImage={handleDeleteImage} />
+        <ProdPrice price={price} priceState={setPrice} />
+        <ProdStatus status={status} statusState={setStatus} />
+        <ProdDiscount discount={discount} discState={setDiscount} />
+        <ProdVariant
+          view="edit"
+          variants={variants}
+          variantPreviews={variantPreviews}
+          addVariant={handleAddVariant}
+          removeVariant={handleRemoveVariant}
+          variantChange={handleVariantChange}
+          variantFileChange={handleVariantFileChange}
+          addStock={handleAddStock}
+          stockChange={handleStockChange}
+          removeStock={handleRemoveStock}
+        />
       </div>
-
-      {/* acciones */}
-      <div className="mt-6 flex gap-3">
-        <button onClick={() => router.back()} className="px-4 py-2 border rounded cursor-pointer">Cancelar</button>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 cursor-pointer">{saving ? "Guardando..." : "Guardar"}</button>
-      </div>
+      <ActionBtns view="edit" saving={saving} router={router} handleSave={handleSave} />
     </div>
   );
 }

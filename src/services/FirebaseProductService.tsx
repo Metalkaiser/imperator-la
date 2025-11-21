@@ -216,13 +216,16 @@ export class FirebaseProductService implements ProductService {
 
   async uploadImage(file: File, destPath: string): Promise<{ok: boolean; url?: string; error?: string}> {
     try {
+      //Fecha y hora independiente de zona horaria para evitar problemas con nombres duplicados
+      const stamp = Date.now();
+      const path = `${destPath}_${stamp}.webp`;
       // 1) convertir File -> Buffer
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
   
       // 2) obtener bucket y file handle
       const bucket = admin.storage().bucket(); // usa storageBucket configurado en admin.initializeApp
-      const remoteFile = bucket.file(destPath); // sin slash inicial
+      const remoteFile = bucket.file(path); // sin slash inicial
   
       // 3) generar token para url de descarga pública estilo firebase
       const token = uuidv4();
@@ -239,12 +242,37 @@ export class FirebaseProductService implements ProductService {
       });
   
       // 5) construir la URL pública con token (igual que la que genera Firebase console)
-      const url = `${encodeURIComponent(destPath)}?alt=media&token=${token}`.replace("products", "");
+
+      const url = `${encodeURIComponent(path)}?alt=media&token=${token}`.replace("products", "");
   
       return { ok: true, url };
     } catch (err: any) {
       console.error("processAndUploadServer error:", err);
       return { ok: false, error: String(err?.message ?? err) };
+    }
+  }
+
+  async deleteImage(url: string): Promise<{ ok: boolean; message: string; }> {
+    try {
+      const bucket = admin.storage().bucket();
+      // extraer el path del archivo de la URL
+      const decodedUrl = decodeURIComponent(url);
+      const startEndIndex = decodedUrl.indexOf("/") === 0 ? 1 : 0;
+      const pathEndIndex = decodedUrl.indexOf("?alt=media");
+      const filePath = decodedUrl.substring(startEndIndex, pathEndIndex);
+  
+      const remoteFile = bucket.file(`products/${filePath}`);
+      const deleteResult = await remoteFile.delete();
+
+      if (deleteResult[0].statusCode !== 200 && deleteResult[0].statusCode !== 204) {
+        return { ok: false, message: deleteResult[0].statusMessage || `Failed to delete image at ${url}` };
+      }
+        
+      return { ok: true, message: `Image at ${url} deleted successfully.` };
+    }
+    catch (err: any) {
+      console.error("deleteImage error:", err);
+      return { ok: false, message: `Error deleting image at ${url}: ${String(err?.message ?? err)}` };
     }
   }
 
