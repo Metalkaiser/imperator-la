@@ -1,13 +1,23 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import Image from "next/image";
-import { Trash2Icon, Plus } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Swal from "sweetalert2";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { productProps } from "@/app/utils/types";
-import { storagePath, variantsColors } from "@/app/utils/utils";
+import {
+  ActionBtns,
+  ProdName,
+  ProdmainSKU,
+  ProdThumbnail,
+  ProdDesc,
+  ProdImages,
+  ProdPrice,
+  ProdStatus,
+  ProdDiscount
+} from "@/app/admin/components/formComponents/ProductForm";
+import ProdVariant from "@/app/admin/components/formComponents/ProductForm";
+import { storagePath } from "@/app/utils/utils";
 
 // Tipos (sin cambios)
 type StockItem = { name: string; quantity: number };
@@ -27,9 +37,9 @@ export default function EditProduct({ id }: { id?: string }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [mainSku, setMainSku] = useState("");
-  const [price, setPrice] = useState<number | "">("");
+  const [price, setPrice] = useState<number | string>("");
   const [status, setStatus] = useState<number>(1);
-  const [discount, setDiscount] = useState<Discount | null>(null);
+  const [discount, setDiscount] = useState<Discount | undefined>(undefined)
   const [variants, setVariants] = useState<Variant[]>([]);
 
   // Thumbnail state
@@ -128,7 +138,7 @@ export default function EditProduct({ id }: { id?: string }) {
         setMainSku(found.mainSku ?? "");
         setPrice(typeof found.price !== "undefined" ? Number(found.price) : "");
         setStatus(typeof found.status !== "undefined" ? Number(found.status) : 1);
-        setDiscount(found.discount ?? null);
+        setDiscount(found.discount ?? undefined);
 
         const vars = Array.isArray(found.variants) ? found.variants : [];
         setVariants(vars);
@@ -310,7 +320,7 @@ export default function EditProduct({ id }: { id?: string }) {
     setVariants((s) => s.map((v, i) => (i === index ? { ...v, ...patch } : v)));
   };
   const handleAddStock = (vIndex: number) => {
-    setVariants((s) => s.map((v, i) => (i === vIndex ? { ...v, stock: [...v.stock, { name: "default", quantity: 0 }] } : v)));
+    setVariants((s) => s.map((v, i) => (i === vIndex ? { ...v, stock: [...v.stock, { name: "", quantity: 0 }] } : v)));
   };
   const handleRemoveStock = (vIndex: number, sIndex: number) => {
     setVariants((s) => s.map((v, i) => (i === vIndex ? { ...v, stock: v.stock.filter((_, j) => j !== sIndex) } : v)));
@@ -410,270 +420,29 @@ export default function EditProduct({ id }: { id?: string }) {
   return (
     <div className="max-w-4xl mx-auto p-6 rounded shadow">
       <h1 className="text-xl font-semibold mb-4">Editar producto: {product.name} (SKU: {product.mainSku})</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium">Nombre</label>
-          <input
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">SKU principal</label>
-          <input
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={mainSku}
-            onChange={(e) => setMainSku(e.target.value)}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          {/* Aquí añadimos la UI para cambiar la miniatura del producto */}
-          <label className="block text-sm font-medium mb-2">Miniatura del producto</label>
-          <div className="flex items-center gap-4">
-            <div className="w-28 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-              {thumbnailPreview ? (
-                // preferimos Image con tamaño fijo
-                <Image src={/^%2F/i.test(thumbnailPreview) ? `${storagePath}${thumbnailPreview}` : thumbnailPreview} alt="Miniatura" width={112} height={112} style={{ objectFit: "cover" }} />
-              ) : (
-                <div className="text-xs text-gray-500">Sin miniatura</div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="px-3 py-2 border rounded cursor-pointer inline-block text-center text-sm">
-                Cambiar miniatura
-                <input
-                  type="file"
-                  accept="image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    handleThumbnailFileChange(f);
-                  }}
-                />
-              </label>
-
-              <button
-                type="button"
-                className="px-3 py-2 border rounded text-sm"
-                onClick={() => handleThumbnailFileChange(null)}
-              >
-                Deshacer cambio
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Descripción</label>
-          <textarea
-            className="mt-1 block w-full border rounded px-3 py-2 h-28"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-2">Imágenes del producto</label>
-          <div className="flex flex-wrap gap-4">
-            {imagesPreviews.map((imgSrc, i) => (
-              <div key={i} className="w-24 h-24 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-                {imgSrc ? (
-                  <div className="relative w-full h-full">
-                    <Trash2Icon
-                      className="absolute top-1 right-1 w-5 h-5 text-white bg-red-600 rounded-full p-0.5 cursor-pointer z-10"
-                      onClick={() => handleDeleteImage(i)}></Trash2Icon>
-                    <Image src={/^%2F/i.test(imgSrc) ? `${storagePath}${imgSrc}` : imgSrc} alt={`Imagen ${i + 1}`} width={96} height={96} style={{ objectFit: "cover" }} />
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-500">Sin imagen</div>
-                )}
-              </div>
-            ))}
-          </div>
-          <label className="mt-5 px-3 py-2 border rounded cursor-pointer inline-block text-center text-sm">
-            Agregar imágenes
-            <input
-              type="file"
-              multiple
-              accept="image/webp"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files ?? null;
-                handleAddImages(f);
-              }}
-            />
-          </label>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Precio</label>
-          <input
-            type="number"
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={price}
-            onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))}
-            min={0}
-            step="0.01"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Estado</label>
-          <select value={String(status)} onChange={(e) => setStatus(Number(e.target.value))} className="mt-1 block w-full border rounded px-3 py-2">
-            <option value={1}>Disponible</option>
-            <option value={0}>Agotado</option>
-            <option value={2}>Eliminado</option>
-          </select>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Descuento (opcional)</label>
-          <div className="flex gap-2 items-center mt-1">
-            <select
-              value={discount ? String(discount.type) : ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === "") setDiscount(null);
-                else setDiscount({ type: Number(v), value: discount?.value ?? 0 });
-              }}
-              className="border rounded px-2 py-1 w-3/5 md:w-40"
-            >
-              <option value="">Sin descuento</option>
-              <option value="0">Porcentaje (%)</option>
-              <option value="1">Fijo</option>
-            </select>
-
-            {discount !== null && (
-              <input
-                type="number"
-                className="border rounded px-2 py-1 w-2/5 md:w-40"
-                value={discount.value}
-                onChange={(e) => setDiscount({ ...(discount ?? { type: 0, value: 0 }), value: Number(e.target.value) })}
-                min={0}
-                step="0.01"
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Variantes */}
-        <div className="md:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Variantes</h2>
-            <div className="flex gap-2">
-              <button type="button" onClick={handleAddVariant} className="inline-flex items-center gap-2 px-3 py-1 border rounded">
-                <Plus size={16} /> Añadir variante
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-3 space-y-3">
-            {variants.length === 0 && <div className="text-sm text-gray-500">Sin variantes</div>}
-            {variants.map((v, vi) => (
-              <div key={vi} className="border rounded p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium">Variante {vi + 1}</div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => handleRemoveVariant(vi)} className="px-2 py-1 border rounded text-sm">Eliminar</button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  {variants.length > 1 && (
-                    <div>
-                      <label className="block text-xs">Color</label>
-                      <select
-                        className="mt-1 block w-full border rounded px-2 py-1"
-                        value={v.color}
-                        onChange={(e) => handleVariantChange(vi, { color: e.target.value })}
-                      >
-                        <option value="">Sin color</option>
-                        {variantsColors.map((vc) => (
-                          <option key={vc.name} value={vc.name}>{vc.label}</option>
-                        ))}
-                      </select>
-                    </div>)}
-                  <div>
-                    <label className="block text-xs">SKU</label>
-                    <input className="mt-1 block w-full border rounded px-2 py-1" value={v.sku} onChange={(e) => handleVariantChange(vi, { sku: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="block text-xs">Imagen</label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <div className="w-20 h-20 bg-gray-100 flex items-center justify-center overflow-hidden rounded relative">
-                        {variantPreviews[vi] ? (
-                          <Image
-                            src={/^%2F/i.test(variantPreviews[vi]) ? `${storagePath}${variantPreviews[vi]}` : variantPreviews[vi]}
-                            alt={`Variante ${vi + 1}`}
-                            fill
-                            objectFit="cover"
-                            className="w-full h-full" />
-                        ) : (<div className="text-xs text-gray-500">Sin imagen</div>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <label className="px-2 py-1 border rounded cursor-pointer text-sm">
-                          Cambiar imagen
-                          <input
-                            type="file"
-                            accept="image/webp"
-                            className="hidden"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0] ?? null;
-                              handleVariantFileChange(vi, f);
-                            }}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          className="mt-2 px-2 py-1 border rounded text-sm"
-                          onClick={() => {
-                            // quitar file seleccionado y volver a imagen original
-                            handleVariantFileChange(vi, null);
-                          }}
-                        >
-                          Deshacer cambio
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Tallas</div>
-                    <button type="button" onClick={() => handleAddStock(vi)} className="inline-flex items-center gap-2 px-2 py-1 border rounded text-sm">
-                      <Plus size={16} /> Añadir talla
-                    </button>
-                  </div>
-
-                  <div className="mt-2 space-y-2">
-                    {v.stock.map((st, si) => (
-                      <div key={si} className="flex gap-2 items-center">
-                        <input className="border rounded px-2 py-1 w-1/2" value={st.name} onChange={(e) => handleStockChange(vi, si, { name: e.target.value })} />
-                        <input type="number" className="border rounded px-2 py-1 w-1/2" value={st.quantity} onChange={(e) => handleStockChange(vi, si, { quantity: Number(e.target.value) })} />
-                        <button type="button" onClick={() => handleRemoveStock(vi, si)} className="px-2 py-1 border rounded text-sm">Eliminar</button>
-                      </div>
-                    ))}
-                    {v.stock.length === 0 && <div className="text-xs text-gray-500">No hay tallas</div>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <ProdThumbnail view="new" thumbnail={thumbnailPreview} setThumbnail={handleThumbnailFileChange} />
+        <ProdName name={name} nameState={setName} />
+        <ProdmainSKU mainSku={mainSku} skuState={setMainSku} />
+        <ProdDesc description={description} descState={setDescription} />
+        <ProdImages previews={imagesPreviews} addImages={handleAddImages} deleteImage={handleDeleteImage} />
+        <ProdPrice price={price} priceState={setPrice} />
+        <ProdStatus status={status} statusState={setStatus} />
+        <ProdDiscount discount={discount} discState={setDiscount} />
+        <ProdVariant
+          view="edit"
+          variants={variants}
+          variantPreviews={variantPreviews}
+          addVariant={handleAddVariant}
+          removeVariant={handleRemoveVariant}
+          variantChange={handleVariantChange}
+          variantFileChange={handleVariantFileChange}
+          addStock={handleAddStock}
+          stockChange={handleStockChange}
+          removeStock={handleRemoveStock}
+        />
       </div>
-
-      {/* acciones */}
-      <div className="mt-6 flex gap-3">
-        <button onClick={() => router.back()} className="px-4 py-2 border rounded cursor-pointer">Cancelar</button>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 cursor-pointer">{saving ? "Guardando..." : "Guardar"}</button>
-      </div>
+      <ActionBtns view="edit" saving={saving} router={router} handleSave={handleSave} />
     </div>
   );
 }

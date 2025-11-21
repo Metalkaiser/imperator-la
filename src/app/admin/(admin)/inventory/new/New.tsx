@@ -3,12 +3,22 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
-import Image from "next/image";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
 import { capitalize, checkMime } from "@/app/utils/functions";
-import { variantsColors } from "@/app/utils/utils";
-import { Plus } from "lucide-react";
+import { storagePath } from "@/app/utils/utils";
+import {
+  ActionBtns,
+  ProdName,
+  ProdmainSKU,
+  ProdThumbnail,
+  ProdDesc,
+  ProdImages,
+  ProdPrice,
+  ProdStatus,
+  ProdDiscount
+} from "@/app/admin/components/formComponents/ProductForm";
+import ProdVariant from "@/app/admin/components/formComponents/ProductForm";
 
 type StockItem = { name: string; quantity: number };
 type Variant = { color: string; sku: string; image: string; stock: StockItem[] };
@@ -24,7 +34,7 @@ export default function NewProduct() {
   const [name, setName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [mainSku, setMainSku] = useState<string>("");
-  const [price, setPrice] = useState<number | "">("");
+  const [price, setPrice] = useState<number | string>(0);
   const [status, setStatus] = useState<number>(1);
   const [category, setCategory] = useState<string>("");
   const [subcategory, setSubcategory] = useState<string>("");
@@ -85,6 +95,25 @@ export default function NewProduct() {
       return copy;
     });
   };
+
+  const handleDeleteImage = (index: number) => {
+      Swal.fire({
+        title: "¿Eliminar imagen?",
+        text: "Esta acción no se puede deshacer.",
+        imageUrl: /^%2F/i.test(imagePreviews[index]) ? `${storagePath}${imagePreviews[index]}` : imagePreviews[index],
+        imageWidth: 100,
+        imageHeight: 100,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+          setImageFiles((prev) => prev.filter((_, i) => i !== (index - (imagePreviews.length - imageFiles.length))));
+        }
+      });
+    };
 
   const allCategories = getCategoriesWithSubcategories("es");
 
@@ -283,75 +312,24 @@ export default function NewProduct() {
     } finally {
       setSaving(false);
     }
+    console.log(form.get('payload'));
   };
-
 
   return (
     <div className="max-w-4xl mx-auto p-6 rounded shadow">
       <h1 className="text-xl font-semibold mb-4">Crear producto nuevo</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium">Nombre</label>
-          <input className="mt-1 block w-full border rounded px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">SKU principal</label>
-          <input className="mt-1 block w-full border rounded px-3 py-2" value={mainSku} onChange={(e) => setMainSku(e.target.value)} />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Miniatura del producto (WEBP preferido)</label>
-          <div className="flex items-center gap-3 mt-2 relative size-20">
-            <input
-              className="mt-1 block border rounded px-3 py-2"
-              type="file"
-              accept="image/webp"
-              onChange={(e) => handleThumbnailChange(e.target.files?.[0] ?? null)}
-            />
-            {thumbnailPreview && (
-              <Image
-                src={thumbnailPreview}
-                alt="thumbnail preview"
-                className="rounded"
-                fill
-                objectFit="cover"
-                ></Image>
-            )}
-          </div>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Descripción</label>
-          <textarea className="mt-1 block w-full border rounded px-3 py-2 h-28" value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Precio</label>
-          <input
-            type="number"
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={price}
-            onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))}
-            min={0}
-            step="0.01"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Estado</label>
-          <select value={String(status)} onChange={(e) => setStatus(Number(e.target.value))} className="mt-1 block w-full border rounded px-3 py-2">
-            <option value={1}>Disponible</option>
-            <option value={0}>Agotado</option>
-            <option value={2}>Eliminado</option>
-          </select>
-        </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <ProdThumbnail view="new" thumbnail={thumbnailPreview} setThumbnail={handleThumbnailChange} />
+        <ProdName name={name} nameState={setName} />
+        <ProdmainSKU mainSku={mainSku} skuState={setMainSku} />
+        <ProdDesc description={description} descState={setDescription} />
+        <ProdImages previews={imagePreviews} addImages={handleImageFilesChange} deleteImage={handleDeleteImage} />
+        <ProdPrice price={price} priceState={setPrice} />
+        <ProdStatus status={status} statusState={setStatus} />
         <div className="md:col-span-2">
           <label className="block text-sm font-medium mb-1">Categoría</label>
-          <div className="flex gap-2 items-center mt-1">
-            <select className="border rounded px-2 py-1 w-2/5" onChange={(e) => {
+          <div className="flex flex-col md:flex-row gap-2 items-center mt-1 w-full">
+            <select className="border rounded px-2 py-1 w-full md:w-1/2" onChange={(e) => {
                 setSubcategory("");
                 setCategory(e.target.value)}
               }
@@ -364,7 +342,7 @@ export default function NewProduct() {
             {(allCategories.length > Number(category) &&
               allCategories[Number(category)].subcategories.length > 0 &&
               category !== "") && (
-              <select className="border rounded px-2 py-1 w-2/5" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
+              <select className="border rounded px-2 py-1 w-full md:w-1/2" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
                 <option value="" disabled>Seleccionar subcategoría</option>
                 {allCategories[Number(category)].subcategories.map((subcat, j) => (
                   <option key={`subcat-${j}`} value={j}>{capitalize(subcat.label)}</option>
@@ -373,147 +351,21 @@ export default function NewProduct() {
             )}
           </div>
         </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Imágenes adicionales (puedes seleccionar varias)</label>
-          <input
-            type="file"
-            accept="image/webp"
-            className="mt-1 block w-1/2 md:w-1/3 border rounded px-3 py-2"
-            multiple
-            onChange={(e) => handleImageFilesChange(e.target.files)} />
-          <div className="flex gap-2 mt-2 overflow-x-auto">
-            {imagePreviews.map((u, i) => (
-              <div key={i} className="relative size-20 flex-shrink-0">
-                <Image src={u} alt={`img-${i}`} className="rounded" fill objectFit="cover"></Image>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium">Descuento (opcional)</label>
-          <div className="flex gap-2 items-center mt-1">
-            <select
-              value={discount ? String(discount.type) : ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === "") setDiscount(undefined);
-                else setDiscount({ type: Number(v), value: discount?.value ?? 0 });
-              }}
-              className="border rounded px-2 py-1 w-3/5 md:w-40"
-            >
-              <option value="">Sin descuento</option>
-              <option value="0">Porcentaje (%)</option>
-              <option value="1">Fijo</option>
-            </select>
-
-            {discount !== undefined && (
-              <input
-                type="number"
-                className="border rounded px-2 py-1 w-2/5 md:w-40"
-                value={discount.value}
-                onChange={(e) => setDiscount({ ...(discount ?? { type: 0, value: 0 }), value: Number(e.target.value) })}
-                min={0}
-                step="0.01"
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Variantes */}
-        <div className="md:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Variantes</h2>
-            <div className="flex gap-2">
-              <button type="button" onClick={handleAddVariant} className="inline-flex items-center gap-2 px-3 py-1 border rounded">
-                <Plus size={16} /> Añadir variante
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-3 space-y-3">
-            {variants.length === 0 && <div className="text-sm text-gray-500">Sin variantes</div>}
-            {variants.map((v, vi) => (
-              <div key={vi} className="border rounded p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium">Variante {vi + 1}</div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => handleRemoveVariant(vi)} className="px-2 py-1 border rounded text-sm">
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  {variants.length > 1 && (
-                    <div>
-                      <label className="block text-xs">Color</label>
-                      <select
-                        className="mt-1 block w-full border rounded px-2 py-1"
-                        value={v.color}
-                        onChange={(e) => handleVariantChange(vi, { color: e.target.value })}
-                      >
-                        <option value="">Sin color</option>
-                        {variantsColors.map((vc) => (
-                          <option key={vc.name} value={vc.name}>{vc.label}</option>
-                        ))}
-                      </select>
-                    </div>)}
-                  <div>
-                    <label className="block text-xs">SKU</label>
-                    <input className="mt-1 block w-full border rounded px-2 py-1" value={v.sku} onChange={(e) => handleVariantChange(vi, { sku: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="block text-xs">Miniatura variante</label>
-                    <input
-                      type="file"
-                      accept="image/webp"
-                      className="mt-1 block w-1/2 border rounded px-3 py-2"
-                      onChange={(e) => handleVariantFileChange(vi, e.target.files?.[0] ?? null)}
-                    />
-                    {variantFiles[vi] && (
-                      <Image src={URL.createObjectURL(variantFiles[vi] as File)} alt={`var-${vi}`} className="w-16 h-16 object-cover rounded mt-1" width={0} height={0}></Image>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Tallas / Stock</div>
-                    <button type="button" onClick={() => handleAddStock(vi)} className="inline-flex items-center gap-2 px-2 py-1 border rounded text-sm">
-                      <Plus size={16} /> Añadir talla
-                    </button>
-                  </div>
-
-                  <div className="mt-2 space-y-2">
-                    {v.stock.map((st, si) => (
-                      <div key={si} className="flex gap-2 items-center">
-                        <input className="border rounded px-2 py-1 w-1/2" value={st.name} onChange={(e) => handleStockChange(vi, si, { name: e.target.value })} placeholder="Talla" />
-                        <input type="number" className="border rounded px-2 py-1 w-1/2" value={st.quantity} onChange={(e) => handleStockChange(vi, si, { quantity: Number(e.target.value) })} />
-                        <button type="button" onClick={() => handleRemoveStock(vi, si)} className="px-2 py-1 border rounded text-sm">
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                    {v.stock.length === 0 && <div className="text-xs text-gray-500">No hay tallas</div>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ProdDiscount discount={discount} discState={setDiscount} />
+        <ProdVariant
+          view="new"
+          variants={variants}
+          variantPreviews={variantFiles}
+          addVariant={handleAddVariant}
+          removeVariant={handleRemoveVariant}
+          variantChange={handleVariantChange}
+          variantFileChange={handleVariantFileChange}
+          addStock={handleAddStock}
+          stockChange={handleStockChange}
+          removeStock={handleRemoveStock}
+        />
       </div>
-
-      {/* acciones */}
-      <div className="mt-6 flex gap-3">
-        <button onClick={() => router.push("/admin/inventory")} className="px-4 py-2 border rounded">
-          Cancelar
-        </button>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">
-          {saving ? "Creando..." : "Crear producto"}
-        </button>
-      </div>
+      <ActionBtns view="new" saving={saving} router={router} handleSave={handleSave} />
     </div>
   );
 }
