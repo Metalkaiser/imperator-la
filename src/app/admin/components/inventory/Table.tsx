@@ -242,7 +242,7 @@ export default function Table() {
     // Ejecutar llamadas (por cada id, hacemos PATCH /api/admin/products/:id con payloadPartial)
     const ids = Array.from(selectedIds);
     const promises = ids.map((id) =>
-      fetch(`/api/admin/products/${id}`, {  //encodeURIComponent(String(id))
+      fetch(`/api/admin/products/bulk/${id}`, {  //encodeURIComponent(String(id))
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -263,6 +263,7 @@ export default function Table() {
         const res = r.value as Response;
         if (res.ok) {
           successCount++;
+          console.log(await res.json());
         } else {
           let reasonMsg = undefined;
           try {

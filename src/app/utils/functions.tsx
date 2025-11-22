@@ -134,7 +134,9 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
   const seen = new WeakSet<any>();
 
   function pushDiff(item: string, va: any, vb: any) {
-    diffs.push({ item, oldValue: va, newValue: vb });
+    const oldVal = va === undefined ? "undefined" : va;
+    const newVal = vb === undefined ? "undefined" : vb;
+    diffs.push({ item, oldValue: oldVal, newValue: newVal });
   }
 
   function walk(va: any, vb: any, item = "", depth = 0) {
