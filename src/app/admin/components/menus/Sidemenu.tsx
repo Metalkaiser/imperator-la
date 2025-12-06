@@ -7,6 +7,7 @@ import { ChevronRight, X, Menu } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "../context/authContext";
 import { capitalizeName } from "@/app/utils/functions";
+import { rolesMap } from "@/app/utils/utils";
 import home_light from "@P/light/icons/home.png";
 import home_dark from "@P/dark/icons/home.png";
 import inventory_light from "@P/light/icons/inventory.png";
@@ -62,13 +63,7 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // roles map (display)
-  const roles = ["admin", "editor", "viewer"];
-  const translatedRoles = ["Administrador", "Editor", "Visualizador"];
-  const rolesMap = roles.reduce((acc, role, index) => {
-    acc[role] = translatedRoles[index];
-    return acc;
-  }, {} as Record<string, string>);
+  
 
   const isActive = (href: string) => {
     if (!pathname) return false;

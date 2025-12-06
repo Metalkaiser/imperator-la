@@ -139,4 +139,12 @@ export const variantsColors = [
   { name: "blue", label: "Azul" },
   { name: "red", label: "Rojo" },
   { name: "green", label: "Verde" }
-]
+];
+
+// roles map (display)
+const roles = ["admin", "editor", "viewer"];
+const translatedRoles = ["Administrador", "Editor", "Visualizador"];
+export const rolesMap = roles.reduce((acc, role, index) => {
+  acc[role] = translatedRoles[index];
+  return acc;
+}, {} as Record<string, string>);
