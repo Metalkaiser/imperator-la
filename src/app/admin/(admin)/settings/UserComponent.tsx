@@ -92,6 +92,8 @@ export default function UserComponent() {
         color: theme === 'dark' ? '#ffffff' : '#000000',
       });
     } catch (e) {
+      console.error(e);
+      Swal.close();
       //alert("Error subiendo la imagen.");
       Swal.fire({
         title: 'Error subiendo la imagen',
@@ -123,6 +125,7 @@ export default function UserComponent() {
       setCurrentPw("");
       setNewPw("");
     } catch (e) {
+      console.error(e);
       setPwError("Error actualizando contraseña.");
     } finally {
       setPwLoading(false);
@@ -199,6 +202,7 @@ export default function UserComponent() {
                 </button>*/}
                 <button
                   disabled
+                  onClick={handleImageUpload}
                   className="bg-blue-600 text-white px-3 py-2 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {imageLoading ? "Subiendo..." : "No disponible"}
