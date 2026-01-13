@@ -51,7 +51,7 @@ export class MockProductService implements ProductService {
 
   async updateProduct(id: string | number, product: Partial<productProps>): Promise<appResponse> {
     const existingProduct = mutableProducts.find(p => p.id === id);
-    const copyProduct = { ...existingProduct };
+    //const copyProduct = { ...existingProduct };
     if (existingProduct === undefined) return {code: "product-not-found", response: null, status: 404}
     
     const index = mutableProducts.indexOf(existingProduct);
@@ -60,11 +60,11 @@ export class MockProductService implements ProductService {
     if (updatedProduct.status !== 2) {
       delete updatedProduct.isDeleted;
     }
-    if (product.discount === undefined || product.discount.value === 0) {
+    if (product.discount === null) {
       delete updatedProduct.discount;
     }
     mutableProducts[index] = updatedProduct;
-    return {code: "success", response: copyProduct , status: 200}
+    return {code: "success", response: updatedProduct , status: 200}
   }
 
   async getCartConfigs(): Promise<appResponse> {
@@ -166,8 +166,9 @@ export class MockProductService implements ProductService {
     return notImplemented;
   }
 
-  async uploadImage(file: File, folder: string): Promise<{ ok: boolean; url?: string; error?: string; }> {
-    const mockUrl = `https://mockstorage.com/${folder}`;
+  async uploadImage(file: File, destPath: string): Promise<{ ok: boolean; url?: string; error?: string; }> {
+    const stamp = Date.now();
+    const mockUrl = `https://mockstorage.com/${destPath}_${stamp}.${file.name.split('.').pop()}`;
     return { ok: true, url: mockUrl };
   }
 

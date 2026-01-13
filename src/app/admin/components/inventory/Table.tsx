@@ -162,29 +162,34 @@ export default function Table() {
         inputOptions: {
           0: "Porcentaje (%)",
           1: "Fijo (monto)",
+          2: "Quitar descuento",
         },
         inputPlaceholder: "Selecciona tipo",
         showCancelButton: true,
       });
       if (discountType === undefined) return;
 
-      const { value: discountValue } = await Swal.fire({
-        title: "Valor del descuento",
-        input: "text",
-        inputLabel: discountType === "0" ? "Introduce porcentaje (ej: 10 para 10%)" : "Introduce monto fijo (ej: 5.00)",
-        inputValidator: (val) => {
-          if (!val) return "Debes introducir un valor";
-          const n = Number(String(val).replace(",", "."));
-          if (Number.isNaN(n) || !isFinite(n) || n < 0) return "Valor inválido";
-          if (discountType === "0" && n > 100) return "Porcentaje no puede ser mayor a 100";
-          return null;
-        },
-        showCancelButton: true,
-      });
-      if (discountValue === undefined) return;
+      if (discountType === "2") {
+        payloadPartial = { discount: null };
+      } else {
+        const { value: discountValue } = await Swal.fire({
+          title: "Valor del descuento",
+          input: "text",
+          inputLabel: discountType === "0" ? "Introduce porcentaje (ej: 10 para 10%)" : "Introduce monto fijo (ej: 5.00)",
+          inputValidator: (val) => {
+            if (!val) return "Debes introducir un valor";
+            const n = Number(String(val).replace(",", "."));
+            if (Number.isNaN(n) || !isFinite(n) || n < 0) return "Valor inválido";
+            if (discountType === "0" && n > 100) return "Porcentaje no puede ser mayor a 100";
+            return null;
+          },
+          showCancelButton: true,
+        });
+        if (discountValue === undefined) return;
 
-      const normalizedVal = Number(String(discountValue).replace(",", "."));
-      payloadPartial = { discount: { type: Number(discountType), value: normalizedVal } };
+        const normalizedVal = Number(String(discountValue).replace(",", "."));
+        payloadPartial = { discount: { type: Number(discountType), value: normalizedVal } };
+      }
     } else if (action === "status") {
       // pedir nuevo estado
       const { value: statusChoice } = await Swal.fire({
@@ -193,7 +198,6 @@ export default function Table() {
         inputOptions: {
           "1": "Disponible",
           "0": "Agotado",
-          "2": "Eliminar (marcar eliminado)",
           "restore": "Restaurar",
         },
         inputPlaceholder: "Selecciona estado",
@@ -202,19 +206,7 @@ export default function Table() {
 
       if (statusChoice === undefined) return; // cancelado
 
-      // si eligió 'Eliminar', pedir confirmación extra
-      if (statusChoice === "2") {
-        const confirmDelete = await Swal.fire({
-          title: "Confirmar eliminación",
-          text: `Vas a marcar ${selectedIds.size} producto(s) como eliminados. Esta acción marcará isDeleted = true. ¿Continuar?`,
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Eliminar",
-          cancelButtonText: "Cancelar",
-        });
-        if (!confirmDelete.isConfirmed) return;
-        payloadPartial = { status: 2, isDeleted: true };
-      } else if (statusChoice === "restore") {
+      if (statusChoice === "restore") {
         // Restaurar: quitar isDeleted y poner status disponible (1)
         payloadPartial = { status: 1, isDeleted: false };
       } else {

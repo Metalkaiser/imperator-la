@@ -341,7 +341,7 @@ export function validateVariants(
     // image (si debe ser no vacío)
     const image = v.image === null ? null : String(v.image ?? "");
     if (requireNonEmptyImage && (!image || image.trim() === "")) {
-      return { ok: false, message: `La variante ${i} debe tener una miniatura (image)` };
+      return { ok: false, message: `La variante ${v.sku} debe tener una miniatura (image)` };
     }
 
     // stock: debe ser array no vacío (según tu regla) y cada item válido
@@ -370,4 +370,200 @@ export function validateVariants(
   }
 
   return { ok: true, parsed };
+}
+
+// uploadPlan.ts
+export type UploadTask =
+  | { type: "upload"; file: File; path: string; target: "thumbnail" | "variant" | "image"; index?: number; sku?: string }
+  | { type: "delete"; url: string };
+
+export type UploadPlan = {
+  uploads: UploadTask[];
+  deletes: UploadTask[];
+  updates: any;
+  errors: string[];
+};
+
+import { ProductService } from "@/services/ProductService";
+import { fileSchema } from "./apis/validatePayload";
+import type { productProps } from "./types";
+
+
+/**
+ * 
+ * Builds an upload plan for product images based on form data and existing product data.
+ * @param form  The form data containing files and fields
+ * @param existing The existing product data
+ * @param body The parsed body data
+ * @returns An UploadPlan detailing the upload and delete tasks
+ */
+export function buildUploadPlan({
+  form,
+  existing,
+  body
+}: {
+  form: FormData;
+  existing: productProps;
+  body: Partial<productProps>;
+}): UploadPlan {
+
+  const plan: UploadPlan = {
+    uploads: [],
+    deletes: [],
+    updates: {},
+    errors: []
+  };
+
+  const isValidFile = (f: any) => fileSchema.safeParse(f).success;
+
+  // ---------------- THUMBNAIL ----------------
+  const thumb = form.get("thumbnail");
+  if (thumb instanceof File) {
+    if (!isValidFile(thumb)) {
+      plan.errors.push("Invalid thumbnail file");
+    } else {
+      plan.uploads.push({
+        type: "upload",
+        file: thumb,
+        path: `products/thumbnails/${body.mainSku ?? existing.mainSku}`,
+        target: "thumbnail"
+      });
+
+      if (existing.thumbnail) {
+        plan.deletes.push({ type: "delete", url: existing.thumbnail });
+      }
+    }
+  }
+
+  // ---------------- VARIANTS ----------------
+  const baseVariants =
+    Array.isArray(body.variants)
+      ? body.variants
+      : existing.variants;
+
+  const updatedVariants = structuredClone(baseVariants);
+  plan.updates.variants = updatedVariants;
+
+  baseVariants.forEach((v, i) => {
+    const sku = String(v.sku).trim();
+    const file =
+      form.get(`variant_${sku}_image`) ??
+      form.get(`variant_${i}_image`);
+
+    if (file instanceof File) {
+      if (!isValidFile(file)) {
+        plan.errors.push(`Invalid variant image at index ${v.sku}`);
+        return;
+      }
+
+      plan.uploads.push({
+        type: "upload",
+        file,
+        path: `products/skus/${sku}`,
+        target: "variant",
+        index: i,
+        sku
+      });
+
+      const old = existing.variants?.find(ev => ev.sku === sku);
+      if (old?.image) {
+        plan.deletes.push({ type: "delete", url: old.image });
+      }
+    }
+  });
+
+  plan.updates.variants = updatedVariants;
+
+  // ---------------- ADDITIONAL IMAGES ----------------
+  let hasNew = false;
+
+  for (const key of form.keys()) {
+    if (!key.startsWith("image_")) continue;
+
+    const file = form.get(key);
+    if (file instanceof File) {
+      if (!isValidFile(file)) {
+        plan.errors.push(`Invalid image file: ${key}`);
+        continue;
+      }
+
+      hasNew = true;
+      plan.uploads.push({
+        type: "upload",
+        file,
+        path: `products/images/${existing.name}_${key}`,
+        target: "image"
+      });
+    }
+  }
+
+  if (body.images && Array.isArray(body.images)) {
+    const kept = body.images.filter(x => typeof x === "string" && !x.startsWith("blob:"));
+
+    if (!kept.length && !hasNew) {
+      plan.errors.push("At least one product image is required.");
+    } else {
+      plan.updates.images = [...kept];
+      existing.images
+        .filter(img => !kept.includes(img))
+        .forEach(url => plan.deletes.push({ type: "delete", url }));
+    }
+  } else {
+    if (hasNew) {
+      plan.updates.images = existing.images;
+    }
+  }
+
+  return plan;
+}
+
+/**
+ * 
+ * Executes the upload plan by performing uploads and deletions using the provided ProductService.
+ * @param plan  The UploadPlan containing upload and delete tasks
+ * @param dbService The ProductService to handle uploads and deletions
+ * @returns An object with updates and errors after executing the upload plan
+ */
+export async function executeUploadPlan(
+  plan: UploadPlan,
+  dbService: ProductService
+) {
+  const results = {
+    updates: { ...plan.updates },
+    errors: [...plan.errors]
+  };
+
+  for (const task of plan.uploads) {
+    if (task.type !== "upload") continue;
+    const up = await dbService.uploadImage(task.file, task.path);
+    if (!up.ok || !up.url) {
+      results.errors.push(`Upload failed: ${task.path}`);
+      continue;
+    }
+
+    if (task.target === "thumbnail") {
+      results.updates.thumbnail = up.url;
+    }
+
+    if (task.target === "variant" && task.index !== undefined) {
+      results.updates.variants[task.index].image = up.url;
+    }
+
+    if (task.target === "image") {
+      if (!Array.isArray(results.updates.images)) {
+        results.updates.images = [];
+      }
+      results.updates.images.push(up.url);
+    }
+  }
+
+  for (const del of plan.deletes) {
+    if (del.type !== "delete") continue;
+    try {
+      await dbService.deleteImage(del.url);
+    } catch {
+      console.warn("Delete failed:", del.url);
+    }
+  }
+  return results;
 }

@@ -60,17 +60,45 @@ export class FirebaseProductService implements ProductService {
     });
   }
 
-  async updateProduct(id: string | number, product: Partial<productProps>): Promise<appResponse> {
-    return handleFirebase(async () => {
-      const productsCol = admin.firestore().collection(dbCollections.products);
-      const docRef = productsCol.doc(id.toString());
-      const docSnap = await docRef.get();
-      const now = Date.now();
-      if (!docSnap.exists) throw new Error("Product not found");
-      await docRef.set({ ...product, updatedAt: now });
-      return { id: docSnap.id, ...docSnap.data() };
-    });
-  }
+  async updateProduct(
+  id: string | number,
+  product: Partial<productProps>
+): Promise<appResponse> {
+  return handleFirebase(async () => {
+    const productsCol = admin.firestore().collection(dbCollections.products);
+    const docRef = productsCol.doc(id.toString());
+
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      throw new Error("Product not found");
+    }
+
+    const now = Date.now();
+
+    const fieldsToUpdate: Record<string, any> = {
+      updatedAt: now
+    };
+
+    for (const [key, value] of Object.entries(product)) {
+      if (value === null) {
+        fieldsToUpdate[key] = admin.firestore.FieldValue.delete();
+      } else if (value !== undefined) {
+        fieldsToUpdate[key] = value;
+      }
+    }
+
+    await docRef.update(fieldsToUpdate);
+
+    return {
+      status: 200,
+      response: {
+        id,
+        updatedAt: now
+      }
+    };
+  });
+}
+
 
   async getCartConfigs(): Promise<appResponse> {
     return handleFirebase(async () => {

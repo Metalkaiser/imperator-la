@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Swal from "sweetalert2";
+import isEqual from "fast-deep-equal";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { productProps } from "@/app/utils/types";
 import {
@@ -17,7 +18,12 @@ import {
   ProdDiscount
 } from "@/app/admin/components/formComponents/ProductForm";
 import ProdVariant from "@/app/admin/components/formComponents/ProductForm";
+import { updateProductSchema } from "@/app/utils/apis/validatePayload";
 import { storagePath } from "@/app/utils/utils";
+import { validateVariants } from "@/app/utils/clientFunctions";
+import z from "zod";
+import { es } from "zod/locales"
+z.config(es());
 
 // Tipos (sin cambios)
 type StockItem = { name: string; quantity: number };
@@ -28,6 +34,7 @@ export default function EditProduct({ id }: { id?: string }) {
   const router = useRouter();
   const params = useParams(); // <- usar useParams en App Router
   const { products, refreshProducts } = useDB();
+  const originalRef = useRef<productProps | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,13 +74,11 @@ export default function EditProduct({ id }: { id?: string }) {
     return undefined;
   }, [id, params]);
 
-  // Reemplaza tu useEffect actual que actualiza variantPreviews
+  // Sincronizar variantFiles y variantPreviews al cambiar variantes
   useEffect(() => {
-    // garantizar que los arrays tengan la misma longitud que variants
     setVariantFiles((prev) => variants.map((_, i) => prev[i] ?? null));
 
     setVariantPreviews((prev) => {
-      // limpiar prev objectURLs que ya no usamos
       variantPreviewUrlsRef.current.forEach((url, idx) => {
         if (url && (!variants[idx] || prev[idx] !== url)) {
           try { URL.revokeObjectURL(url); } catch (e) { console.warn("Revoke objectURL error:", e); }
@@ -97,11 +102,9 @@ export default function EditProduct({ id }: { id?: string }) {
       });
       return next;
     });
-  // Añadimos variantFiles a deps
   }, [variants]);
 
-
-  // limpieza al desmontar del componente: revoke objectURLs
+  // Limpiar objectURLs al desmontar
   useEffect(() => {
     return () => {
       variantPreviewUrlsRef.current.forEach((u) => {
@@ -132,6 +135,7 @@ export default function EditProduct({ id }: { id?: string }) {
       setProduct(found ?? null);
 
       if (found) {
+        originalRef.current = structuredClone(found);
         // inicializar formulario aquí
         setName(found.name ?? "");
         setDescription(found.description ?? "");
@@ -178,35 +182,6 @@ export default function EditProduct({ id }: { id?: string }) {
     }
   }, [resolvedId, products]);
 
-  const validate = () => {
-    if (!name || name.trim().length < 2) {
-      Swal.fire("Nombre inválido", "El nombre debe tener al menos 2 caracteres.", "warning");
-      return false;
-    }
-    if (!mainSku || mainSku.trim().length === 0) {
-      Swal.fire("SKU inválido", "El SKU principal no puede estar vacío.", "warning");
-      return false;
-    }
-    if (price === "" || Number.isNaN(Number(price)) || Number(price) < 0) {
-      Swal.fire("Precio inválido", "Introduce un precio válido (>= 0).", "warning");
-      return false;
-    }
-    // validar variantes: skus únicos
-    const skus = new Set<string>();
-    for (const v of variants) {
-      if (!v.sku || !v.sku.trim()) {
-        Swal.fire("SKU variante inválido", "Cada variante debe tener un SKU.", "warning");
-        return false;
-      }
-      if (skus.has(v.sku)) {
-        Swal.fire("SKU duplicado", `El SKU ${v.sku} está repetido entre variantes.`, "warning");
-        return false;
-      }
-      skus.add(v.sku);
-    }
-    return true;
-  };
-
   const handleThumbnailFileChange = (file: File | null) => {
     // limpiar previa blob URL si existe
     if (thumbnailPreview && thumbnailPreview.startsWith("blob:")) {
@@ -251,11 +226,13 @@ export default function EditProduct({ id }: { id?: string }) {
         const obj = URL.createObjectURL(file);
         variantPreviewUrlsRef.current[index] = obj;
         next[index] = obj;
-        handleVariantChange(index, { image: "" }); // limpiar image en variant
+        //handleVariantChange(index, { image: "" }); // limpiar image en variant
       } else {
         // si file es null, volver a imagen original en variants (si existe)
-        handleVariantChange(index, { image: product?.variants[index].image });
-        next[index] = variants[index]?.image ?? ""; //storagePath + (variants[index]?.image ?? "");
+        if (variants[index]?.image) {
+          handleVariantChange(index, { image: product?.variants[index].image });
+          next[index] = variants[index]?.image ?? ""; //storagePath + (variants[index]?.image ?? "");
+        }
       }
       return next;
     });
@@ -337,19 +314,71 @@ export default function EditProduct({ id }: { id?: string }) {
 
   // Guardar: si hay archivos, envio FormData con payload + variant_{i}_image
   const handleSave = async () => {
-    if (!validate() || !resolvedId) return;
+    if (!resolvedId) return;
 
-    const payload = {
-      name: name.trim(),
-      description: description,
-      thumbnail: thumbnailPreview,
-      images: imagesPreviews,
-      mainSku: mainSku.trim(),
-      price: Number(price),
-      status: Number(status),
-      variants: variants,
-      discount: discount,
-    };
+    const payload: any = {};
+    const original = originalRef.current!;
+
+    // construir payload solo con campos modificados
+    if (name.trim() !== original.name) payload.name = name.trim();
+    if (description !== original.description) payload.description = description;
+    if (mainSku.trim() !== original.mainSku) payload.mainSku = mainSku.trim();
+    if (Number(price) !== Number(original.price)) payload.price = Number(price);
+    if (Number(status) !== Number(original.status)) payload.status = Number(status);
+    // comparar discount (puede ser undefined)
+    if (JSON.stringify(discount) !== JSON.stringify(original.discount)) {
+      if (discount === undefined) {
+        payload.discount = null; // eliminar descuento
+      } else {
+        payload.discount = discount;
+      }
+    }
+    const cleanImages = imagesPreviews.filter((img) => img && !img.startsWith("blob:"));
+    if (!isEqual(cleanImages, original.images)) {  // comparar imágenes
+      payload.images = cleanImages;
+    }
+    if (!isEqual(variants, original.variants)) {
+      payload.variants = variants;
+    }
+
+    if (Object.keys(payload).length === 0 &&
+      !thumbnailFile &&
+      !variantFiles.some(Boolean) &&
+      !imagesFiles.some(f => f instanceof File)) {
+      Swal.fire("Sin cambios", "No se han realizado modificaciones.", "info");
+      return;
+    }
+
+    const parsed = updateProductSchema.safeParse(payload);
+    
+    if (!parsed.success) {
+      const errors = z.flattenError(parsed.error);
+      const errorArray = Object.values(errors.fieldErrors);
+      Swal.fire({
+        title: "Error de validación",
+        html: errorArray.flat().map((e, i) => `<div key=${i}>- ${e}</div>`).join("") || "Datos inválidos.",
+        icon: "error"
+      });
+      return;
+    }
+
+    if (payload.variants || payload.mainSku) {
+      const variantErrors = validateVariants({
+        variants: payload.variants ?? originalRef.current!.variants,
+        mainSku: payload.mainSku ?? originalRef.current!.mainSku,
+        variantFiles,
+      });
+      if (variantErrors.length > 0) {
+        Swal.fire({
+          title: "Errores en variantes",
+          html: variantErrors
+            .map(e => `• ${e.message}`)
+            .join("<br />"),
+          icon: "warning",
+        });
+        return;
+      }
+    }
 
     try {
       setSaving(true);
@@ -358,7 +387,8 @@ export default function EditProduct({ id }: { id?: string }) {
       // ¿Hay archivos? si al menos uno en variantFiles no es null -> usamos FormData
       const hasVariantFiles = variantFiles.some((f) => f !== null);
       const hasThumbnailFile = thumbnailFile !== null;
-      const hasImagesFiles = imagesFiles.length > 0;
+      const hasImagesFiles = imagesFiles.some(f => f instanceof File);
+
 
       const form = new FormData();
       form.append("payload", JSON.stringify(payload));
@@ -372,16 +402,18 @@ export default function EditProduct({ id }: { id?: string }) {
       if (hasVariantFiles) {
         variantFiles.forEach((f, i) => {
           if (f) {
-            form.append(`variant_${i}_image`, f, (f as File).name);
+            form.append(`variant_${variants[i].sku}_image`, f, (f as File).name);
           }
         });
       }
 
       // imágenes adicionales
       if (hasImagesFiles) {
-        imagesFiles.forEach((f, i) => {
+        let indexOffset = 0;
+        imagesFiles.forEach((f) => {
           if (f) {
-            form.append(`image_${i}`, f, (f as File).name);
+            form.append(`image_${indexOffset}`, f, (f as File).name);
+            indexOffset += 1;
           }
         });
       }
@@ -405,12 +437,15 @@ export default function EditProduct({ id }: { id?: string }) {
       await Swal.fire("Guardado", "Producto actualizado correctamente.", "success");
       await refreshProducts();
       router.push("/admin/inventory");
+
+      Swal.close();
     } catch (err: any) {
       console.error("save error", err);
       Swal.fire("Error", err?.message || "No se pudo guardar el producto.", "error");
     } finally {
       setSaving(false);
     }
+
   };
 
   if (loading) return <div className="p-6">Cargando producto...</div>;
