@@ -36,24 +36,5 @@ export interface AuthService {
    * @returns success: true if user is added successfully; otherwise success: false and an error message.
    * @returns message: Error message on failure.
    */
-  addUser(user: User, password: string): Promise<{ success: boolean; message: string }>;
-
-  /**
-   * Update an existing user's data, optionally uploading a new profile image.
-   * 
-   * @param user The updated user data.
-   * @param file Optional profile image file to upload.
-   * @returns success: true if user is updated successfully; otherwise success: false and an error message.
-   * @returns message: Error message on failure.
-   */
-  updateUser(user: User, file?:File): Promise<{ success: boolean; message: string }>;
-
-  /**
-   * Delete a user by their ID.
-   * 
-   * @param userId The ID of the user to delete.
-   * @returns success: true if user is deleted successfully; otherwise success: false and an error message.
-   * @returns message: Error message on failure.
-   */
-  deleteUser(userId: string): Promise<{ success: boolean; message: string }>;
+  createUser(user: User, password: string): Promise<{ success: boolean; message: string }>;
 }

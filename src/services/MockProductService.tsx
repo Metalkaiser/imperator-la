@@ -184,7 +184,7 @@ export class MockProductService implements ProductService {
 
     mutableProducts.push(newProduct);
 
-    return {code: "success", response: newProduct , status: 200}
+    return {code: "success", response: newProduct.id , status: 200}
   }
 
   async getUsers(): Promise<appResponse> {

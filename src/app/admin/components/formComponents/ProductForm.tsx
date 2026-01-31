@@ -121,19 +121,19 @@ export const ProdStatus = ( {status, statusState}: {status: number; statusState:
 
 export const ProdCategory = ( {category, subcategory, setCategory, setSubcategory}
   : {
-    category: number | string;
-    subcategory: number;
-    setCategory: (cat: number) => void;
-    setSubcategory: (subcat: number | string) => void;
+    category: string;
+    subcategory: string;
+    setCategory: (cat: string) => void;
+    setSubcategory: (subcat: string) => void;
   } ) => {
   const allCategories = getCategoriesWithSubcategories("es");
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium mb-1">Categoría</label>
       <div className="flex gap-2 items-center mt-1">
-        <select className="border rounded px-2 py-1 w-2/5" onChange={(e) => {
+        <select required name="category" className="border rounded px-2 py-1 w-2/5" onChange={(e) => {
             setSubcategory("");
-            setCategory(Number(e.target.value))}
+            setCategory(e.target.value)}
           }
           value={category}>
           <option value="" disabled>Seleccionar categoría</option>
@@ -144,7 +144,7 @@ export const ProdCategory = ( {category, subcategory, setCategory, setSubcategor
         {(allCategories.length > Number(category) &&
           allCategories[Number(category)].subcategories.length > 0 &&
           category !== "") && (
-          <select className="border rounded px-2 py-1 w-2/5" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
+          <select name="subcategory" className="border rounded px-2 py-1 w-2/5" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
             <option value="" disabled>Seleccionar subcategoría</option>
             {allCategories[Number(category)].subcategories.map((subcat, j) => (
               <option key={`subcat-${j}`} value={j}>{capitalize(subcat.label)}</option>
@@ -347,9 +347,26 @@ export const VariantThumbnail = ({index, variantPV}: {index: number; variantPV: 
   )
 }
 
-export default function ProdVariant({
+export const ImgSizeIndicator = ({sizeInBytes}: {sizeInBytes:number}) => {
+  const kbSize = sizeInBytes / 1024;
+  let elSize = "";
+  let textColor = "text-green-500";
+  if (kbSize < 1024) {
+    elSize = `${kbSize.toFixed(2)} KB`;
+    if (kbSize > 500) textColor = "text-yellow-500";
+    if (kbSize > 1024) textColor = "text-red-500";
+  } else {
+    const mbSize = kbSize / 1024;
+    elSize = `${mbSize.toFixed(2)} MB`;
+    textColor = "text-red-500";
+  }
+  return <p className={`absolute top-1 left-1 font-bold text-xs bg-gray-500/75 z-99 ${textColor}`}>{elSize}</p>
+}
+
+export const ProdVariant = ({
   view,
   variants,
+  variantFiles,
   variantPreviews,
   addVariant,
   removeVariant,
@@ -361,6 +378,7 @@ export default function ProdVariant({
 }: {
   view: "new" | "edit";
   variants: productProps["variants"];
+  variantFiles?: (File | null)[];
   variantPreviews: (File | string | null)[];
   addVariant: () => void;
   removeVariant: (index: number) => void;
@@ -369,7 +387,7 @@ export default function ProdVariant({
   addStock: (vIndex: number) => void;
   stockChange: (vIndex: number, sIndex: number, patch: Partial<StockItem>) => void;
   removeStock: (vIndex: number, sIndex: number) => void
-}) {
+}) => {
   return (
     <div className="md:col-span-2">
       <div className="flex items-center justify-between">
@@ -406,6 +424,7 @@ export default function ProdVariant({
                 <label className="block text-xs">Miniatura variante</label>
                 <div className="mt-1 flex items-center gap-2">
                   <div className="w-20 h-20 bg-gray-100 flex items-center justify-center overflow-hidden rounded relative">
+                    {variantFiles && variantFiles[vi] && <ImgSizeIndicator sizeInBytes={variantFiles[vi]?.size ?? 0} />}
                     <VariantThumbnail index={vi} variantPV={variantPreviews[vi]} />
                   </div>
                   <div className="flex flex-col">
@@ -413,7 +432,7 @@ export default function ProdVariant({
                       Cambiar imagen
                       <input
                         type="file"
-                        accept="image/webp"
+                        accept="image/webp, image/jpeg, image/png, image/bmp"
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0] ?? null;

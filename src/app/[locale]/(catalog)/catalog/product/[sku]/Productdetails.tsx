@@ -36,7 +36,7 @@ export default function ProductDetails() {
             <p className="text-sm mb-4 dark:text-white">{product.description}</p>
             <Modelselect product={product} />
           </div>
-          <WaProduct link={product.waLink} price={product.price} discount={product.discount} />
+          <WaProduct link={encodeURIComponent(product.name)} price={product.price} discount={product.discount} />
           <div></div>
         </div>
       </article>

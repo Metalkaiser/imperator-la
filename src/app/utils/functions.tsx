@@ -567,3 +567,34 @@ export async function executeUploadPlan(
   }
   return results;
 }
+
+/**
+ * 
+ * @param s The string to sanitize
+ * @returns A sanitized string safe for file names
+ */
+export function sanitizeFileName(s: string) {
+  return String(s)
+    .normalize("NFKD")
+    .replace(/[^\w\s.-]/g, "") // quitar caracteres raros
+    .trim()
+    .replace(/\s+/g, "_"); // espacios -> _
+}
+
+/**
+ * 
+ * @param obj 
+ * @returns 
+ */
+export function removeUndefined(obj: Record<string, any>): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(value => value[1] !== undefined)
+      .map(([key, value]) => [
+        key,
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? removeUndefined(value)  // recursivo para objetos anidados
+          : value
+      ])
+  );
+}

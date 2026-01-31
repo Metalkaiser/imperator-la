@@ -15,9 +15,9 @@ import {
   ProdImages,
   ProdPrice,
   ProdStatus,
-  ProdDiscount
+  ProdDiscount,
+  ProdVariant
 } from "@/app/admin/components/formComponents/ProductForm";
-import ProdVariant from "@/app/admin/components/formComponents/ProductForm";
 import { updateProductSchema } from "@/app/utils/apis/validatePayload";
 import { storagePath } from "@/app/utils/utils";
 import { validateVariants } from "@/app/utils/clientFunctions";

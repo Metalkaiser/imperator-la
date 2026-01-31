@@ -1,5 +1,6 @@
 import { ProductService } from './ProductService';
 import {v4 as uuidv4} from 'uuid';
+import sharp from 'sharp';
 import admin from '@/app/utils/firebaseAdmin';
 import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
@@ -250,6 +251,11 @@ export class FirebaseProductService implements ProductService {
       // 1) convertir File -> Buffer
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
+
+      const webpBuffer = await sharp(buffer)
+        .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true }) // opcional pero recomendado
+        .webp({ quality: 82, effort: 4 }) // effort 4 = buen balance velocidad/calidad
+        .toBuffer();
   
       // 2) obtener bucket y file handle
       const bucket = admin.storage().bucket(); // usa storageBucket configurado en admin.initializeApp
@@ -259,14 +265,14 @@ export class FirebaseProductService implements ProductService {
       const token = uuidv4();
   
       // 4) subir (save) y setear metadata con token
-      await remoteFile.save(buffer, {
+      await remoteFile.save(webpBuffer, {
         metadata: {
           contentType: (file as any).type || "application/octet-stream",
           metadata: {
             firebaseStorageDownloadTokens: token,
           },
         },
-        // opcional: gzip: true
+        resumable: false,
       });
   
       // 5) construir la URL pública con token (igual que la que genera Firebase console)
@@ -308,7 +314,7 @@ export class FirebaseProductService implements ProductService {
     return handleFirebase(async () => {
       const col = admin.firestore().collection(dbCollections.products);
       const docRef = await col.add(product);
-      return { response: docRef.id };
+      return docRef.id;
     });
   }
 
