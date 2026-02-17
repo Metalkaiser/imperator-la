@@ -243,13 +243,6 @@ export function getCookieValue(cookieHeader: string | null, name: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-type VariantInput = {
-  color?: string;
-  sku?: string;
-  image?: string | null;
-  stock?: { name?: string; quantity?: number | string }[];
-};
-
 // uploadPlan.ts
 export type UploadTask =
   | { type: "upload"; file: File; path: string; target: "thumbnail" | "variant" | "image"; index?: number; sku?: string }
