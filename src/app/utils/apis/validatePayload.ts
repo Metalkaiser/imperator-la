@@ -6,36 +6,35 @@ const categoryIndices = allCategories.map((_, i) => i);
 const MAX_IMAGE_BYTES = 512_000;
 const ALLOWED_MIMES = ["image/webp", "image/jpeg", "image/png", "image/bmp"];
 
-const stockSchema = z.object({
-  name: z.string().min(1, {error: "El nombre de la talla debe tener al menos un caracter"}),
-  quantity: z.number().nonnegative("La cantidad de cada talla debe ser mayor o igual a cero")
-});
-
-const discountSchema = z.object({
-  type: z.number().int().refine(v => v === 0 || v === 1, "El tipo de descuento solo puede ser Porcentaje o Valor absoluto"),
-  value: z.number().nonnegative("La cantidad del descuento debe ser mayor o igual a cero")
-}).optional().nullable();
-
-const variantSchema = z.object({
-  color: z.string(),
-  image: z.string(),
-  sku: z.string().min(1, {error: "El sku es requerido en cada variante"}),
-  stock: z.array(stockSchema).min(1, {error: "Cada variante debe tener al menos una talla"})
-});
-
 export const updateProductSchema = z.object({
-  name: z.string().min(2, { error: "El nombre es obligatorio y requiere más de dos caracteres" }).optional(),
-  description: z.string().min(10, {error: "La descripción es obligatoria y de al menos 10 caracteres"}).optional(),
-  price: z.number().nonnegative("El precio debe ser mayor o igual a cero").optional(),
-  discount: discountSchema,
-  category: z.number().optional(),
-  subcategory: z.number().optional(),
+  name: z.string().min(2, { error: "El nombre es obligatorio y requiere más de dos caracteres" }).trim().optional(),
+  mainSku: z.string().min(2, {error: "El SKU principal es obligatorio y de al menos 2 caracteres"}).trim().optional(),
+  description: z.string().min(10, {error: "La descripción es obligatoria y de al menos 10 caracteres"}).trim().optional(),
+  price: z.number().gt(0, "El precio debe ser mayor a cero").optional(),
+  discount: z.object({
+    type: z.number().int().refine(v => v === 0 || v === 1, "El tipo de descuento solo puede ser Porcentaje o Valor absoluto"),
+    value: z.number().gt(0, "La cantidad del descuento debe ser mayor a cero")
+  }).optional(),
   status: z.number().int().refine(v => [0,1,2].includes(v), "El estado solo puede ser Disponible, Agotado o Eliminado").optional(),
-  thumbnail: z.string().min(1).optional(),
-  images: z.array(z.string()).optional(),
-  mainSku: z.string().min(2, {error: "El SKU principal es obligatorio y de al menos 2 caracteres"}).optional(),
-  variants: z.array(variantSchema).optional(),
-  position: z.number().optional().nullable()
+  variants: z.array(z.object({
+    color: z.string().trim(),
+    sku: z.string().min(1, {error: "El sku es requerido en cada variante"}).trim(),
+    stock: z.array(z.object({
+      name: z.string().min(1, {error: "El nombre de la talla debe tener al menos un caracter"}).trim(),
+      quantity: z.number().nonnegative("La cantidad de cada talla debe ser mayor o igual a cero")
+    })).min(1, {error: "Cada variante debe tener al menos una talla"})
+  })).min(1, {error: "El producto debe tener al menos una variante"}).superRefine((variants, ctx) => {
+      const skus = variants.map(v => v.sku.trim());
+      const uniqueSkus = new Set(skus);
+
+      if (uniqueSkus.size !== skus.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "SKUs duplicados entre variantes",
+          path: ["variants"],
+        });
+      }
+    }).optional()
 });
 
 

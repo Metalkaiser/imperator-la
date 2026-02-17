@@ -232,16 +232,6 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
 
 /**
  * 
- * Checks if the MIME type of a given file is "image/webp".
- * @param file The file to check the MIME property
- * @returns {boolean} - True if MIME is webp. False otherwise.
- */
-export function checkMime(file: File): boolean {
-  return file.type === "image/webp";
-}
-
-/**
- * 
  * Retrieves the value of a specified cookie from the provided cookie header string.
  * @param cookieHeader The cookie header string
  * @param name The name of the cookie to retrieve
@@ -259,118 +249,6 @@ type VariantInput = {
   image?: string | null;
   stock?: { name?: string; quantity?: number | string }[];
 };
-
-/**
- * 
- * Validates an array of product variants against specific rules.
- * @param variants The array of variant objects to validate
- * @param mainSku The main SKU to compare against
- * @param opts Optional settings for validation
- * @returns An object indicating whether validation passed and the parsed variants or an error message
- */
-export function validateVariants(
-  variants: VariantInput[] | null | undefined,
-  mainSku: string,
-  opts?: {
-    skuDiffChars?: number; // cuántos chars finales pueden diferir (por defecto 1)
-    requireNonEmptyImage?: boolean; // exige image no vacío
-    disallowSuffixEqualMain?: boolean; // evita suffix igual al mainSku suffix
-  }
-): { ok: true; parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] }
-  | { ok: false; message: string } {
-  const skuDiffChars = Math.max(0, Math.floor(opts?.skuDiffChars ?? 1));
-  const requireNonEmptyImage = opts?.requireNonEmptyImage ?? true;
-  const disallowSuffixEqualMain = opts?.disallowSuffixEqualMain ?? true;
-
-  if (!mainSku || typeof mainSku !== "string" || !mainSku.trim()) {
-    return { ok: false, message: "mainSku inválido" };
-  }
-  const main = mainSku.trim();
-
-  // permitir null/undefined si no quieres obligarlo
-  if (variants === null || variants === undefined) {
-    return { ok: false, message: "Las variantes son obligatorias" };
-  }
-
-  if (!Array.isArray(variants)) {
-    return { ok: false, message: "variants debe ser un array" };
-  }
-
-  if (main.length <= skuDiffChars) {
-    return { ok: false, message: `mainSku debe tener más de ${skuDiffChars} caracteres` };
-  }
-  const prefix = main.slice(0, main.length - skuDiffChars);
-  const mainSuffix = main.slice(main.length - skuDiffChars);
-
-  const seenSuffix = new Set<string>();
-  const parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] = [];
-
-  for (let i = 0; i < variants.length; i++) {
-    const v = variants[i];
-    if (typeof v !== "object" || v === null) {
-      return { ok: false, message: `La variante en índice ${i} debe ser un objeto` };
-    }
-
-    const rawSku = String(v.sku ?? "").trim();
-    if (!rawSku) return { ok: false, message: `La variante ${i} no tiene sku` };
-
-    // verificar longitud y prefijo/suffix según regla
-    if (rawSku.length !== main.length) {
-      return { ok: false, message: `La variante ${i} sku debe tener la misma longitud que el mainSku (${main.length} caracteres)` };
-    }
-    const skuPrefix = rawSku.slice(0, rawSku.length - skuDiffChars);
-    const skuSuffix = rawSku.slice(rawSku.length - skuDiffChars);
-
-    if (skuPrefix !== prefix) {
-      return { ok: false, message: `La variante ${i} tiene prefijo distinto. Se esperaba prefijo "${prefix}"` };
-    }
-
-    // patrón simple para suffix (alfanumérico). Ajusta si necesitas solo dígitos u otro patrón.
-    if (!/^[A-Za-z0-9]+$/.test(skuSuffix)) {
-      return { ok: false, message: `La variante ${i} suffix "${skuSuffix}" no cumple el patrón permitido` };
-    }
-
-    if (disallowSuffixEqualMain && skuSuffix === mainSuffix && variants.length > 1) {
-      return { ok: false, message: `La variante ${i} no puede tener el mismo suffix que el mainSku` };
-    }
-    if (seenSuffix.has(skuSuffix)) {
-      return { ok: false, message: `Suffix duplicado "${skuSuffix}" en variante ${i}` };
-    }
-    seenSuffix.add(skuSuffix);
-
-    // image (si debe ser no vacío)
-    const image = v.image === null ? null : String(v.image ?? "");
-    if (requireNonEmptyImage && (!image || image.trim() === "")) {
-      return { ok: false, message: `La variante ${v.sku} debe tener una miniatura (image)` };
-    }
-
-    // stock: debe ser array no vacío (según tu regla) y cada item válido
-    if (!Array.isArray(v.stock) || v.stock.length === 0) {
-      return { ok: false, message: `La variante ${i} debe tener stock declarado` };
-    }
-    const stockNormalized: { name: string; quantity: number }[] = [];
-    for (let j = 0; j < v.stock.length; j++) {
-      const st = v.stock[j] as any;
-      if (typeof st !== "object" || st === null) {
-        return { ok: false, message: `Stock inválido en variante ${i} índice ${j}` };
-      }
-      const name = String(st.name ?? "").trim();
-      if (!name) return { ok: false, message: `La variante ${i} stock[${j}] debe tener un nombre` };
-      const q = Number(st.quantity);
-      if (!Number.isFinite(q) || q < 0 || !Number.isInteger(q)) {
-        return { ok: false, message: `Formato de stock incorrecto en variante ${i} stock[${j}]` };
-      }
-      stockNormalized.push({ name, quantity: q });
-    }
-
-    // color: normalizar a string (puede quedar vacío si lo permites)
-    const color = String(v.color ?? "").trim();
-
-    parsed.push({ color, sku: rawSku, image: image === "" ? null : image, stock: stockNormalized });
-  }
-
-  return { ok: true, parsed };
-}
 
 // uploadPlan.ts
 export type UploadTask =
@@ -476,26 +354,22 @@ export function buildUploadPlan({
 
   // ---------------- ADDITIONAL IMAGES ----------------
   let hasNew = false;
-
-  for (const key of form.keys()) {
-    if (!key.startsWith("image_")) continue;
-
-    const file = form.get(key);
-    if (file instanceof File) {
-      if (!isValidFile(file)) {
-        plan.errors.push(`Invalid image file: ${key}`);
-        continue;
-      }
-
-      hasNew = true;
-      plan.uploads.push({
-        type: "upload",
-        file,
-        path: `products/images/${existing.name}_${key}`,
-        target: "image"
-      });
+  const additionalImages = form.getAll("images");
+  additionalImages.forEach((file, index) => {
+    if (!(file instanceof File)) return;
+    if (!isValidFile(file)) {
+      plan.errors.push(`Invalid image file: images[${index}]`);
+      return;
     }
-  }
+
+    hasNew = true;
+    plan.uploads.push({
+      type: "upload",
+      file,
+      path: `products/images/${existing.name}_images_${index}`,
+      target: "image"
+    });
+  });
 
   if (body.images && Array.isArray(body.images)) {
     const kept = body.images.filter(x => typeof x === "string" && !x.startsWith("blob:"));
@@ -583,8 +457,8 @@ export function sanitizeFileName(s: string) {
 
 /**
  * 
- * @param obj 
- * @returns 
+ * @param obj The object to remove undefined values from
+ * @returns A new object with all undefined values removed, including nested objects
  */
 export function removeUndefined(obj: Record<string, any>): Record<string, any> {
   return Object.fromEntries(

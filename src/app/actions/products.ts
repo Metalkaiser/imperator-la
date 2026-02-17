@@ -7,10 +7,11 @@ import getProductService from "@/config/productServiceInstance";
 import admin from "@/app/utils/firebaseAdmin";
 import { authConfigs } from "@/config/websiteConfig/authConfig";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
-import { sanitizeFileName, removeUndefined } from "@/app/utils/functions";
-import { newProductSchema, newProductImagesSchema, fileSchema } from "@/app/utils/apis/validatePayload";
+import { sanitizeFileName, removeUndefined, diffObjects } from "@/app/utils/functions";
+import { newProductSchema, newProductImagesSchema, fileSchema, updateProductSchema } from "@/app/utils/apis/validatePayload";
 import { dbCollections } from "../utils/utils";
-import { productProps, User } from "../utils/types";
+import { NewActivityLog, NewProduct, productProps, User } from "../utils/types";
+import { buildUploads } from "../utils/apis/buildUploads";
 
 async function getAdminUser() {
   const { cookies } = await import("next/headers");
@@ -229,5 +230,104 @@ export async function createProductAction(prevState: any, formData: FormData) {
       success: false,
       error: err.message || "Error interno al crear producto",
     };
+  }
+}
+
+export async function updateProductAction(prevState: any, formData: FormData) {
+  try {
+    const id = formData.get("id");
+    if (!id) return { success: false, error: "ID de producto requerido" };
+    if (typeof id !== "string") return { success: false, error: "ID de producto inválido" };
+
+    const authResult = await getAdminUser();
+    if (!authResult.success) return { success: false, error: authResult.response }
+    const adminUser = authResult.response as { id: string | number; role: string; username: string };
+    
+    const payloadRaw = formData.get("payload");
+
+    if (!payloadRaw || typeof payloadRaw !== "string") return { success: false, error: "Payload JSON requerido" };
+
+    let body: any;
+    try {
+      const json = JSON.parse(payloadRaw);
+      
+      const isPayloadEmpty = !json || Object.keys(json).length === 0;
+      const hasOtherFields = [...formData.keys()].some(k => k !== "payload");
+
+      if (isPayloadEmpty && !hasOtherFields) return { success: false, error: "El cuerpo de la solicitud está vacío" };
+
+
+      try {
+        updateProductSchema.parse(json);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          return { success: false, error: error.issues };
+        } else {
+          return { success: false, error: "Error de validación" };
+        }
+      }
+
+      body = json;
+    } catch (err) {
+      console.error("Error al parsear JSON de payload:", err);
+      return { success: false, error: "JSON de payload inválido" };
+    }
+
+    const dbService = await getProductService();
+    const productRes = await dbService.getItemById(id, dbCollections.products);
+    if (productRes.status !== 200) return { success: false, error: productRes.response ?? "Fallo al obtener producto" };
+
+    const existingProduct = productRes.response as productProps;
+
+    // process uploads: thumbnail, variants, additional images
+    // We'll mutate `body` to set the resulting URLs before validation + save.
+
+    const uploads = await buildUploads({form: formData, existing: existingProduct, body, dbService});
+
+    if (!uploads.updates.images && Array.isArray(body.images) && body.images.length === 0) {
+      return { success: false, error: "No se pueden eliminar todas las imágenes del producto" };
+    }
+
+    const allowed: Partial<NewProduct> = {
+      ...body,
+      ...uploads.updates
+    };
+
+    if ("status" in allowed) {
+      allowed.isDeleted = body.isDeleted ?? allowed.status === 2;
+    }
+
+    Object.keys(allowed).forEach(key => {
+      if (allowed[key as keyof typeof allowed] === undefined) {
+        delete allowed[key as keyof typeof allowed];
+      }
+    });
+
+
+    // finalmente actualizar producto
+    const updateRes = await dbService.updateProduct(id, allowed);
+    if (!updateRes || updateRes.status !== 200) return { success: false, error: updateRes?.response ?? "Fallo al actualizar producto" };
+
+    const logData: NewActivityLog = {
+      userId: adminUser.id,
+      username: adminUser.username.toLowerCase(),
+      action: "product_edit",
+      target: { collection: "products", item: id }
+    };
+    const modifiedProduct = { ...existingProduct, ...allowed };
+    const diffs = diffObjects(existingProduct, modifiedProduct);
+    if (diffs.length) logData.diff = diffs;
+    const newLog = await dbService.setActivityLog(logData);
+    if (newLog.status !== 200) console.warn("Activity log not saved");
+
+    console.log("Producto actualizado:", updateRes.response, "Log guardado:", newLog);
+    
+    revalidatePath("/admin/inventory");
+
+    return { success: true, message: updateRes.response };
+  } catch (err: any) {
+    console.error("PATCH /api/admin/products/[id] error:", err);
+    const message = err.message ?? "Internal server error";
+    return { success: false, error: message };
   }
 }

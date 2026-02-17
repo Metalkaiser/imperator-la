@@ -1,29 +1,27 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useActionState, startTransition } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Swal from "sweetalert2";
 import isEqual from "fast-deep-equal";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { productProps } from "@/app/utils/types";
+import { updateProductAction } from "@/app/actions/products";
 import {
-  ActionBtns,
+  ProdThumbnail,
   ProdName,
   ProdmainSKU,
-  ProdThumbnail,
   ProdDesc,
-  ProdImages,
   ProdPrice,
   ProdStatus,
+  ProdImages,
   ProdDiscount,
-  ProdVariant
+  ProdVariant,
+  ActionBtns
 } from "@/app/admin/components/formComponents/ProductForm";
-import { updateProductSchema } from "@/app/utils/apis/validatePayload";
-import { storagePath } from "@/app/utils/utils";
-import { validateVariants } from "@/app/utils/clientFunctions";
-import z from "zod";
-import { es } from "zod/locales"
-z.config(es());
+import { fileSchema } from "@/app/utils/apis/validatePayload";
+import { useFilePreviews } from "@/app/admin/components/formComponents/useFilePreviews";
+import { ZodError } from "zod";
 
 // Tipos (sin cambios)
 type StockItem = { name: string; quantity: number };
@@ -34,28 +32,17 @@ export default function EditProduct({ id }: { id?: string }) {
   const router = useRouter();
   const params = useParams(); // <- usar useParams en App Router
   const { products, refreshProducts } = useDB();
-  const originalRef = useRef<productProps | null>(null);
+
+  const thumbnail = useFilePreviews(1);
+  const productImages = useFilePreviews(10);
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [product, setProduct] = useState<productProps | null>(null);
+  const [state, formAction, isPending] = useActionState(updateProductAction, null);
 
   // Form state
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [mainSku, setMainSku] = useState("");
-  const [price, setPrice] = useState<number | string>("");
-  const [status, setStatus] = useState<number>(1);
   const [discount, setDiscount] = useState<Discount | undefined>(undefined)
   const [variants, setVariants] = useState<Variant[]>([]);
-
-  // Thumbnail state
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
-
-  //Images state
-  const [imagesFiles, setImagesFiles] = useState<(File | null)[]>([]);
-  const [imagesPreviews, setImagesPreviews] = useState<string[]>([]);
 
   // Estado para archivos de variantes y previews
   const [variantFiles, setVariantFiles] = useState<(File | null)[]>([]);
@@ -114,6 +101,28 @@ export default function EditProduct({ id }: { id?: string }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (state?.error) {
+      let htmlError = "";
+      if (Array.isArray(state.error)) {
+        state.error.forEach((err) => {
+          htmlError += `<p>${err.message}</p>`;
+        });
+      } else {
+        htmlError = `<p>${state.message || state.error}</p>`;
+      }
+      Swal.fire({
+        icon: "error",
+        html: htmlError || "Error inesperado."
+      });
+    } else if (state?.success) {
+      Swal.fire("Guardado", "Producto actualizado correctamente.", "success").then(async () => {
+        await refreshProducts();
+        router.push("/admin/inventory");
+      });
+    }
+  }, [state]);
+
   // Obtener producto desde contexto products
   useEffect(() => {
     if (!resolvedId) {
@@ -135,15 +144,7 @@ export default function EditProduct({ id }: { id?: string }) {
       setProduct(found ?? null);
 
       if (found) {
-        originalRef.current = structuredClone(found);
-        // inicializar formulario aquí
-        setName(found.name ?? "");
-        setDescription(found.description ?? "");
-        setMainSku(found.mainSku ?? "");
-        setPrice(typeof found.price !== "undefined" ? Number(found.price) : "");
-        setStatus(typeof found.status !== "undefined" ? Number(found.status) : 1);
         setDiscount(found.discount ?? undefined);
-
         const vars = Array.isArray(found.variants) ? found.variants : [];
         setVariants(vars);
         setVariantFiles(vars.map(() => null));
@@ -155,16 +156,14 @@ export default function EditProduct({ id }: { id?: string }) {
 
         const imgs = Array.isArray(found.images) ? found.images.map((img: string) => {
           if (!img) return "";
-          //return /^%2F/i.test(img) ? `${storagePath}${img}` : img;
           return img;
         }) : [];
 
-        setImagesPreviews(imgs);
-        setImagesFiles(imgs.map(() => null));
-        // thumbnail
-        const thumb = found.thumbnail ?? "";
-        //const thumbUrl = /^%2F/i.test(thumb) ? `${storagePath}${thumb}` : thumb;
-        setThumbnailPreview(thumb);
+        thumbnail.clear();
+        productImages.clear();
+
+        thumbnail.addRemoteUrls(found.thumbnail ? [found.thumbnail] : []);
+        productImages.addRemoteUrls(imgs);
 
         variantPreviewUrlsRef.current = vars.map(() => null);
         setLoading(false);
@@ -182,26 +181,6 @@ export default function EditProduct({ id }: { id?: string }) {
     }
   }, [resolvedId, products]);
 
-  const handleThumbnailFileChange = (file: File | null) => {
-    // limpiar previa blob URL si existe
-    if (thumbnailPreview && thumbnailPreview.startsWith("blob:")) {
-      try { URL.revokeObjectURL(thumbnailPreview); } catch (e) { console.warn("Revoke objectURL error:", e);}
-    }
-
-    setThumbnailFile(file);
-    if (file) {
-      const obj = URL.createObjectURL(file);
-      setThumbnailPreview(obj);
-    } else {
-      // si se deshace, restaurar desde product.thumbnail si existe
-      const foundThumb = product?.thumbnail ?? "";
-      if (foundThumb) {
-        setThumbnailPreview(foundThumb);
-      } else {
-        setThumbnailPreview("");
-      }
-    }
-  };
   // Manejo de archivos de variante
   const handleVariantFileChange = (index: number, file: File | null) => {
     setVariantFiles((prev) => {
@@ -237,36 +216,7 @@ export default function EditProduct({ id }: { id?: string }) {
       return next;
     });
   };
-  const handleDeleteImage = (index: number) => {
-    Swal.fire({
-      title: "¿Eliminar imagen?",
-      text: "Esta acción no se puede deshacer.",
-      imageUrl: /^%2F/i.test(imagesPreviews[index]) ? `${storagePath}${imagesPreviews[index]}` : imagesPreviews[index],
-      imageWidth: 100,
-      imageHeight: 100,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setImagesPreviews((prev) => prev.filter((_, i) => i !== index));
-        setImagesFiles((prev) => prev.filter((_, i) => i !== (index - (imagesPreviews.length - imagesFiles.length))));
-      }
-    });
-  };
-  const handleAddImages = (file: FileList| null) => {
-    if (!file) return;
-    const newFiles: (File | null)[] = [];
-    const newPreviews: string[] = [];
-    Array.from(file).forEach((f) => {
-      newFiles.push(f);
-      const obj = URL.createObjectURL(f);
-      newPreviews.push(obj);
-    });
-    setImagesFiles((prev) => [...prev, ...newFiles]);
-    setImagesPreviews((prev) => [...prev, ...newPreviews]);
-  };
+
   // Control de variantes (añadir/quitar) — sincronizar files/previews
   const handleAddVariant = () => {
     setVariants((s) => [...s, { color: "", sku: "", image: "", stock: [] }]);
@@ -312,141 +262,114 @@ export default function EditProduct({ id }: { id?: string }) {
     );
   };
 
-  // Guardar: si hay archivos, envio FormData con payload + variant_{i}_image
-  const handleSave = async () => {
-    if (!resolvedId) return;
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    if (!product) {
+      showError("Producto no cargado");
+      return;
+    }
+    if (!resolvedId) {
+      showError("ID inválido");
+      return;
+    }
+    const original = product;
+    const payload:any = {};
 
-    const payload: any = {};
-    const original = originalRef.current!;
+    if (original.name !== formData.get("name")?.toString().trim()) payload.name = formData.get("name")?.toString().trim();
+    if (original.mainSku !== formData.get("mainSku")?.toString().trim()) payload.mainSku = formData.get("mainSku")?.toString().trim();
+    if (original.description !== formData.get("description")?.toString()) payload.description = formData.get("description")?.toString();
+    if (Number(original.price) !== Number(formData.get("price"))) payload.price = Number(formData.get("price"));
+    if (Number(original.status) !== Number(formData.get("status"))) payload.status = Number(formData.get("status"));
 
-    // construir payload solo con campos modificados
-    if (name.trim() !== original.name) payload.name = name.trim();
-    if (description !== original.description) payload.description = description;
-    if (mainSku.trim() !== original.mainSku) payload.mainSku = mainSku.trim();
-    if (Number(price) !== Number(original.price)) payload.price = Number(price);
-    if (Number(status) !== Number(original.status)) payload.status = Number(status);
     // comparar discount (puede ser undefined)
-    if (JSON.stringify(discount) !== JSON.stringify(original.discount)) {
-      if (discount === undefined) {
-        payload.discount = null; // eliminar descuento
-      } else {
-        payload.discount = discount;
-      }
-    }
-    const cleanImages = imagesPreviews.filter((img) => img && !img.startsWith("blob:"));
-    if (!isEqual(cleanImages, original.images)) {  // comparar imágenes
-      payload.images = cleanImages;
-    }
+    if (JSON.stringify(original.discount) !== JSON.stringify(discount)) payload.discount = discount;
+
     if (!isEqual(variants, original.variants)) {
       payload.variants = variants;
     }
 
+    const cleanImages = productImages.items.filter(i => !i.file).map(i => i.url);
+    if (!isEqual(cleanImages, original.images)) {
+      payload.images = cleanImages;
+    }
+
+    formData.append("payload", JSON.stringify(payload));
+
+    formData.delete("thumbnail");
+    formData.delete("images");
+    formData.forEach((_f, i) => {
+      if(i.includes("variant")) formData.delete(i);
+    });
+
+    if (thumbnail.items.length === 0 && !product?.thumbnail) {
+      showError("Miniatura requerida");
+      return;
+    }
+
+    if (thumbnail.items[0]?.file) {
+      const thumb = thumbnail.items[0].file;
+      try {
+        fileSchema.parse(thumb)
+      } catch (error) {
+        if (error instanceof ZodError) showError(`Miniatura: ${error.issues[0].message}`);
+        else showError("Error inesperado");
+        return;
+      }
+      formData.append("thumbnail", thumb);
+    }
+
+    for (let index = 0; index < productImages.items.length; index++) {
+      if (productImages.items[index].file) {
+        const f = productImages.items[index].file;
+        try {
+          fileSchema.parse(f);
+        } catch (error) {
+          if (error instanceof ZodError) {
+            console.log(`Error en imagen adicional ${index + 1}:`, error.issues);
+            showError(`Imágenes: ${error.issues[0].message}`);
+          }
+          else showError("Error inesperado");
+          return;
+        }
+        formData.append("images", f);
+      }
+    }
+
+    for (let index = 0; index < variantFiles.length; index++) {
+      const f = variantFiles[index];
+      if (!f) continue; // solo validar y adjuntar si hay un nuevo archivo para la variante
+      try {
+        fileSchema.parse(f);
+      } catch (error) {
+        if (error instanceof ZodError) showError(`Miniatura de variante ${variants[index].sku}: ${error.issues[0].message}`);
+        else showError("Error inesperado");
+        return;
+      }
+      if (f) formData.append(`variant_${variants[index].sku}_image`, f);
+    }
+
     if (Object.keys(payload).length === 0 &&
-      !thumbnailFile &&
+      !thumbnail.items.some(i => i.file) &&
       !variantFiles.some(Boolean) &&
-      !imagesFiles.some(f => f instanceof File)) {
+      !productImages.items.some(i => i.file)) {
       Swal.fire("Sin cambios", "No se han realizado modificaciones.", "info");
       return;
     }
 
-    const parsed = updateProductSchema.safeParse(payload);
-    
-    if (!parsed.success) {
-      const errors = z.flattenError(parsed.error);
-      const errorArray = Object.values(errors.fieldErrors);
-      Swal.fire({
-        title: "Error de validación",
-        html: errorArray.flat().map((e, i) => `<div key=${i}>- ${e}</div>`).join("") || "Datos inválidos.",
-        icon: "error"
-      });
-      return;
-    }
+    formData.append("id", String(resolvedId));
 
-    if (payload.variants || payload.mainSku) {
-      const variantErrors = validateVariants({
-        variants: payload.variants ?? originalRef.current!.variants,
-        mainSku: payload.mainSku ?? originalRef.current!.mainSku,
-        variantFiles,
-      });
-      if (variantErrors.length > 0) {
-        Swal.fire({
-          title: "Errores en variantes",
-          html: variantErrors
-            .map(e => `• ${e.message}`)
-            .join("<br />"),
-          icon: "warning",
-        });
-        return;
-      }
-    }
+    startTransition(() => {
+      formAction(formData);
+    });
+  }
 
-    try {
-      setSaving(true);
-      Swal.fire({ title: "Guardando...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-      // ¿Hay archivos? si al menos uno en variantFiles no es null -> usamos FormData
-      const hasVariantFiles = variantFiles.some((f) => f !== null);
-      const hasThumbnailFile = thumbnailFile !== null;
-      const hasImagesFiles = imagesFiles.some(f => f instanceof File);
-
-
-      const form = new FormData();
-      form.append("payload", JSON.stringify(payload));
-
-      // thumbnail
-      if (hasThumbnailFile && thumbnailFile) {
-        form.append("thumbnail", thumbnailFile, thumbnailFile.name);
-      }
-
-      // Adjuntar cada file con nombre variant_{index}_image
-      if (hasVariantFiles) {
-        variantFiles.forEach((f, i) => {
-          if (f) {
-            form.append(`variant_${variants[i].sku}_image`, f, (f as File).name);
-          }
-        });
-      }
-
-      // imágenes adicionales
-      if (hasImagesFiles) {
-        let indexOffset = 0;
-        imagesFiles.forEach((f) => {
-          if (f) {
-            form.append(`image_${indexOffset}`, f, (f as File).name);
-            indexOffset += 1;
-          }
-        });
-      }
-
-      const res = await fetch(`/api/admin/products/${encodeURIComponent(String(resolvedId))}`, {
-        method: "PATCH",
-        credentials: "include",
-        body: form,
-      });
-
-
-      Swal.close();
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
-        throw new Error(err.message || "Error al guardar");
-      }
-
-      console.log(await res.json());
-
-      await Swal.fire("Guardado", "Producto actualizado correctamente.", "success");
-      await refreshProducts();
-      router.push("/admin/inventory");
-
-      Swal.close();
-    } catch (err: any) {
-      console.error("save error", err);
-      Swal.fire("Error", err?.message || "No se pudo guardar el producto.", "error");
-    } finally {
-      setSaving(false);
-    }
-
-  };
+  function showError(message: string) {
+    Swal.fire({
+      icon: "error",
+      text: message
+    });
+  }
 
   if (loading) return <div className="p-6">Cargando producto...</div>;
 
@@ -455,14 +378,14 @@ export default function EditProduct({ id }: { id?: string }) {
   return (
     <div className="max-w-4xl mx-auto p-6 rounded shadow">
       <h1 className="text-xl font-semibold mb-4">Editar producto: {product.name} (SKU: {product.mainSku})</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        <ProdThumbnail view="new" thumbnail={thumbnailPreview} setThumbnail={handleThumbnailFileChange} />
-        <ProdName name={name} nameState={setName} />
-        <ProdmainSKU mainSku={mainSku} skuState={setMainSku} />
-        <ProdDesc description={description} descState={setDescription} />
-        <ProdImages previews={imagesPreviews} addImages={handleAddImages} deleteImage={handleDeleteImage} />
-        <ProdPrice price={price} priceState={setPrice} />
-        <ProdStatus status={status} statusState={setStatus} />
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <ProdThumbnail thumbnail={thumbnail} />
+        <ProdName defaultName={product.name} />
+        <ProdmainSKU defaultMainSku={product.mainSku} />
+        <ProdDesc defaultDescription={product.description} />
+        <ProdImages images={productImages} />
+        <ProdPrice defaultPrice={product.price} />
+        <ProdStatus defaultStatus={product.status} />
         <ProdDiscount discount={discount} discState={setDiscount} />
         <ProdVariant
           view="edit"
@@ -476,8 +399,8 @@ export default function EditProduct({ id }: { id?: string }) {
           stockChange={handleStockChange}
           removeStock={handleRemoveStock}
         />
-      </div>
-      <ActionBtns view="edit" saving={saving} router={router} handleSave={handleSave} />
+        <ActionBtns view="edit" saving={isPending} router={router} />
+      </form>
     </div>
   );
 }
