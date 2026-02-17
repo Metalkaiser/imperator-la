@@ -1,24 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useActionState, startTransition } from "react";
+import { createProductAction } from "@/app/actions/products";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { useDB } from "@/app/admin/components/context/dbContext";
-import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
-import { capitalize, checkMime } from "@/app/utils/functions";
-import { storagePath } from "@/app/utils/utils";
 import {
-  ActionBtns,
+  ProdThumbnail,
   ProdName,
   ProdmainSKU,
-  ProdThumbnail,
   ProdDesc,
   ProdImages,
   ProdPrice,
   ProdStatus,
-  ProdDiscount
+  ProdCategory,
+  ProdDiscount,
+  ProdVariant,
+  ActionBtns
 } from "@/app/admin/components/formComponents/ProductForm";
-import ProdVariant from "@/app/admin/components/formComponents/ProductForm";
+import { fileSchema } from "@/app/utils/apis/validatePayload";
+import { useFilePreviews } from "@/app/admin/components/formComponents/useFilePreviews";
+import { ZodError } from "zod";
 
 type StockItem = { name: string; quantity: number };
 type Variant = { color: string; sku: string; image: string; stock: StockItem[] };
@@ -28,47 +30,21 @@ export default function NewProduct() {
   const router = useRouter();
   const { refreshProducts } = useDB();
 
-  const [saving, setSaving] = useState(false);
+  const thumbnail = useFilePreviews(1);
+  const productImages = useFilePreviews(10);
+
+  const [state, formAction, isPending] = useActionState(
+    createProductAction,
+    null
+  );
 
   // Form state (defaults)
-  const [name, setName] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [mainSku, setMainSku] = useState<string>("");
-  const [price, setPrice] = useState<number | string>(0);
-  const [status, setStatus] = useState<number>(1);
   const [category, setCategory] = useState<string>("");
   const [subcategory, setSubcategory] = useState<string>("");
   const [discount, setDiscount] = useState<Discount | undefined>(undefined);
   const [variants, setVariants] = useState<Variant[]>([]);
 
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-
   const [variantFiles, setVariantFiles] = useState<(File | null)[]>([]);
-
-  useEffect(() => {
-    // thumbnail preview
-    if (!thumbnailFile) {
-      setThumbnailPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(thumbnailFile);
-    setThumbnailPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [thumbnailFile]);
-
-  useEffect(() => {
-    // image files previews múltiples
-    const urls = imageFiles.map((f) => URL.createObjectURL(f));
-    // limpiar previos
-    imagePreviews.forEach((u) => URL.revokeObjectURL(u));
-    setImagePreviews(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageFiles]);
 
   // mantener variantFiles alineado con variants length
   useEffect(() => {
@@ -80,14 +56,29 @@ export default function NewProduct() {
     });
   }, [variants]);
 
+  useEffect(() => {
+    if (state?.error) {
+      let htmlError = "";
+      if (Array.isArray(state.error)) {
+        state.error.forEach((err) => {
+          htmlError += `<p>${err.message}</p>`
+        })
+      } else {
+        htmlError = `<p>${state.message || state.error}</p>`;
+        Swal.fire({
+          icon: "error",
+          html: htmlError
+        });
+      }
+    } else if (state?.success) {
+      Swal.fire("Producto creado!", `Producto creado con id: ${state?.message?.response}`, "success").then(async () => {
+        await refreshProducts();
+        router.push("/admin/inventory");
+      });
+    };
+  }, [state]);
+
   // manejadores de archivos
-  const handleThumbnailChange = (f: File | null) => setThumbnailFile(f);
-
-  const handleImageFilesChange = (files: FileList | null) => {
-    if (!files) return setImageFiles([]);
-    setImageFiles(Array.from(files));
-  };
-
   const handleVariantFileChange = (index: number, f: File | null) => {
     setVariantFiles((prev) => {
       const copy = [...prev];
@@ -95,134 +86,6 @@ export default function NewProduct() {
       return copy;
     });
   };
-
-  const handleDeleteImage = (index: number) => {
-      Swal.fire({
-        title: "¿Eliminar imagen?",
-        text: "Esta acción no se puede deshacer.",
-        imageUrl: /^%2F/i.test(imagePreviews[index]) ? `${storagePath}${imagePreviews[index]}` : imagePreviews[index],
-        imageWidth: 100,
-        imageHeight: 100,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-          setImageFiles((prev) => prev.filter((_, i) => i !== (index - (imagePreviews.length - imageFiles.length))));
-        }
-      });
-    };
-
-  const allCategories = getCategoriesWithSubcategories("es");
-
-  const validate = () => {
-    if (!name || name.trim().length < 2) {
-      Swal.fire("Nombre inválido", "El nombre debe tener al menos 2 caracteres.", "warning");
-      return false;
-    }
-    if (!mainSku || mainSku.trim().length === 0) {
-      Swal.fire("SKU inválido", "El SKU principal no puede estar vacío.", "warning");
-      return false;
-    }
-    if (price === "" || Number.isNaN(Number(price)) || Number(price) < 0) {
-      Swal.fire("Precio inválido", "Introduce un precio válido (>= 0).", "warning");
-      return false;
-    }
-    const checkCat = category === "" || Number(category) < 0 || Number(category) >= allCategories.length;
-    const checkSubCat = subcategory === "" || Number(subcategory) < 0 || Number(subcategory) >= allCategories[Number(category)].subcategories.length
-    if (checkCat) {
-      Swal.fire("Seleccione una categoría válida", "La categoría es obligatoria", "warning");
-      return false;
-    }
-    if (allCategories[Number(category)].subcategories.length > 0 && checkSubCat) {
-      Swal.fire("Seleccione una subcategoría válida", `La subcategoría es obligatoria para la categoría ${capitalize(allCategories[Number(category)].label)}`, "warning");
-      return false;
-    }
-    // validar variantes: skus únicos si hay variantes
-    const skus = new Set<string>();
-    for (const v of variants) {
-      if (!v.sku || !v.sku.trim()) {
-        Swal.fire("SKU variante inválido", "Cada variante debe tener un SKU.", "warning");
-        return false;
-      }
-      if (skus.has(v.sku)) {
-        Swal.fire("SKU duplicado", `El SKU ${v.sku} está repetido entre variantes.`, "warning");
-        return false;
-      }
-      if (!v.stock.length) {
-        Swal.fire("Talla o tamaño ausente", `La variante ${v.sku} no tiene tallas declaradas en stock.`, "warning");
-        return false;
-      }
-      for (const s of v.stock) {
-        if (s.name === "") {
-          Swal.fire("Nombre de talla", `La variante ${v.sku} tiene tallas con formato incorrecto.`, "warning");
-          return false;
-        }
-        if (isNaN(Number(s.quantity)) || Number(s.quantity) < 0) {
-          Swal.fire("Stock incorrecto", `La variante ${v.sku} tiene tallas con stock incorrecto.`, "warning");
-          return false;
-        }
-      }
-      skus.add(v.sku);
-    }
-
-    if (!variants.length) {
-      Swal.fire("Variante obligatorias", "Declara al menos una variante.", "warning");
-      return false;
-    }
-
-    if (!thumbnailFile) {
-      Swal.fire("Miniatura obligatoria", "Debes seleccionar una miniatura para el producto.", "warning");
-      return false;
-    }
-    if (!imageFiles.length) {
-      Swal.fire("Imágenes obligatorias", "Debes seleccionar las imágenes del producto.", "warning");
-      return false;
-    }
-    for (let i = 0; i < variants.length; i++) {
-      if (!variantFiles[i]) {
-        Swal.fire("Miniatura de variante obligatoria", `La variante ${i + 1} debe tener una miniatura.`, "warning");
-        return false;
-      }
-      if (variantFiles[i]?.type !== "image/webp") {
-        Swal.fire("Formato incorrecto", `La imagen de la variante ${i + 1} debe ser WEBP.`, "warning");
-        return false;
-      }
-    }
-    if (thumbnailFile.type !== "image/webp") {
-      Swal.fire("Formato inválido", `La miniatura debe estar en formato WebP. (${thumbnailFile.type})`, "warning");
-      return false;
-    }
-
-    if (valImgs()) {
-      Swal.fire("Formato inválido", "Las imágenes deben estar en formato WebP.", "warning");
-      return false;
-    }
-
-    return true;
-  };
-
-  const valImgs = () => {
-    let wrong = 0;
-    for (const img of imageFiles) {
-      if(checkMime(img)) {
-        wrong++;
-        const index = imageFiles.indexOf(img);
-        const imgCopy = [ ...imageFiles ];
-        const imgPrevCopy = [ ...imagePreviews ];
-        imgCopy.splice(index, 1);
-        imgPrevCopy.splice(index, 1);
-        setImageFiles(imgCopy);
-        setImagePreviews(imagePreviews);
-      }
-    }
-    if (wrong) {
-      return false;
-    }
-    return true;
-  }
 
   // Variants helpers
   const handleAddVariant = () => setVariants((s) => [...s, { color: "", sku: "", image: "", stock: [] }]);
@@ -243,118 +106,102 @@ export default function NewProduct() {
       )
     );
 
-  const handleSave = async () => {
-    if (!validate()) return;
-
-    const form = new FormData();
-    // campos JSON como string
-    form.append("payload", JSON.stringify({
-      name: name.trim(),
-      description,
-      mainSku: mainSku.trim(),
-      category,
-      subcategory,
-      price: Number(price),
-      status: Number(status),
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      name: formData.get("name")?.toString().trim(),
+      description: formData.get("description")?.toString(),
+      mainSku: formData.get("mainSku")?.toString().trim(),
+      price: Number(formData.get("price")),
+      status: Number(formData.get("status")),
+      category: Number(formData.get("category")),
+      subcategory: formData.get("subcategory") ? Number(formData.get("subcategory")) : undefined,
+      discount: discount,
       variants,
-      discount,
-    }));
+    };
 
-    if (thumbnailFile) form.append("thumbnail", thumbnailFile, thumbnailFile.name);
-    // imagenes múltiples
-    imageFiles.forEach(f => form.append("images", f, f.name));
-    // archivos de variantes: nombrados por índice (variant_0, variant_1, ...)
-    variantFiles.forEach((f, idx) => {
-      if (f) form.append(`variant_${idx}_image`, f, f.name);
+    formData.append("payload", JSON.stringify(payload));
+
+    formData.delete("thumbnail");
+    formData.delete("images");
+    formData.forEach((_f, i) => {
+      if(i.includes("variant")) formData.delete(i);
     });
-    try {
-      setSaving(true);
-      Swal.fire({ title: "Creando producto...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const res = await fetch("/api/admin/products", {
-        method: "POST",
-        credentials: "include",
-        body: form, // no headers: el browser setea multipart/form-data
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
-        console.log("create failed:", err);
-        throw new Error(err.message || "Error al crear producto");
-      }
-      const json = await res.json().catch(() => ({} as any));
-      const newId = json?.productId;
-      if (json.productId) {
-        const logRes = await fetch("/api/admin/logs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            data: {
-              action: "product_created",
-              target: {
-                collection: "products",
-                item: newId.response,
-              }
-            }
-          }),
-        });
-        if (!logRes.ok) console.warn("No se pudo registrar el log de creación de producto");
-        else console.log(await logRes.json());
-      }
-      Swal.close();
-      console.log("create success:", json);
-      await Swal.fire("Creado", "Producto creado correctamente.", "success");
-      // refrescar / redirigir según respuesta
-      await refreshProducts?.();
-      if (newId) router.push(`/admin/inventory`);
-    } catch (err: any) {
-      console.error("create error:", err);
-      Swal.fire("Error", err?.message || "No se pudo crear el producto.", "error");
-    } finally {
-      setSaving(false);
+
+    if (thumbnail.items.length === 0) {
+      showError("Miniatura requerida");
+      return;
     }
-    console.log(form.get('payload'));
-  };
+
+    const thumb = thumbnail.items[0].file;
+
+    if (thumb) {
+      try {
+        fileSchema.parse(thumb)
+      } catch (error) {
+        if (error instanceof ZodError) showError(`Miniatura: ${error.issues[0].message}`);
+        else showError("Error inesperado");
+        return;
+      }
+      formData.append("thumbnail", thumb);
+    }
+    
+    for (let index = 0; index < productImages.items.length; index++) {
+      const f = productImages.items[index].file;
+      try {
+        fileSchema.parse(f);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          showError(`Imágenes: ${error.issues[0].message}`);
+        }
+        else showError("Error inesperado");
+        return;
+      }
+      formData.append("images", f);
+    }
+
+    for (let index = 0; index < variantFiles.length; index++) {
+      const f = variantFiles[index];
+      try {
+        fileSchema.parse(f);
+      } catch (error) {
+        if (error instanceof ZodError) showError(`Miniatura de variante ${variants[index].sku}: ${error.issues[0].message}`);
+        else showError("Error inesperado");
+        return;
+      }
+      if (f) formData.append(`variant_${variants[index].sku}_image`, f);
+    }
+
+    startTransition(() => {
+      formAction(formData)
+    });
+  }
+
+  function showError(message: string) {
+    Swal.fire({
+      icon: "error",
+      text: message
+    });
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6 rounded shadow">
       <h1 className="text-xl font-semibold mb-4">Crear producto nuevo</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        <ProdThumbnail view="new" thumbnail={thumbnailPreview} setThumbnail={handleThumbnailChange} />
-        <ProdName name={name} nameState={setName} />
-        <ProdmainSKU mainSku={mainSku} skuState={setMainSku} />
-        <ProdDesc description={description} descState={setDescription} />
-        <ProdImages previews={imagePreviews} addImages={handleImageFilesChange} deleteImage={handleDeleteImage} />
-        <ProdPrice price={price} priceState={setPrice} />
-        <ProdStatus status={status} statusState={setStatus} />
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Categoría</label>
-          <div className="flex flex-col md:flex-row gap-2 items-center mt-1 w-full">
-            <select className="border rounded px-2 py-1 w-full md:w-1/2" onChange={(e) => {
-                setSubcategory("");
-                setCategory(e.target.value)}
-              }
-              value={category}>
-              <option value="" disabled>Seleccionar categoría</option>
-            {allCategories.map((cat, i) => (
-              <option key={i} value={i}>{capitalize(cat.label)}</option>
-            ))}
-            </select>
-            {(allCategories.length > Number(category) &&
-              allCategories[Number(category)].subcategories.length > 0 &&
-              category !== "") && (
-              <select className="border rounded px-2 py-1 w-full md:w-1/2" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
-                <option value="" disabled>Seleccionar subcategoría</option>
-                {allCategories[Number(category)].subcategories.map((subcat, j) => (
-                  <option key={`subcat-${j}`} value={j}>{capitalize(subcat.label)}</option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
+      <form id="new-prod" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <ProdThumbnail thumbnail={thumbnail} />
+        <ProdName />
+        <ProdmainSKU defaultMainSku="" />
+        <ProdDesc defaultDescription="" />
+        <ProdImages images={productImages} />
+        <ProdPrice />
+        <ProdStatus />
+        <ProdCategory setCategory={setCategory} setSubcategory={setSubcategory} category={category} subcategory={subcategory} />
         <ProdDiscount discount={discount} discState={setDiscount} />
         <ProdVariant
           view="new"
           variants={variants}
+          variantFiles={variantFiles}
           variantPreviews={variantFiles}
           addVariant={handleAddVariant}
           removeVariant={handleRemoveVariant}
@@ -364,8 +211,13 @@ export default function NewProduct() {
           stockChange={handleStockChange}
           removeStock={handleRemoveStock}
         />
-      </div>
-      <ActionBtns view="new" saving={saving} router={router} handleSave={handleSave} />
+        <ActionBtns view="new" saving={isPending} router={router} />
+      </form>
+      {state?.error && (<ul className="m-5 text-center">
+        {Array.isArray(state.error) ?
+          state.error.map((err, idx) => <li key={idx} style={{ color: "red" }}>{err.message}</li>) :
+          <li style={{ color: "red" }}>{state.message || state.error}</li>}
+      </ul>)}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react";
+import Swal from "sweetalert2";
 import { capitalize } from "@/app/utils/functions";
 import { variantsColors } from "@/app/utils/utils";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
@@ -9,59 +10,109 @@ import { Plus, Trash2Icon, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { storagePath } from "@/app/utils/utils";
+import { useFilePreviews } from "./useFilePreviews";
+
+type useFileType = ReturnType<typeof useFilePreviews>;
 
 type StockItem = { name: string; quantity: number };
 type Variant = { color: string; sku: string; image: string; stock: StockItem[] };
 
-export const ProdName = ( {name, nameState}: {name: string; nameState: (name: string) => void} ) => {
+export const ProdThumbnail = ({
+  thumbnail
+}: {
+  thumbnail: useFileType
+}) => {
+  return (
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium mb-2">Miniatura del producto</label>
+      <div className="flex items-center gap-4">
+        <div className="relative w-28 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+          {thumbnail.items.length > 0 ? (
+            <>
+            {thumbnail.items[0].file && <ImgSizeIndicator sizeInBytes={thumbnail.items[0].file.size} />}
+            <Image src={(/^%2F/i.test(thumbnail.items[0].url) ? `${storagePath}${thumbnail.items[0].url}` : thumbnail.items[0].url)} alt="Miniatura" width={112} height={112} style={{ objectFit: "cover" }} />
+            </>
+          ) : (
+            <div className="text-xs text-gray-500">Sin miniatura</div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="px-3 py-2 border rounded cursor-pointer inline-block text-center text-sm">
+            Seleccionar miniatura
+            <input
+              type="file"
+              name="thumbnail"
+              accept="image/webp, image/jpeg, image/png, image/bmp"
+              className="hidden"
+              onChange={(e) => { 
+                thumbnail.clear();
+                thumbnail.addFiles(e.target.files)
+              }}
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export const ProdName = ( {defaultName}: {defaultName?: string} ) => {
   return (
     <div>
       <label className="block text-sm font-medium">Nombre</label>
       <input
+        defaultValue={defaultName ?? ""}
+        type="text"
+        name="name"
+        required
         className="mt-1 block w-full border rounded px-3 py-2"
-        value={name}
-        placeholder="Nombre del producto"
-        onChange={(e) => nameState(e.target.value)} />
+        placeholder="Nombre del producto" />
     </div>
   )
 }
 
-export const ProdmainSKU = ( {mainSku, skuState}: {mainSku: string; skuState: (mainSku: string) => void} ) => {
+export const ProdmainSKU = ( {defaultMainSku}: {defaultMainSku?: string;} ) => {
   return (
     <div>
       <label className="block text-sm font-medium">SKU principal</label>
       <input
+        defaultValue={defaultMainSku ?? ""}
+        type="text"
+        name="mainSku"
+        required
         className="mt-1 block w-full border rounded px-3 py-2"
-        value={mainSku}
-        placeholder="SKU principal"
-        onChange={(e) => skuState(e.target.value)} />
+        placeholder="SKU principal" />
     </div>
   )
 }
 
-export const ProdDesc = ( {description, descState}: {description: string; descState: (description: string) => void} ) => {
+export const ProdDesc = ( {defaultDescription}: {defaultDescription?: string;} ) => {
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium">Descripción</label>
       <textarea
+        defaultValue={defaultDescription ?? ""}
+        name="description"
+        required
         className="mt-1 block w-full border rounded px-3 py-2 h-28"
-        value={description}
         placeholder="Descripción del producto"
-        onChange={(e) => descState(e.target.value)}
       />
     </div>
   )
 }
 
-export const ProdPrice = ( {price, priceState}: {price: number | string; priceState: (price: number | string) => void} ) => {
+export const ProdPrice = ( {defaultPrice}: {defaultPrice?: number | string;} ) => {
   return (
     <div>
       <label className="block text-sm font-medium">Precio</label>
       <input
+        defaultValue={defaultPrice ?? 0}
         type="number"
+        name="price"
+        required
+        placeholder="Precio"
         className="mt-1 block w-full border rounded px-3 py-2"
-        value={price}
-        onChange={(e) => priceState(e.target.value === "" ? "" : Number(e.target.value))}
         min={0}
         step="0.01"
       />
@@ -106,11 +157,15 @@ export const ProdDiscount = ( {discount, discState}: {
   )
 }
 
-export const ProdStatus = ( {status, statusState}: {status: number; statusState: (status: number) => void} ) => {
+export const ProdStatus = ( {defaultStatus}: {defaultStatus?: number} ) => {
   return (
     <div>
       <label className="block text-sm font-medium">Estado</label>
-      <select value={String(status)} onChange={(e) => statusState(Number(e.target.value))} className="mt-1 block w-full border rounded px-3 py-2">
+      <select className="mt-1 block w-full border rounded px-3 py-2"
+        defaultValue={defaultStatus ?? ""}
+        name="status"
+        required>
+        <option value="" disabled>Seleccione el estado</option>
         <option value={1}>Disponible</option>
         <option value={0}>Agotado</option>
         <option value={2}>Eliminado</option>
@@ -121,19 +176,19 @@ export const ProdStatus = ( {status, statusState}: {status: number; statusState:
 
 export const ProdCategory = ( {category, subcategory, setCategory, setSubcategory}
   : {
-    category: number | string;
-    subcategory: number;
-    setCategory: (cat: number) => void;
-    setSubcategory: (subcat: number | string) => void;
+    category: string;
+    subcategory: string;
+    setCategory: (cat: string) => void;
+    setSubcategory: (subcat: string) => void;
   } ) => {
   const allCategories = getCategoriesWithSubcategories("es");
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium mb-1">Categoría</label>
       <div className="flex gap-2 items-center mt-1">
-        <select className="border rounded px-2 py-1 w-2/5" onChange={(e) => {
+        <select required name="category" className="border rounded px-2 py-1 w-2/5" onChange={(e) => {
             setSubcategory("");
-            setCategory(Number(e.target.value))}
+            setCategory(e.target.value)}
           }
           value={category}>
           <option value="" disabled>Seleccionar categoría</option>
@@ -144,7 +199,7 @@ export const ProdCategory = ( {category, subcategory, setCategory, setSubcategor
         {(allCategories.length > Number(category) &&
           allCategories[Number(category)].subcategories.length > 0 &&
           category !== "") && (
-          <select className="border rounded px-2 py-1 w-2/5" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
+          <select name="subcategory" className="border rounded px-2 py-1 w-2/5" onChange={(e) => setSubcategory(e.target.value)} value={subcategory}>
             <option value="" disabled>Seleccionar subcategoría</option>
             {allCategories[Number(category)].subcategories.map((subcat, j) => (
               <option key={`subcat-${j}`} value={j}>{capitalize(subcat.label)}</option>
@@ -159,110 +214,78 @@ export const ProdCategory = ( {category, subcategory, setCategory, setSubcategor
 export const ActionBtns = ({
   view,
   saving,
-  router,
-  handleSave,
+  router
 }: {
   view: "new" | "edit";
   saving: boolean;
   router: AppRouterInstance;
-  handleSave: () => void;
 }) => {
   const actionBtnText = view === "new" ? "Crear producto" : "Guardar cambios";
-  const savingText = view === "new" ? "Creando..." : "Guardando...";
   return (
     <div className="mt-6 flex gap-3">
-      <button onClick={() => router.back()} className="px-4 py-2 rounded cursor-pointer bg-red-600">Cancelar</button>
-      <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 cursor-pointer">{saving ? savingText : actionBtnText}</button>
+      <button onClick={(e) =>{
+        e.preventDefault();
+        router.back();
+      }} className="px-4 py-2 rounded cursor-pointer bg-red-600">Cancelar</button>
+      <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 cursor-pointer">
+        {saving ? "Guardando..." : actionBtnText}
+      </button>
     </div>
   )
 }
 
 export const ProdImages = ({
-  previews, deleteImage, addImages
+  images
 }: {
-  previews: string[]; deleteImage: (index: number) => void; addImages: (files: FileList | null) => void
+  images: useFileType
 }) => {
   return (
     <div className="md:col-span-2">
-      <label className="block text-sm font-medium mb-2">Imágenes del producto (puedes seleccionar varias)</label>
+      <label className="block text-sm font-medium mb-2">Imágenes del producto (máximo 10 imágenes)</label>
       <div className="flex flex-wrap gap-4 justify-center">
-        {previews.map((imgSrc, i) => (
-          <div key={i} className="size-24 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-            {imgSrc ? (
-              <div className="relative w-full h-full">
-                <Trash2Icon
-                  className="absolute top-1 right-1 w-5 h-5 text-white bg-red-600 rounded-full p-0.5 cursor-pointer z-10"
-                  onClick={() => deleteImage(i)}></Trash2Icon>
-                <Image src={/^%2F/i.test(imgSrc) ? `${storagePath}${imgSrc}` : imgSrc} alt={`Imagen ${i + 1}`} width={96} height={96} style={{ objectFit: "cover" }} />
-              </div>
-            ) : (
-              <div className="text-xs text-gray-500">Sin imagen</div>
-            )}
-          </div>
-        ))}
+        {images.items.map((item, i) => {
+          const src = item.url ? (/^%2F/i.test(item.url) ? `${storagePath}${item.url}` : item.url) : null;
+          return (
+            <div key={i} className="size-24 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+              {src ? (
+                <div className="relative w-full h-full">
+                  {item.file && <ImgSizeIndicator sizeInBytes={item.file.size} />}
+                  <Trash2Icon
+                    className="absolute top-1 right-1 w-5 h-5 text-white bg-red-600 rounded-full p-0.5 cursor-pointer z-10"
+                    onClick={() => {
+                      Swal.fire({
+                        title: "¿Eliminar imagen?",
+                        text: "Esta acción no se puede deshacer.",
+                        imageUrl: src,
+                        imageWidth: 100,
+                        imageHeight: 100,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Sí, eliminar",
+                        cancelButtonText: "Cancelar",
+                      }).then((res) => {
+                        if (res.isConfirmed) images.remove(i);
+                      });
+                    }} />
+                  <Image src={src} alt={`Imagen ${i + 1}`} width={96} height={96} style={{ objectFit: "cover" }} />
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500">Sin imagen</div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <label className="mt-5 px-3 py-2 border rounded cursor-pointer inline-block text-center text-sm">
         Agregar imágenes
         <input
           type="file"
+          name="images"
           multiple
-          accept="image/webp"
+          accept="image/webp, image/jpeg, image/png, image/bmp"
           className="hidden"
-          onChange={(e) => {
-            const f = e.target.files ?? null;
-            addImages(f);
-          }} />
+          onChange={(e) => images.addFiles(e.target.files)} />
       </label>
-    </div>
-  )
-}
-
-export const ProdThumbnail = ({
-  view,
-  thumbnail,
-  setThumbnail
-}: {
-  view: "new" | "edit";
-  thumbnail: string | null;
-  setThumbnail: (file: File | null) => void;
-}) => {
-  const imgBtn = view === "new" ? "Seleccionar miniatura" : "Cambiar miniatura";
-  return (
-    <div className="md:col-span-2">
-      <label className="block text-sm font-medium mb-2">Miniatura del producto</label>
-      <div className="flex items-center gap-4">
-        <div className="w-28 h-28 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-          {thumbnail ? (
-            <Image src={/^%2F/i.test(thumbnail) ? `${storagePath}${thumbnail}` : thumbnail} alt="Miniatura" width={112} height={112} style={{ objectFit: "cover" }} />
-          ) : (
-            <div className="text-xs text-gray-500">Sin miniatura</div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="px-3 py-2 border rounded cursor-pointer inline-block text-center text-sm">
-            {imgBtn}
-            <input
-              type="file"
-              accept="image/webp"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setThumbnail(f);
-              }}
-            />
-          </label>
-          {view === "edit" && (
-            <button
-              type="button"
-              className="px-3 py-2 border rounded text-sm"
-              onClick={() => setThumbnail(null)}
-            >
-              Deshacer cambio
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
@@ -347,9 +370,26 @@ export const VariantThumbnail = ({index, variantPV}: {index: number; variantPV: 
   )
 }
 
-export default function ProdVariant({
+export const ImgSizeIndicator = ({sizeInBytes}: {sizeInBytes:number}) => {
+  const kbSize = sizeInBytes / 1024;
+  let elSize = "";
+  let textColor = "text-green-500";
+  if (kbSize < 1024) {
+    elSize = `${kbSize.toFixed(2)} KB`;
+    if (kbSize > 500) textColor = "text-yellow-500";
+    if (kbSize > 1024) textColor = "text-red-500";
+  } else {
+    const mbSize = kbSize / 1024;
+    elSize = `${mbSize.toFixed(2)} MB`;
+    textColor = "text-red-500";
+  }
+  return <p className={`absolute top-1 left-1 font-bold text-xs bg-gray-500/75 z-99 ${textColor}`}>{elSize}</p>
+}
+
+export const ProdVariant = ({
   view,
   variants,
+  variantFiles,
   variantPreviews,
   addVariant,
   removeVariant,
@@ -361,6 +401,7 @@ export default function ProdVariant({
 }: {
   view: "new" | "edit";
   variants: productProps["variants"];
+  variantFiles?: (File | null)[];
   variantPreviews: (File | string | null)[];
   addVariant: () => void;
   removeVariant: (index: number) => void;
@@ -369,7 +410,7 @@ export default function ProdVariant({
   addStock: (vIndex: number) => void;
   stockChange: (vIndex: number, sIndex: number, patch: Partial<StockItem>) => void;
   removeStock: (vIndex: number, sIndex: number) => void
-}) {
+}) => {
   return (
     <div className="md:col-span-2">
       <div className="flex items-center justify-between">
@@ -406,6 +447,7 @@ export default function ProdVariant({
                 <label className="block text-xs">Miniatura variante</label>
                 <div className="mt-1 flex items-center gap-2">
                   <div className="w-20 h-20 bg-gray-100 flex items-center justify-center overflow-hidden rounded relative">
+                    {variantFiles && variantFiles[vi] && <ImgSizeIndicator sizeInBytes={variantFiles[vi]?.size ?? 0} />}
                     <VariantThumbnail index={vi} variantPV={variantPreviews[vi]} />
                   </div>
                   <div className="flex flex-col">
@@ -413,7 +455,7 @@ export default function ProdVariant({
                       Cambiar imagen
                       <input
                         type="file"
-                        accept="image/webp"
+                        accept="image/webp, image/jpeg, image/png, image/bmp"
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0] ?? null;

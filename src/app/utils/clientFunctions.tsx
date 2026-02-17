@@ -69,3 +69,83 @@ export const getFeeValue = (
   const percent = fee.percentage ? (fee.percentage / 100) * base : 0;
   return parseFloat((fixed + percent).toFixed(2));
 };
+
+type StockItem = { name: string; quantity: number };
+
+type Variant = {
+  color: string;
+  sku: string;
+  image: string;
+  stock: StockItem[];
+};
+
+type VariantValidationError = {
+  field: string;
+  sku?: string;
+  message: string;
+};
+
+type ValidateVariantsInput = {
+  variants: Variant[];
+  mainSku: string;
+  variantFiles?: (File | null)[];
+};
+
+export function validateVariants({
+  variants,
+  mainSku,
+  variantFiles = []
+}: ValidateVariantsInput): VariantValidationError[] {
+  const errors: VariantValidationError[] = [];
+
+  const mainSkuPrefix = mainSku.slice(0, -1);
+  const seenSkus = new Set<string>();
+
+  variants.forEach((variant, index) => {
+    const { sku, image } = variant;
+
+    // SKU requerido
+    if (!sku || !sku.trim()) {
+      errors.push({
+        field: "sku",
+        message: "Cada variante debe tener un SKU.",
+      });
+      return;
+    }
+
+    // SKU duplicado
+    if (seenSkus.has(sku)) {
+      errors.push({
+        field: "sku",
+        sku,
+        message: `El SKU ${sku} está duplicado entre variantes.`,
+      });
+      return;
+    }
+
+    // Prefijo de SKU
+    if (!sku.startsWith(mainSkuPrefix)) {
+      errors.push({
+        field: "sku",
+        sku,
+        message: `El SKU ${sku} debe comenzar con el prefijo ${mainSkuPrefix}.`,
+      });
+    }
+
+    // Imagen efectiva (URL previa o File nuevo)
+    const hasFile = Boolean(variantFiles[index]);
+    const hasImage = Boolean(image && image.trim());
+
+    if (!hasFile && !hasImage) {
+      errors.push({
+        field: "image",
+        sku,
+        message: `La variante ${sku} debe tener una imagen.`,
+      });
+    }
+
+    seenSkus.add(sku);
+  });
+
+  return errors;
+}

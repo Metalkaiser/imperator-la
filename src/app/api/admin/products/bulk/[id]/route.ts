@@ -3,8 +3,10 @@ import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import { authConfigs } from "@/config/websiteConfig/authConfig";
 import admin from "@/app/utils/firebaseAdmin";
+import getProductService from "@/config/productServiceInstance";
 import { dbCollections } from "@/app/utils/utils";
-import { productProps } from "@/app/utils/types";
+import { productProps, NewActivityLog } from "@/app/utils/types";
+import { diffObjects } from "@/app/utils/functions";
 import { getCookieValue } from "@/app/utils/functions";
 
 type PatchBody = Partial<productProps>
@@ -88,7 +90,7 @@ export async function PATCH(req: NextRequest, ctx: any) {
     const id = ctx?.params?.id as string | undefined;
     if (!id) return NextResponse.json({ status: 400, message: "Missing product id" }, { status: 400 });
 
-    await verifyAdminFromReq(req);
+    const { uid, username } = await verifyAdminFromReq(req);
 
     const body = (await req.json()) as PatchBody | undefined;
     if (!body || Object.keys(body).length === 0) {
@@ -125,9 +127,6 @@ export async function PATCH(req: NextRequest, ctx: any) {
       } else {
         return NextResponse.json({ status: 400, message: "Invalid discount object" }, { status: 400 });
       }
-    } else {
-      //Eliminar descuento
-      allowed.discount = null;
     }
 
     if (body.status !== undefined) {
@@ -147,18 +146,32 @@ export async function PATCH(req: NextRequest, ctx: any) {
     if (Object.keys(allowed).length === 0) {
       return NextResponse.json({ status: 400, message: "No allowed fields present" }, { status: 400 });
     }
+    console.log(body, allowed);
+    //return NextResponse.json({ status: 200, response: { id, updatedFields: body } }, { status: 200 });
 
-    
-    const productsCol = admin.firestore().collection(dbCollections.products);
-    const prodRef = productsCol.doc(String(id));
-    const prodSnap = await prodRef.get();
-    if (!prodSnap.exists) {
-      return NextResponse.json({ status: 404, message: "Product not found" }, { status: 404 });
+    const dbService = await getProductService();
+
+    const updateRes = await dbService.updateProduct(id, allowed);
+    if (!updateRes || updateRes.status !== 200) {
+      return NextResponse.json({ status: updateRes?.status ?? 500, message: updateRes?.response ?? "Update failed" }, { status: updateRes?.status ?? 500 });
     }
-    //const prevData = prodSnap.data() as any;
 
-    allowed.updatedAt = Date.now();
-    await prodRef.update(allowed);
+    const productRes = await dbService.getItemById(id, dbCollections.products);
+    if (productRes.status !== 200) return NextResponse.json({ status: productRes.status, message: productRes.code ?? "Product fetch failed" }, { status: productRes.status });
+
+    const existingProduct = productRes.response as productProps;
+    const updatedData = { ...existingProduct, ...allowed };
+    const diffs = diffObjects(existingProduct, updatedData);
+
+    const logData: NewActivityLog = {
+      userId: uid,
+      username: username.toLowerCase(),
+      action: "product_edit",
+      target: { collection: "products", item: id }
+    };
+    if (diffs.length) logData.diff = diffs;
+    const newLog = await dbService.setActivityLog(logData);
+    if (newLog.status !== 200) console.warn("Activity log not saved");
 
     return NextResponse.json({ status: 200, response: { id, updatedFields: allowed } }, { status: 200 });
 

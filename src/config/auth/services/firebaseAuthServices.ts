@@ -1,7 +1,7 @@
 import { AuthService } from "../authService";
-import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, db, storage } from "@/config/fbConfig";
-import { ref, uploadBytes, getDownloadURL, StorageError } from "firebase/storage";
+import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "@/config/fbConfig";
+import { StorageError } from "firebase/storage";
 import { User } from "@/app/utils/types";
 import { dbCollections } from "@/app/utils/utils";
 import { 
@@ -124,7 +124,7 @@ export class FirebaseAuthService implements AuthService {
     };
   }
 
-  async addUser(user: User, password: string): Promise<{ success: boolean; message: string }> {
+  async createUser(user: User, password: string): Promise<{ success: boolean; message: string }> {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, user.email, password);
       const newUser = userCredential.user;
@@ -142,45 +142,6 @@ export class FirebaseAuthService implements AuthService {
       return { success: true, message: "User added successfully" };
     } catch (error: unknown) {
       return { success: false, message: extractErrorMessage(error) || "Add user failed" };
-    }
-  }
-
-  async updateUser(user: User, file?:File): Promise<{ success: boolean; message: string }> {
-    try {
-      if (!user.uid) return { success: false, message: "User ID is required" };
-      const userRef = await findUserDocByUid(String(user.uid));
-      if (!userRef) return { success: false, message: "User not found" };
-      await updateDoc(userRef.ref, user);
-      const filePath = `users/${user.uid}/profile.jpg`;
-      if (file) {
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
-        const photoURL = await getDownloadURL(storageRef);
-        await updateDoc(userRef.ref, { image: photoURL, updatedAt: Date.now() });
-        user.image = photoURL;
-      }
-      if (auth.currentUser && auth.currentUser.uid === user.uid) {
-        await updateProfile(auth.currentUser, {
-        displayName: user.name,
-        photoURL: user.image
-      });
-      }
-      return { success: true, message: "User updated successfully" };
-    } catch (error: unknown) {
-      return { success: false, message: extractErrorMessage(error) || "Update user failed" };
-    }
-  }
-
-  async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
-    try {
-      if (!userId) return { success: false, message: "User ID is required" };
-      const userRef = await findUserDocByUid(userId);
-      if (!userRef) return { success: false, message: "User not found" };
-      await updateDoc(userRef.ref, { isDeleted: true, deletedAt: Date.now() });
-      // Note: Deleting from Firebase Auth requires admin privileges and is not handled here
-      return { success: true, message: "User deleted successfully" };
-    } catch (error: unknown) {
-      return { success: false, message: extractErrorMessage(error) || "Delete user failed" };
     }
   }
 }

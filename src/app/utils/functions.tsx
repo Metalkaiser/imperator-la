@@ -232,16 +232,6 @@ export function diffObjects(a: any, b: any, opts: DiffOptions = {}): DiffItem[] 
 
 /**
  * 
- * Checks if the MIME type of a given file is "image/webp".
- * @param file The file to check the MIME property
- * @returns {boolean} - True if MIME is webp. False otherwise.
- */
-export function checkMime(file: File): boolean {
-  return file.type === "image/webp";
-}
-
-/**
- * 
  * Retrieves the value of a specified cookie from the provided cookie header string.
  * @param cookieHeader The cookie header string
  * @param name The name of the cookie to retrieve
@@ -253,121 +243,225 @@ export function getCookieValue(cookieHeader: string | null, name: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-type VariantInput = {
-  color?: string;
-  sku?: string;
-  image?: string | null;
-  stock?: { name?: string; quantity?: number | string }[];
+// uploadPlan.ts
+export type UploadTask =
+  | { type: "upload"; file: File; path: string; target: "thumbnail" | "variant" | "image"; index?: number; sku?: string }
+  | { type: "delete"; url: string };
+
+export type UploadPlan = {
+  uploads: UploadTask[];
+  deletes: UploadTask[];
+  updates: any;
+  errors: string[];
 };
+
+import { ProductService } from "@/services/ProductService";
+import { fileSchema } from "./apis/validatePayload";
+import type { productProps } from "./types";
+
 
 /**
  * 
- * Validates an array of product variants against specific rules.
- * @param variants The array of variant objects to validate
- * @param mainSku The main SKU to compare against
- * @param opts Optional settings for validation
- * @returns An object indicating whether validation passed and the parsed variants or an error message
+ * Builds an upload plan for product images based on form data and existing product data.
+ * @param form  The form data containing files and fields
+ * @param existing The existing product data
+ * @param body The parsed body data
+ * @returns An UploadPlan detailing the upload and delete tasks
  */
-export function validateVariants(
-  variants: VariantInput[] | null | undefined,
-  mainSku: string,
-  opts?: {
-    skuDiffChars?: number; // cuántos chars finales pueden diferir (por defecto 1)
-    requireNonEmptyImage?: boolean; // exige image no vacío
-    disallowSuffixEqualMain?: boolean; // evita suffix igual al mainSku suffix
-  }
-): { ok: true; parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] }
-  | { ok: false; message: string } {
-  const skuDiffChars = Math.max(0, Math.floor(opts?.skuDiffChars ?? 1));
-  const requireNonEmptyImage = opts?.requireNonEmptyImage ?? true;
-  const disallowSuffixEqualMain = opts?.disallowSuffixEqualMain ?? true;
+export function buildUploadPlan({
+  form,
+  existing,
+  body
+}: {
+  form: FormData;
+  existing: productProps;
+  body: Partial<productProps>;
+}): UploadPlan {
 
-  if (!mainSku || typeof mainSku !== "string" || !mainSku.trim()) {
-    return { ok: false, message: "mainSku inválido" };
-  }
-  const main = mainSku.trim();
+  const plan: UploadPlan = {
+    uploads: [],
+    deletes: [],
+    updates: {},
+    errors: []
+  };
 
-  // permitir null/undefined si no quieres obligarlo
-  if (variants === null || variants === undefined) {
-    return { ok: false, message: "Las variantes son obligatorias" };
-  }
+  const isValidFile = (f: any) => fileSchema.safeParse(f).success;
 
-  if (!Array.isArray(variants)) {
-    return { ok: false, message: "variants debe ser un array" };
-  }
+  // ---------------- THUMBNAIL ----------------
+  const thumb = form.get("thumbnail");
+  if (thumb instanceof File) {
+    if (!isValidFile(thumb)) {
+      plan.errors.push("Invalid thumbnail file");
+    } else {
+      plan.uploads.push({
+        type: "upload",
+        file: thumb,
+        path: `products/thumbnails/${body.mainSku ?? existing.mainSku}`,
+        target: "thumbnail"
+      });
 
-  if (main.length <= skuDiffChars) {
-    return { ok: false, message: `mainSku debe tener más de ${skuDiffChars} caracteres` };
-  }
-  const prefix = main.slice(0, main.length - skuDiffChars);
-  const mainSuffix = main.slice(main.length - skuDiffChars);
-
-  const seenSuffix = new Set<string>();
-  const parsed: { color: string; sku: string; image: string | null; stock: { name: string; quantity: number }[] }[] = [];
-
-  for (let i = 0; i < variants.length; i++) {
-    const v = variants[i];
-    if (typeof v !== "object" || v === null) {
-      return { ok: false, message: `La variante en índice ${i} debe ser un objeto` };
-    }
-
-    const rawSku = String(v.sku ?? "").trim();
-    if (!rawSku) return { ok: false, message: `La variante ${i} no tiene sku` };
-
-    // verificar longitud y prefijo/suffix según regla
-    if (rawSku.length !== main.length) {
-      return { ok: false, message: `La variante ${i} sku debe tener la misma longitud que el mainSku (${main.length} caracteres)` };
-    }
-    const skuPrefix = rawSku.slice(0, rawSku.length - skuDiffChars);
-    const skuSuffix = rawSku.slice(rawSku.length - skuDiffChars);
-
-    if (skuPrefix !== prefix) {
-      return { ok: false, message: `La variante ${i} tiene prefijo distinto. Se esperaba prefijo "${prefix}"` };
-    }
-
-    // patrón simple para suffix (alfanumérico). Ajusta si necesitas solo dígitos u otro patrón.
-    if (!/^[A-Za-z0-9]+$/.test(skuSuffix)) {
-      return { ok: false, message: `La variante ${i} suffix "${skuSuffix}" no cumple el patrón permitido` };
-    }
-
-    if (disallowSuffixEqualMain && skuSuffix === mainSuffix && variants.length > 1) {
-      return { ok: false, message: `La variante ${i} no puede tener el mismo suffix que el mainSku` };
-    }
-    if (seenSuffix.has(skuSuffix)) {
-      return { ok: false, message: `Suffix duplicado "${skuSuffix}" en variante ${i}` };
-    }
-    seenSuffix.add(skuSuffix);
-
-    // image (si debe ser no vacío)
-    const image = v.image === null ? null : String(v.image ?? "");
-    if (requireNonEmptyImage && (!image || image.trim() === "")) {
-      return { ok: false, message: `La variante ${i} debe tener una miniatura (image)` };
-    }
-
-    // stock: debe ser array no vacío (según tu regla) y cada item válido
-    if (!Array.isArray(v.stock) || v.stock.length === 0) {
-      return { ok: false, message: `La variante ${i} debe tener stock declarado` };
-    }
-    const stockNormalized: { name: string; quantity: number }[] = [];
-    for (let j = 0; j < v.stock.length; j++) {
-      const st = v.stock[j] as any;
-      if (typeof st !== "object" || st === null) {
-        return { ok: false, message: `Stock inválido en variante ${i} índice ${j}` };
+      if (existing.thumbnail) {
+        plan.deletes.push({ type: "delete", url: existing.thumbnail });
       }
-      const name = String(st.name ?? "").trim();
-      if (!name) return { ok: false, message: `La variante ${i} stock[${j}] debe tener un nombre` };
-      const q = Number(st.quantity);
-      if (!Number.isFinite(q) || q < 0 || !Number.isInteger(q)) {
-        return { ok: false, message: `Formato de stock incorrecto en variante ${i} stock[${j}]` };
-      }
-      stockNormalized.push({ name, quantity: q });
     }
-
-    // color: normalizar a string (puede quedar vacío si lo permites)
-    const color = String(v.color ?? "").trim();
-
-    parsed.push({ color, sku: rawSku, image: image === "" ? null : image, stock: stockNormalized });
   }
 
-  return { ok: true, parsed };
+  // ---------------- VARIANTS ----------------
+  const baseVariants =
+    Array.isArray(body.variants)
+      ? body.variants
+      : existing.variants;
+
+  const updatedVariants = structuredClone(baseVariants);
+  plan.updates.variants = updatedVariants;
+
+  baseVariants.forEach((v, i) => {
+    const sku = String(v.sku).trim();
+    const file =
+      form.get(`variant_${sku}_image`) ??
+      form.get(`variant_${i}_image`);
+
+    if (file instanceof File) {
+      if (!isValidFile(file)) {
+        plan.errors.push(`Invalid variant image at index ${v.sku}`);
+        return;
+      }
+
+      plan.uploads.push({
+        type: "upload",
+        file,
+        path: `products/skus/${sku}`,
+        target: "variant",
+        index: i,
+        sku
+      });
+
+      const old = existing.variants?.find(ev => ev.sku === sku);
+      if (old?.image) {
+        plan.deletes.push({ type: "delete", url: old.image });
+      }
+    }
+  });
+
+  plan.updates.variants = updatedVariants;
+
+  // ---------------- ADDITIONAL IMAGES ----------------
+  let hasNew = false;
+  const additionalImages = form.getAll("images");
+  additionalImages.forEach((file, index) => {
+    if (!(file instanceof File)) return;
+    if (!isValidFile(file)) {
+      plan.errors.push(`Invalid image file: images[${index}]`);
+      return;
+    }
+
+    hasNew = true;
+    plan.uploads.push({
+      type: "upload",
+      file,
+      path: `products/images/${existing.name}_images_${index}`,
+      target: "image"
+    });
+  });
+
+  if (body.images && Array.isArray(body.images)) {
+    const kept = body.images.filter(x => typeof x === "string" && !x.startsWith("blob:"));
+
+    if (!kept.length && !hasNew) {
+      plan.errors.push("At least one product image is required.");
+    } else {
+      plan.updates.images = [...kept];
+      existing.images
+        .filter(img => !kept.includes(img))
+        .forEach(url => plan.deletes.push({ type: "delete", url }));
+    }
+  } else {
+    if (hasNew) {
+      plan.updates.images = existing.images;
+    }
+  }
+
+  return plan;
+}
+
+/**
+ * 
+ * Executes the upload plan by performing uploads and deletions using the provided ProductService.
+ * @param plan  The UploadPlan containing upload and delete tasks
+ * @param dbService The ProductService to handle uploads and deletions
+ * @returns An object with updates and errors after executing the upload plan
+ */
+export async function executeUploadPlan(
+  plan: UploadPlan,
+  dbService: ProductService
+) {
+  const results = {
+    updates: { ...plan.updates },
+    errors: [...plan.errors]
+  };
+
+  for (const task of plan.uploads) {
+    if (task.type !== "upload") continue;
+    const up = await dbService.uploadImage(task.file, task.path);
+    if (!up.ok || !up.url) {
+      results.errors.push(`Upload failed: ${task.path}`);
+      continue;
+    }
+
+    if (task.target === "thumbnail") {
+      results.updates.thumbnail = up.url;
+    }
+
+    if (task.target === "variant" && task.index !== undefined) {
+      results.updates.variants[task.index].image = up.url;
+    }
+
+    if (task.target === "image") {
+      if (!Array.isArray(results.updates.images)) {
+        results.updates.images = [];
+      }
+      results.updates.images.push(up.url);
+    }
+  }
+
+  for (const del of plan.deletes) {
+    if (del.type !== "delete") continue;
+    try {
+      await dbService.deleteImage(del.url);
+    } catch {
+      console.warn("Delete failed:", del.url);
+    }
+  }
+  return results;
+}
+
+/**
+ * 
+ * @param s The string to sanitize
+ * @returns A sanitized string safe for file names
+ */
+export function sanitizeFileName(s: string) {
+  return String(s)
+    .normalize("NFKD")
+    .replace(/[^\w\s.-]/g, "") // quitar caracteres raros
+    .trim()
+    .replace(/\s+/g, "_"); // espacios -> _
+}
+
+/**
+ * 
+ * @param obj The object to remove undefined values from
+ * @returns A new object with all undefined values removed, including nested objects
+ */
+export function removeUndefined(obj: Record<string, any>): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(value => value[1] !== undefined)
+      .map(([key, value]) => [
+        key,
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? removeUndefined(value)  // recursivo para objetos anidados
+          : value
+      ])
+  );
 }

@@ -5,6 +5,7 @@ import Image from "next/image";
 import logo_light from "@P/brand/logo_banner_light.webp";
 import logo_dark from "@P/brand/logo_banner_dark.webp";
 import { useAuth } from "../context/authContext";
+import Swal from "sweetalert2";
 
 export default function LoginComponent() {
   const [email, setEmail] = useState("");
@@ -16,8 +17,18 @@ export default function LoginComponent() {
 
   const handleSignIn = async () => {
     setError("");
+    Swal.fire({
+      title: 'Iniciando sesión...',
+      allowEscapeKey: false,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
     if (!email || !password) {
       setError("Por favor, completa todos los campos.");
+      Swal.close();
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Por favor, completa todos los campos.' });
       return;
     }
     try {
@@ -25,12 +36,16 @@ export default function LoginComponent() {
       const result = await login(email, password);
       if (result && !result.success) {
         setLoginAttempt(false);
+        Swal.close();
+        Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Error al iniciar sesión.' });
         setError(result.message || "Error al iniciar sesión");
-      }
+      } else Swal.close();
     } catch (err: unknown) {
       setLoginAttempt(false);
       if (err instanceof Error) setError(err.message);
       else setError("Error desconocido");
+      Swal.close();
+      Swal.fire({ icon: 'error', title: 'Error', text: error || 'Error desconocido.' });
     }
   };
 
@@ -46,7 +61,7 @@ export default function LoginComponent() {
           className="p-2 rounded-md mt-2 dark:bg-gray-800 dark:caret-white dark:text-white outline outline-1 dark:outline-0"
           type="email"
           placeholder="Correo electrónico"
-          autoComplete="email"
+          autoComplete="on"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -73,7 +88,7 @@ export default function LoginComponent() {
           </div>
           ) : "Iniciar sesión"}
         </button>
-        {error && <p className="text-red-600 text-center font-bold">{error}</p>}
+        {/*error && <p className="text-red-600 text-center font-bold">{error}</p>*/}
       </form>
     </article>
   );

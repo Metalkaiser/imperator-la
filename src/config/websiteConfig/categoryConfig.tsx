@@ -168,8 +168,8 @@ export const getActiveCategory = (catIndexes:number[], locale:string) => {
  * @param locale - The locale code used to select the appropriate labels for categories and subcategories.
  * @returns An array of category objects, each containing a slug, a localized label, and an array of subcategory objects with their respective slugs and labels.
  */
-export function getCategoriesWithSubcategories(locale: string) {
-  const labels = catalogLabels[locale] || catalogLabels[defaultLocale];
+export function getCategoriesWithSubcategories(locale?: string) {
+  const labels = locale ? catalogLabels[locale] : catalogLabels[defaultLocale];
 
   return baseCatalogStructure.map(cat => ({
     slug: cat.slug,
