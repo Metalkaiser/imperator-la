@@ -13,6 +13,16 @@ import { dbCollections } from "../utils/utils";
 import { NewActivityLog, NewProduct, productProps, User } from "../utils/types";
 import { buildUploads } from "../utils/apis/buildUploads";
 
+export type BulkPatchBody = Partial<Pick<productProps, "price" | "discount" | "status" | "isDeleted">>;
+export type BulkUpdateProductsInput = { ids: Array<string | number>; changes: BulkPatchBody };
+export type BulkUpdateProductsResult = {
+  success: boolean;
+  updatedCount: number;
+  failedCount: number;
+  failedItems: Array<{ id: string; status?: number; reason: string }>;
+  message?: string;
+};
+
 async function getAdminUser() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
@@ -59,6 +69,60 @@ async function getAdminUser() {
   if (!userData) return { success: false, response: "Problema al autenticar usuario" }
   if (userData.role !== "admin") return { success: false, response: "Permisos insuficientes" };
   return { success: true, response: { id: uid, role: userData.role, username: userData.name }}
+}
+
+function getBulkAllowedChanges(changes: BulkPatchBody) {
+  const allowed: Record<string, any> = {};
+
+  if (changes.price !== undefined) {
+    const n = Number(changes.price);
+    if (Number.isNaN(n) || !Number.isFinite(n) || n < 0) {
+      return { ok: false as const, error: "Invalid price" };
+    }
+    allowed.price = n;
+  }
+
+  if (changes.discount !== undefined) {
+    const d = changes.discount;
+    if (d === null) {
+      allowed.discount = null;
+    } else if (
+      typeof d === "object" &&
+      (d.type === 0 || d.type === 1) &&
+      typeof d.value !== "undefined" &&
+      !Number.isNaN(Number(d.value)) &&
+      Number.isFinite(Number(d.value)) &&
+      Number(d.value) >= 0
+    ) {
+      const val = Number(d.value);
+      if (d.type === 0 && val > 100) {
+        return { ok: false as const, error: "Discount percent cannot be > 100" };
+      }
+      allowed.discount = { type: Number(d.type), value: val };
+    } else {
+      return { ok: false as const, error: "Invalid discount object" };
+    }
+  }
+
+  if (changes.status !== undefined) {
+    const s = Number(changes.status);
+    if (!Number.isFinite(s) || ![0, 1, 2].includes(s)) {
+      return { ok: false as const, error: "Invalid status (allowed: 0,1,2)" };
+    }
+    allowed.status = s;
+    allowed.isDeleted = s === 2;
+  } else if (typeof changes.isDeleted === "boolean") {
+    allowed.isDeleted = Boolean(changes.isDeleted);
+    if (changes.isDeleted === true && allowed.status === undefined) {
+      allowed.status = 2;
+    }
+  }
+
+  if (Object.keys(allowed).length === 0) {
+    return { ok: false as const, error: "No allowed fields present" };
+  }
+
+  return { ok: true as const, allowed };
 }
 
 export async function createProductAction(prevState: any, formData: FormData) {
@@ -329,5 +393,141 @@ export async function updateProductAction(prevState: any, formData: FormData) {
     console.error("PATCH /api/admin/products/[id] error:", err);
     const message = err.message ?? "Internal server error";
     return { success: false, error: message };
+  }
+}
+
+export async function bulkUpdateProductsAction(input: BulkUpdateProductsInput): Promise<BulkUpdateProductsResult> {
+  try {
+    const authResult = await getAdminUser();
+    if (!authResult.success) {
+      return {
+        success: false,
+        updatedCount: 0,
+        failedCount: 0,
+        failedItems: [],
+        message: String(authResult.response ?? "No autorizado")
+      };
+    }
+    const adminUser = authResult.response as { id: string | number; role: string; username: string };
+
+    if (!input || !Array.isArray(input.ids) || input.ids.length === 0) {
+      return {
+        success: false,
+        updatedCount: 0,
+        failedCount: 0,
+        failedItems: [],
+        message: "Missing product ids"
+      };
+    }
+
+    if (!input.changes || typeof input.changes !== "object" || Object.keys(input.changes).length === 0) {
+      return {
+        success: false,
+        updatedCount: 0,
+        failedCount: 0,
+        failedItems: [],
+        message: "Empty body"
+      };
+    }
+
+    const ids = Array.from(
+      new Set(
+        input.ids
+          .map((id) => String(id).trim())
+          .filter((id) => id.length > 0)
+      )
+    );
+
+    if (ids.length === 0) {
+      return {
+        success: false,
+        updatedCount: 0,
+        failedCount: 0,
+        failedItems: [],
+        message: "Missing product ids"
+      };
+    }
+
+    const allowedRes = getBulkAllowedChanges(input.changes);
+    if (!allowedRes.ok) {
+      return {
+        success: false,
+        updatedCount: 0,
+        failedCount: 0,
+        failedItems: [],
+        message: allowedRes.error
+      };
+    }
+
+    const allowed = allowedRes.allowed as Partial<productProps>;
+    const dbService = await getProductService();
+
+    const results = await Promise.allSettled(
+      ids.map(async (id) => {
+        const updateRes = await dbService.updateProduct(id, allowed);
+        if (!updateRes || updateRes.status !== 200) {
+          throw {
+            id,
+            status: updateRes?.status,
+            reason: String(updateRes?.response ?? "Update failed")
+          };
+        }
+        return { id };
+      })
+    );
+
+    let updatedCount = 0;
+    const failedItems: Array<{ id: string; status?: number; reason: string }> = [];
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const id = ids[i];
+      if (result.status === "fulfilled") {
+        updatedCount++;
+      } else {
+        const reason = result.reason as { id?: string; status?: number; reason?: string } | undefined;
+        failedItems.push({
+          id,
+          status: reason?.status,
+          reason: String(reason?.reason ?? "Unexpected update error")
+        });
+      }
+    }
+
+    if (updatedCount > 0) {
+      const changedFields = Object.keys(allowed);
+      const logData: NewActivityLog = {
+        userId: adminUser.id,
+        username: adminUser.username.toLowerCase(),
+        action: "product_bulk",
+        target: { collection: "products", item: "bulk" },
+        diff: [
+          { item: "updatedCount", oldValue: 0, newValue: updatedCount },
+          { item: "failedCount", oldValue: 0, newValue: failedItems.length },
+          { item: "fields", oldValue: "-", newValue: changedFields.join(", ") }
+        ]
+      };
+      const logRes = await dbService.setActivityLog(logData);
+      if (logRes.status !== 200) console.warn("Bulk activity log not saved");
+
+      revalidatePath("/admin/inventory");
+    }
+
+    return {
+      success: updatedCount > 0,
+      updatedCount,
+      failedCount: failedItems.length,
+      failedItems,
+      message: updatedCount > 0 ? "Bulk update completed" : "No products were updated"
+    };
+  } catch (err: any) {
+    console.error("bulkUpdateProductsAction error:", err);
+    return {
+      success: false,
+      updatedCount: 0,
+      failedCount: 0,
+      failedItems: [],
+      message: err?.message ?? "Internal server error"
+    };
   }
 }
