@@ -11,6 +11,7 @@ import { Pen, Trash2, Plus } from "lucide-react";
 import { useDB } from "../../components/context/dbContext";
 import { capitalize } from "@/app/utils/functions";
 import { pdfIcon, csvIcon, xlsIcon } from "@/app/utils/svgItems";
+import { bulkUpdateProductsAction } from "@/app/actions/products";
 
 /**
  * Tabla de productos con:
@@ -21,7 +22,7 @@ import { pdfIcon, csvIcon, xlsIcon } from "@/app/utils/svgItems";
  * - export: CSV (Excel-friendly) y "PDF" via ventana de impresión
  *
  * Observaciones de implementación:
- * - Eliminación llama a DELETE /api/admin/products/:id (tú debes implementar ese endpoint).
+ * - Eliminación usa Server Action para borrado lógico (status=2, isDeleted=true).
  * - Las acciones se validan en servidor (no confiar en canEditAll del cliente).
  */
 
@@ -223,6 +224,11 @@ export default function Table() {
       return;
     }
 
+    if (!payloadPartial) {
+      Swal.fire("Datos inválidos", "No se pudo construir la actualización masiva.", "error");
+      return;
+    }
+
     // Mostramos loading
     Swal.fire({
       title: "Actualizando productos",
@@ -231,67 +237,34 @@ export default function Table() {
       didOpen: () => Swal.showLoading(),
     });
 
-    // Ejecutar llamadas (por cada id, hacemos PATCH /api/admin/products/:id con payloadPartial)
-    const ids = Array.from(selectedIds);
-    const promises = ids.map((id) =>
-      fetch(`/api/admin/products/bulk/${id}`, {  //encodeURIComponent(String(id))
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payloadPartial),
-      })
-    );
-
-    const results = await Promise.allSettled(promises);
-
-    // Analizar resultados
-    let successCount = 0;
-    const failedItems: { id: string | number; reason?: any; status?: number }[] = [];
-
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      const id = ids[i];
-      if (r.status === "fulfilled") {
-        const res = r.value as Response;
-        if (res.ok) {
-          successCount++;
-          console.log(await res.json());
-        } else {
-          let reasonMsg = undefined;
-          try {
-            const json = await res.json();
-            reasonMsg = json?.message ?? JSON.stringify(json);
-          } catch {
-            reasonMsg = `HTTP ${res.status}`;
-          }
-          failedItems.push({ id, reason: reasonMsg, status: res.status });
-        }
-      } else {
-        failedItems.push({ id, reason: r.reason });
-      }
-    }
+    const result = await bulkUpdateProductsAction({
+      ids: Array.from(selectedIds),
+      changes: payloadPartial
+    });
 
     Swal.close();
 
     // Mostrar resumen
-    if (failedItems.length === 0) {
-      await Swal.fire("Actualizado", `${successCount} producto(s) actualizados correctamente.`, "success");
+    if (result.success && result.failedCount === 0) {
+      await Swal.fire("Actualizado", `${result.updatedCount} producto(s) actualizados correctamente.`, "success");
       setBulkEdit("");
       clearSelection();
       await refreshProducts();
-    } else {
-      // mostrar resumen y log de fallos (si hay muchos, sólo mostrar primeros 10)
-      const firstFailures = failedItems.slice(0, 10).map((f) => `<li>${String(f.id)} — ${String(f.reason)}</li>`).join("");
-      const more = failedItems.length > 10 ? `<p>...y ${failedItems.length - 10} más</p>` : "";
+    } else if (result.updatedCount > 0 && result.failedCount > 0) {
+      const firstFailures = result.failedItems
+        .slice(0, 10)
+        .map((f) => `<li>${String(f.id)} — ${String(f.reason)}</li>`)
+        .join("");
+      const more = result.failedCount > 10 ? `<p>...y ${result.failedCount - 10} más</p>` : "";
       await Swal.fire({
         title: "Resultados parciales",
-        html: `<p>${successCount} actualizados correctamente. ${failedItems.length} fallaron:</p><ul style="text-align:left;">${firstFailures}</ul>${more}`,
+        html: `<p>${result.updatedCount} actualizados correctamente. ${result.failedCount} fallaron:</p><ul style="text-align:left;">${firstFailures}</ul>${more}`,
         icon: "warning",
         width: "600px",
       });
-      // intentar refrescar los que fallaron o refrescar todo
       await refreshProducts();
-      // no limpiamos selección para que el usuario pueda reintentar (opcional)
+    } else {
+      await Swal.fire("Error", result.message ?? "No se pudieron actualizar productos.", "error");
     }
   };
 
@@ -321,22 +294,21 @@ export default function Table() {
     });
 
     try {
-      const payloadPartial = { status: 2, isDeleted: true };
-      const res = await fetch(`/api/admin/products/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payloadPartial),
+      const result = await bulkUpdateProductsAction({
+        ids: [String(id)],
+        changes: { status: 2, isDeleted: true },
       });
 
       Swal.close();
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Error" }));
-        throw new Error(err.message || "Error al eliminar");
+      if (result.success && result.updatedCount >= 1) {
+        await Swal.fire("Eliminado", "Producto eliminado correctamente.", "success");
+        await refreshProducts();
+        return;
       }
-      await Swal.fire("Eliminado", "Producto eliminado correctamente.", "success");
-      await refreshProducts();
+
+      const reason = result.failedItems?.[0]?.reason ?? result.message ?? "No se pudo eliminar el producto";
+      throw new Error(reason);
     } catch (err: any) {
       console.error(err);
       Swal.fire("Error", err.message || "No se pudo eliminar el producto", "error");
