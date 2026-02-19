@@ -37,4 +37,17 @@ export interface AuthService {
    * @returns message: Error message on failure.
    */
   createUser(user: User, password: string): Promise<{ success: boolean; message: string }>;
+
+  /**
+   * Change current authenticated user's password.
+   * @param currentPassword Current password used for re-authentication.
+   * @param newPassword New password to be set.
+   */
+  changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }>;
+
+  /**
+   * Optional password policy helper for UI validation.
+   * @param newPassword New password candidate.
+   */
+  validateNewPassword?(newPassword: string): { ok: boolean; message?: string };
 }

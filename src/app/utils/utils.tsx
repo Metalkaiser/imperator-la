@@ -25,6 +25,9 @@ export const dbCollections = {
 // This path is used to store and retrieve product images in the Firebase storage.
 export const storagePath = "https://firebasestorage.googleapis.com/v0/b/imperator-next.appspot.com/o/products";
 
+//Storage path for user profile images
+export const userProfileStoragePath = "https://firebasestorage.googleapis.com/v0/b/imperator-next.appspot.com/o";
+
 export const noProductError = {
   code: "product-not-found", 
   response: null,

@@ -1,5 +1,12 @@
 import { AuthService } from "../authService";
-import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+} from "firebase/auth";
 import { auth, db } from "@/config/fbConfig";
 import { StorageError } from "firebase/storage";
 import { User } from "@/app/utils/types";
@@ -47,6 +54,13 @@ async function findUserDocByUid(uid: string): Promise<{
 }
 
 export class FirebaseAuthService implements AuthService {
+  validateNewPassword(newPassword: string): { ok: boolean; message?: string } {
+    if (!newPassword || newPassword.length < 8) {
+      return { ok: false, message: "La nueva contraseña debe tener al menos 8 caracteres" };
+    }
+    return { ok: true };
+  }
+
 
   async login(email: string, password: string): Promise<{ success: boolean; message?: string; user?: User }> {
     try {
@@ -142,6 +156,37 @@ export class FirebaseAuthService implements AuthService {
       return { success: true, message: "User added successfully" };
     } catch (error: unknown) {
       return { success: false, message: extractErrorMessage(error) || "Add user failed" };
+    }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const currentUser = auth.currentUser;
+      console.log(currentUser)
+      if (!currentUser) return { success: false, message: "No hay sesión activa" };
+      if (!currentUser.email) return { success: false, message: "Usuario sin correo asociado" };
+
+      const passwordCheck = this.validateNewPassword(newPassword);
+      if (!passwordCheck.ok) {
+        return { success: false, message: passwordCheck.message ?? "Nueva contraseña inválida" };
+      }
+
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+      await updatePassword(currentUser, newPassword);
+
+      return { success: true, message: "Contraseña actualizada correctamente" };
+    } catch (error: unknown) {
+      if (error instanceof FirebaseError) {
+        if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password") {
+          return { success: false, message: "La contraseña actual es incorrecta" };
+        }
+        if (error.code === "auth/requires-recent-login") {
+          return { success: false, message: "Tu sesión es antigua. Vuelve a iniciar sesión e intenta de nuevo" };
+        }
+        return { success: false, message: getFirebaseAuthErrorMessage(error.code) };
+      }
+      return { success: false, message: extractErrorMessage(error) || "No se pudo cambiar la contraseña" };
     }
   }
 }
