@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { User, authResult } from '@/app/utils/types';
 import { getAuthService } from '@/config/auth/authServiceInstance';
 import { AuthService } from '@/config/auth/authService';
-import { log } from 'console';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
