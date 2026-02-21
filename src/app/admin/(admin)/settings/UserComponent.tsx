@@ -8,12 +8,14 @@ import { updateMyProfileImageAction } from "@/app/actions/users";
 import { useAuth } from "../../components/context/authContext";
 import { capitalizeName } from "@/app/utils/functions";
 import { rolesMap } from "@/app/utils/utils";
+import { useRouter } from "next/navigation";
 
 const ALLOWED_IMAGE_MIMES = ["image/webp", "image/jpeg", "image/png"];
 const MAX_IMAGE_BYTES = 512_000;
 
 export default function UserComponent() {
-  const { user, logout, refreshSession } = useAuth();
+  const { user, authStatus, authError, refreshSession } = useAuth();
+  const router = useRouter();
 
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -33,6 +35,12 @@ export default function UserComponent() {
   }, [user]);
 
   useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.replace("/admin/login");
+    }
+  }, [authStatus, router]);
+
+  useEffect(() => {
     if (!imageFile) {
       setImagePreview(null);
       return;
@@ -44,9 +52,36 @@ export default function UserComponent() {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  if (!user) {
-    void logout();
-    return null;
+  if (authStatus === "loading") {
+    return (
+      <section className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-gray-500">Verificando sesión...</p>
+      </section>
+    );
+  }
+
+  if (authStatus === "unauthenticated") {
+    return (
+      <section className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-gray-500">Redirigiendo al login...</p>
+      </section>
+    );
+  }
+
+  if (authStatus === "authenticated" && !user) {
+    return (
+      <section className="max-w-2xl mx-auto p-4 space-y-4">
+        <p className="text-sm text-red-500">
+          {authError ?? "No se pudo cargar tu perfil en este momento."}
+        </p>
+        <button
+          className="bg-blue-600 text-white px-3 py-2 rounded cursor-pointer"
+          onClick={() => void refreshSession()}
+        >
+          Reintentar sesión
+        </button>
+      </section>
+    );
   }
 
   const validateImage = (file: File): string | null => {

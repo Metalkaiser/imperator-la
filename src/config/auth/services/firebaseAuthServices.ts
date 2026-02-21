@@ -41,6 +41,10 @@ function extractErrorMessage(err: unknown): string {
   }
 }
 
+async function clearServerSessionCookie() {
+  await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' }).catch(() => null);
+}
+
 async function findUserDocByUid(uid: string): Promise<{
   docId: string;
   ref: DocumentReference;
@@ -78,6 +82,7 @@ export class FirebaseAuthService implements AuthService {
       if (!r.ok) {
         // Si el servidor rechazó el token, cerramos sesión localmente por seguridad
         await this.logout();
+        await clearServerSessionCookie();
         console.error(r.statusText);
         const errJson = await r.json().catch(() => ({ message: 'Server login failed' }));
         return { success: false, message: errJson.message || 'Server login failed' };
@@ -91,10 +96,12 @@ export class FirebaseAuthService implements AuthService {
       const userData = await findUserDocByUid(user);
       if (!userData) {
         await this.logout();
+        await clearServerSessionCookie();
         return { success: false, message: "User data not found" };
       }
       if (userData.data && userData.data.isDeleted) {
         await this.logout();
+        await clearServerSessionCookie();
         return { success: false, message: "User account is deleted" };
       }
       const userRef = await findUserDocByUid(user);
@@ -107,14 +114,12 @@ export class FirebaseAuthService implements AuthService {
   }
 
   async logout(): Promise<{ success: boolean; message?: string }> {
-    await signOut(auth);
-    const r = await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
-    if (!r.ok) {
-      console.error('Server logout failed:', r.statusText);
-      const errJson = await r.json().catch(() => ({ message: 'Server logout failed' }));
-      return { success: false, message: errJson.message || 'Server logout failed' };
+    try {
+      await signOut(auth);
+      return { success: true, message: 'Logout local successful' };
+    } catch (error: unknown) {
+      return { success: false, message: extractErrorMessage(error) || 'Local logout failed' };
     }
-    return { success: true, message: 'Logout successful' };
   }
 
   async getCurrentUser(): Promise<User | null> {
@@ -175,6 +180,19 @@ export class FirebaseAuthService implements AuthService {
       await reauthenticateWithCredential(currentUser, credential);
       await updatePassword(currentUser, newPassword);
 
+      const renewSessionCookie = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: await currentUser.getIdToken() }),
+        credentials: 'include'
+      });
+
+      if (!renewSessionCookie.ok) {
+        await this.logout();
+        await clearServerSessionCookie();
+        const errJson = await renewSessionCookie.json().catch(() => ({ message: 'Failed to renew session after password change' }));
+        return { success: false, message: errJson.message || 'Failed to renew session after password change' };
+      }
       return { success: true, message: "Contraseña actualizada correctamente" };
     } catch (error: unknown) {
       if (error instanceof FirebaseError) {
