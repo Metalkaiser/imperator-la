@@ -1,26 +1,31 @@
-"use client"
+"use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import { getAuthService } from "@/config/auth/authServiceInstance";
+import { updateMyProfileImageAction } from "@/app/actions/users";
 import { useAuth } from "../../components/context/authContext";
 import { capitalizeName } from "@/app/utils/functions";
 import { rolesMap } from "@/app/utils/utils";
+import { useRouter } from "next/navigation";
 
-// === Helpers del backend (tú los implementas luego) ===
-// export async function uploadUserImage(file: File): Promise<string> {}
-// export async function updateUserImage(imageUrl: string): Promise<void> {}
+const ALLOWED_IMAGE_MIMES = ["image/webp", "image/jpeg", "image/png"];
+const MAX_IMAGE_BYTES = 512_000;
 
 export default function UserComponent() {
-  const { user, logout } = useAuth();
+  const { user, authStatus, refreshSession } = useAuth();
+  const router = useRouter();
 
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState("");
 
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
   const [pwSuccess, setPwSuccess] = useState("");
   const [pwError, setPwError] = useState("");
@@ -29,115 +34,189 @@ export default function UserComponent() {
     if (user?.image) setImageUrl(user.image);
   }, [user]);
 
-  if (!user) {
-    void logout();
-    return null;
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.replace("/admin/login");
+    }
+  }, [authStatus, router]);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  if (user === null) {
+    return (
+      <section className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-gray-500">Cargando datos del usuario...</p>
+      </section>
+    );
+  }
+  if (authStatus === "loading") {
+    return (
+      <section className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-gray-500">Verificando sesión...</p>
+      </section>
+    );
   }
 
-  // === Selección del archivo ===
+  if (authStatus === "unauthenticated") {
+    return (
+      <section className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-gray-500">Redirigiendo al login...</p>
+      </section>
+    );
+  }
+
+  const validateImage = (file: File): string | null => {
+    if (!ALLOWED_IMAGE_MIMES.includes(file.type)) {
+      return `Formato no permitido. Usa: ${ALLOWED_IMAGE_MIMES.join(", ")}`;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      return `La imagen debe pesar máximo ${MAX_IMAGE_BYTES / 1024} KB`;
+    }
+    return null;
+  };
+
   const handleImageSelection = (fileList: FileList | null) => {
+    setImageError("");
     if (!fileList || fileList.length === 0) return;
 
     const file = fileList[0];
-    setImageFile(file);
+    const validationError = validateImage(file);
+    if (validationError) {
+      setImageFile(null);
+      setImagePreview(null);
+      setImageError(validationError);
+      return;
+    }
 
-    // Crear preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    setImageFile(file);
   };
 
-  // === Cancelar selección ===
   const handleCancelImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setImageError("");
   };
 
-  // === Subir imagen final ===
   const handleImageUpload = async () => {
     if (!imageFile) return;
 
+    const validationError = validateImage(imageFile);
+    if (validationError) {
+      setImageError(validationError);
+      return;
+    }
+
+    setImageError("");
+    setImageLoading(true);
+
+    Swal.fire({
+      title: "Subiendo imagen...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
     try {
-      setImageLoading(true);
-      Swal.fire({
-        title: 'Subiendo imagen...',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
-        background: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-        color: theme === 'dark' ? '#ffffff' : '#000000',
-      });
+      const formData = new FormData();
+      formData.set("image", imageFile);
 
-      // === 1. Subir archivo ===
-      // const uploadedUrl = await uploadUserImage(imageFile);
-      const uploadedUrl = "https://example.com/imagen_subida.jpg"; // placeholder
+      const result = await updateMyProfileImageAction(formData);
+      Swal.close();
 
-      // === 2. Actualizar en DB ===
-      // await updateUserImage(uploadedUrl);
+      if (!result.success || !result.imageUrl) {
+        const message = result.error ?? "No se pudo actualizar la imagen";
+        setImageError(message);
+        await Swal.fire("Error", message, "error");
+        return;
+      }
 
-      setImageUrl(uploadedUrl);
+      setImageUrl(result.imageUrl);
       setImageFile(null);
       setImagePreview(null);
-      Swal.close();
+      await refreshSession();
 
-      //alert("Imagen actualizada.");
-      Swal.fire({
-        title: 'Imagen actualizada',
-        icon: 'success',
-        confirmButtonText: 'Aceptar',
-        background: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-        color: theme === 'dark' ? '#ffffff' : '#000000',
-      });
-    } catch (e) {
-      console.error(e);
+      await Swal.fire("Imagen actualizada", "Tu foto de perfil se actualizó correctamente.", "success");
+    } catch (error: any) {
+      console.error(error);
       Swal.close();
-      //alert("Error subiendo la imagen.");
-      Swal.fire({
-        title: 'Error subiendo la imagen',
-        icon: 'error',
-        confirmButtonText: 'Aceptar',
-        background: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-        color: theme === 'dark' ? '#ffffff' : '#000000',
-      });
+      const message = error?.message ?? "Error subiendo la imagen";
+      setImageError(message);
+      await Swal.fire("Error", message, "error");
     } finally {
       setImageLoading(false);
     }
   };
 
-  // === Update password ===
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: FormEvent) => {
     e.preventDefault();
     setPwError("");
     setPwSuccess("");
 
-    if (!currentPw || !newPw) {
+    if (!currentPw || !newPw || !confirmPw) {
       setPwError("Todos los campos son obligatorios");
+      return;
+    }
+
+    if (newPw.length < 8) {
+      setPwError("La nueva contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+
+    if (currentPw === newPw) {
+      setPwError("La nueva contraseña debe ser distinta a la actual");
+      return;
+    }
+
+    if (newPw !== confirmPw) {
+      setPwError("La confirmación no coincide con la nueva contraseña");
       return;
     }
 
     try {
       setPwLoading(true);
-      // await updateUserPassword(currentPw, newPw);
-      setPwSuccess("Contraseña actualizada.");
+      const authService = await getAuthService();
+
+      const policyResult = authService.validateNewPassword?.(newPw);
+      if (policyResult && !policyResult.ok) {
+        setPwError(policyResult.message ?? "Nueva contraseña inválida");
+        return;
+      }
+
+      const result = await authService.changePassword(currentPw, newPw);
+
+      if (!result.success) {
+        setPwError(result.message || "Error actualizando contraseña");
+        await Swal.fire("Error", result.message || "Error actualizando contraseña", "error");
+        return;
+      }
+
+      setPwSuccess(result.message || "Contraseña actualizada");
       setCurrentPw("");
       setNewPw("");
-    } catch (e) {
-      console.error(e);
-      setPwError("Error actualizando contraseña.");
+      setConfirmPw("");
+
+      await Swal.fire("Contraseña actualizada", result.message || "Cambio aplicado correctamente.", "success");
+    } catch (error: any) {
+      console.error(error);
+      const message = error?.message ?? "Error actualizando contraseña";
+      setPwError(message);
+      await Swal.fire("Error", message, "error");
     } finally {
       setPwLoading(false);
     }
   };
 
-  const theme = typeof window !== "undefined" && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-
   return (
     <section className="max-w-2xl mx-auto p-4 space-y-10">
-      
-      {/* === USER INFO === */}
       <article className="space-y-4">
         <h2 className="text-xl font-bold">Datos del usuario</h2>
 
@@ -163,24 +242,23 @@ export default function UserComponent() {
         </div>
       </article>
 
-      {/* === UPDATE IMAGE === */}
       <article className="space-y-4">
         <h2 className="text-xl font-bold">Cambiar foto de perfil</h2>
 
         <div className="flex flex-col space-y-4">
-
-          {/* Input file */}
           <label className="border p-2 rounded text-center cursor-pointer">
-            Cambiar imagen de perfil
+            Seleccionar imagen
             <input
               type="file"
-              accept="image/webp"
+              accept="image/webp,image/jpeg,image/png"
               onChange={(e) => handleImageSelection(e.target.files)}
               className="hidden"
+              disabled={imageLoading}
             />
           </label>
 
-          {/* Preview */}
+          {imageError && <p className="text-red-500 text-sm">{imageError}</p>}
+
           {imagePreview && (
             <div className="space-y-2">
               <p className="text-sm text-gray-600">Vista previa:</p>
@@ -193,24 +271,18 @@ export default function UserComponent() {
               />
 
               <div className="flex gap-3">
-                {/*<button
+                <button
                   onClick={handleImageUpload}
-                  disabled={imageLoading}
+                  disabled={imageLoading || !imageFile}
                   className="bg-blue-600 text-white px-3 py-2 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {imageLoading ? "Subiendo..." : "Confirmar imagen"}
-                </button>*/}
-                <button
-                  disabled
-                  onClick={handleImageUpload}
-                  className="bg-blue-600 text-white px-3 py-2 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {imageLoading ? "Subiendo..." : "No disponible"}
                 </button>
 
                 <button
                   onClick={handleCancelImage}
-                  className="bg-red-600 text-white px-3 py-2 rounded cursor-pointer"
+                  disabled={imageLoading}
+                  className="bg-red-600 text-white px-3 py-2 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancelar
                 </button>
@@ -220,7 +292,6 @@ export default function UserComponent() {
         </div>
       </article>
 
-      {/* === UPDATE PASSWORD === */}
       <article className="space-y-4">
         <h2 className="text-xl font-bold">Cambiar contraseña</h2>
 
@@ -231,6 +302,7 @@ export default function UserComponent() {
             placeholder="Contraseña actual"
             value={currentPw}
             onChange={(e) => setCurrentPw(e.target.value)}
+            disabled={pwLoading}
           />
 
           <input
@@ -239,24 +311,27 @@ export default function UserComponent() {
             placeholder="Nueva contraseña"
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
+            disabled={pwLoading}
+          />
+
+          <input
+            type="password"
+            className="border p-2 rounded w-full"
+            placeholder="Confirmar nueva contraseña"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            disabled={pwLoading}
           />
 
           {pwError && <p className="text-red-500">{pwError}</p>}
           {pwSuccess && <p className="text-green-600">{pwSuccess}</p>}
 
-          {/*<button
+          <button
             type="submit"
             disabled={pwLoading}
-            className="bg-green-600 text-white px-4 py-2 rounded w-full disabled:opacity-50"
-          >
-            {pwLoading ? "Guardando..." : "Actualizar contraseña"}
-          </button>*/}
-          <button
-            type="button"
-            disabled
             className="bg-green-600 text-white px-4 py-2 rounded w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {pwLoading ? "Guardando..." : "No disponible"}
+            {pwLoading ? "Guardando..." : "Actualizar contraseña"}
           </button>
         </form>
       </article>

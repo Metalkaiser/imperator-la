@@ -367,6 +367,7 @@ export async function updateProductAction(prevState: any, formData: FormData) {
       }
     });
 
+    console.log("Allowed changes after processing uploads:", allowed);
 
     // finalmente actualizar producto
     const updateRes = await dbService.updateProduct(id, allowed);

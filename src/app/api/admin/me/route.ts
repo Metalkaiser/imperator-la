@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const sessionCookie = match ? decodeURIComponent(match[1]) : null;
 
     if (!sessionCookie) {
-      return NextResponse.json({ ok: false, message: "No session cookie" }, { status: 401 });
+      return NextResponse.json({ ok: false, code: "NO_COOKIE", message: "No session cookie" }, { status: 401 });
     }
 
     // Verificar session cookie con firebase-admin.
@@ -43,12 +43,12 @@ export async function GET(req: NextRequest) {
       .catch(() => null);
 
     if (!decoded) {
-      return NextResponse.json({ ok: false, message: "Invalid or expired session" }, { status: 401 });
+      return NextResponse.json({ ok: false, code: "SESSION_INVALID", message: "Invalid or expired session" }, { status: 401 });
     }
 
     const uid = decoded.uid;
     if (!uid) {
-      return NextResponse.json({ ok: false, message: "Invalid token payload" }, { status: 401 });
+      return NextResponse.json({ ok: false, code: "SESSION_INVALID", message: "Invalid token payload" }, { status: 401 });
     }
 
     // Consultar Firestore por el documento del usuario.
@@ -58,14 +58,14 @@ export async function GET(req: NextRequest) {
 
     if (snap.empty) {
       // No se encontró usuario en la colección de usuarios (posible inconsistencia)
-      return NextResponse.json({ ok: false, message: "User not found" }, { status: 401 });
+      return NextResponse.json({ ok: false, code: "SESSION_INVALID", message: "User not found" }, { status: 401 });
     }
 
     const doc = snap.docs[0].data() as User;
 
     // Si el usuario está marcado como eliminado, denegar acceso
     if (doc.isDeleted) {
-      return NextResponse.json({ ok: false, message: "Account deleted" }, { status: 403 });
+      return NextResponse.json({ ok: false, code: "ACCOUNT_DELETED", message: "Account deleted" }, { status: 403 });
     }
 
     // Construir currentUser conforme a tu tipo
@@ -84,9 +84,9 @@ export async function GET(req: NextRequest) {
     // Opcional: actualizar lastLogin en la DB (comenta si no lo quieres)
     // await admin.firestore().collection(usersCollection).doc(snap.docs[0].id).update({ lastLogin: new Date().toISOString() });
 
-    return NextResponse.json({ ok: true, user: current }, { status: 200 });
+    return NextResponse.json({ ok: true, code: "OK", user: current }, { status: 200 });
   } catch (err) {
     console.error("/api/admin/me error:", err);
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+    return NextResponse.json({ ok: false, code: "SERVER_ERROR", message: "Server error" }, { status: 500 });
   }
 }

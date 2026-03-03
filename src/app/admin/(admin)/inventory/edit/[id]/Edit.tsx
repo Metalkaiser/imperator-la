@@ -290,7 +290,8 @@ export default function EditProduct({ id }: { id?: string }) {
     }
 
     const cleanImages = productImages.items.filter(i => !i.file).map(i => i.url);
-    if (!isEqual(cleanImages, original.images)) {
+    const hasNewImages = productImages.items.some((i) => Boolean(i.file));
+    if (!isEqual(cleanImages, original.images) || hasNewImages) {
       payload.images = cleanImages;
     }
 
@@ -319,11 +320,18 @@ export default function EditProduct({ id }: { id?: string }) {
       formData.append("thumbnail", thumb);
     }
 
+    const imagesOrder: Array<
+      | { type: "remote"; url: string }
+      | { type: "new"; newIndex: number }
+    > = [];
+    let newImageIndex = 0;
+
     for (let index = 0; index < productImages.items.length; index++) {
-      if (productImages.items[index].file) {
-        const f = productImages.items[index].file;
+      const item = productImages.items[index];
+      const file = item.file;
+      if (file) {
         try {
-          fileSchema.parse(f);
+          fileSchema.parse(file);
         } catch (error) {
           if (error instanceof ZodError) {
             console.log(`Error en imagen adicional ${index + 1}:`, error.issues);
@@ -332,9 +340,14 @@ export default function EditProduct({ id }: { id?: string }) {
           else showError("Error inesperado");
           return;
         }
-        formData.append("images", f);
+        formData.append("images", file);
+        imagesOrder.push({ type: "new", newIndex: newImageIndex });
+        newImageIndex += 1;
+      } else if (item.url) {
+        imagesOrder.push({ type: "remote", url: item.url });
       }
     }
+    formData.append("imagesOrder", JSON.stringify(imagesOrder));
 
     for (let index = 0; index < variantFiles.length; index++) {
       const f = variantFiles[index];

@@ -11,9 +11,18 @@ export async function POST(req: NextRequest) {
     const cookieHeader = req.headers.get("cookie") ?? "";
     const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`));
     const cookieValue = match ? decodeURIComponent(match[1]) : null;
+    const globalByQuery = req.nextUrl.searchParams.get("global") === "true";
+    let globalByBody = false;
+    try {
+      const body = await req.json();
+      globalByBody = body?.global === true;
+    } catch {
+      globalByBody = false;
+    }
+    const globalLogout = globalByQuery || globalByBody;
 
-    // Si Firebase, opcionalmente revocar refresh tokens para forzar logout global
-    if (authConfigs.source === "firebase" && cookieValue) {
+    // Logout normal borra cookie local. Revocación global solo si se solicita explícitamente.
+    if (authConfigs.source === "firebase" && cookieValue && globalLogout) {
       try {
         // decode session cookie to get uid
         const decoded = await admin.auth().verifySessionCookie(cookieValue).catch(() => null);
@@ -26,7 +35,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Borra cookie (setear maxAge=0)
-    const res = NextResponse.json({ ok: true, message: "Logged out" });
+    const res = NextResponse.json({
+      ok: true,
+      message: globalLogout ? "Logged out (global revoke)" : "Logged out",
+      globalRevocation: globalLogout,
+    });
     res.cookies.set(COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
     return res;
   } catch (err) {

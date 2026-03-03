@@ -245,8 +245,14 @@ export function getCookieValue(cookieHeader: string | null, name: string) {
 
 // uploadPlan.ts
 export type UploadTask =
-  | { type: "upload"; file: File; path: string; target: "thumbnail" | "variant" | "image"; index?: number; sku?: string }
+  | { type: "upload"; file: File; path: string; target: "thumbnail" }
+  | { type: "upload"; file: File; path: string; target: "variant"; index: number; sku: string }
+  | { type: "upload"; file: File; path: string; target: "image"; newIndex: number }
   | { type: "delete"; url: string };
+
+type ImageOrderToken =
+  | { type: "remote"; url: string }
+  | { type: "new"; newIndex: number };
 
 export type UploadPlan = {
   uploads: UploadTask[];
@@ -258,6 +264,44 @@ export type UploadPlan = {
 import { ProductService } from "@/services/ProductService";
 import { fileSchema } from "./apis/validatePayload";
 import type { productProps } from "./types";
+
+function parseImagesOrder(raw: FormDataEntryValue | null): ImageOrderToken[] | null {
+  if (typeof raw !== "string") return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+
+    const tokens: ImageOrderToken[] = [];
+    for (const item of parsed) {
+      if (!item || typeof item !== "object") return null;
+
+      if (
+        item.type === "remote" &&
+        typeof item.url === "string" &&
+        item.url.trim().length > 0
+      ) {
+        tokens.push({ type: "remote", url: item.url });
+        continue;
+      }
+
+      if (
+        item.type === "new" &&
+        Number.isInteger(item.newIndex) &&
+        Number(item.newIndex) >= 0
+      ) {
+        tokens.push({ type: "new", newIndex: Number(item.newIndex) });
+        continue;
+      }
+
+      return null;
+    }
+
+    return tokens;
+  } catch {
+    return null;
+  }
+}
 
 
 /**
@@ -347,6 +391,7 @@ export function buildUploadPlan({
 
   // ---------------- ADDITIONAL IMAGES ----------------
   let hasNew = false;
+  const parsedImagesOrder = parseImagesOrder(form.get("imagesOrder"));
   const additionalImages = form.getAll("images");
   additionalImages.forEach((file, index) => {
     if (!(file instanceof File)) return;
@@ -360,7 +405,8 @@ export function buildUploadPlan({
       type: "upload",
       file,
       path: `products/images/${existing.name}_images_${index}`,
-      target: "image"
+      target: "image",
+      newIndex: index
     });
   });
 
@@ -374,10 +420,19 @@ export function buildUploadPlan({
       existing.images
         .filter(img => !kept.includes(img))
         .forEach(url => plan.deletes.push({ type: "delete", url }));
+
+      if (parsedImagesOrder) {
+        plan.updates.__imagesOrder = parsedImagesOrder;
+        plan.updates.__keptImages = [...kept];
+      }
     }
   } else {
     if (hasNew) {
       plan.updates.images = existing.images;
+      if (parsedImagesOrder) {
+        plan.updates.__imagesOrder = parsedImagesOrder;
+        plan.updates.__keptImages = Array.isArray(existing.images) ? [...existing.images] : [];
+      }
     }
   }
 
@@ -395,10 +450,12 @@ export async function executeUploadPlan(
   plan: UploadPlan,
   dbService: ProductService
 ) {
+  const baseImages = Array.isArray(plan.updates.images) ? [...plan.updates.images] : [];
   const results = {
     updates: { ...plan.updates },
     errors: [...plan.errors]
   };
+  const uploadedByIndex = new Map<number, string>();
 
   for (const task of plan.uploads) {
     if (task.type !== "upload") continue;
@@ -417,12 +474,55 @@ export async function executeUploadPlan(
     }
 
     if (task.target === "image") {
-      if (!Array.isArray(results.updates.images)) {
-        results.updates.images = [];
-      }
-      results.updates.images.push(up.url);
+      uploadedByIndex.set(task.newIndex, up.url);
     }
   }
+
+  const imagesOrder = Array.isArray(results.updates.__imagesOrder)
+    ? (results.updates.__imagesOrder as ImageOrderToken[])
+    : null;
+  const keptImages = Array.isArray(results.updates.__keptImages)
+    ? (results.updates.__keptImages as string[])
+    : baseImages;
+
+  let canUseCustomOrder = Boolean(imagesOrder && imagesOrder.length > 0);
+  if (canUseCustomOrder && imagesOrder) {
+    const orderRemotes = imagesOrder
+      .filter((token) => token.type === "remote")
+      .map((token) => token.url);
+    const orderNewIndexes = new Set(
+      imagesOrder
+        .filter((token) => token.type === "new")
+        .map((token) => token.newIndex)
+    );
+
+    const hasAllKeptRemotes = keptImages.every((url) => orderRemotes.includes(url));
+    const hasAllUploadedIndexes = Array.from(uploadedByIndex.keys()).every((idx) => orderNewIndexes.has(idx));
+    canUseCustomOrder = hasAllKeptRemotes && hasAllUploadedIndexes;
+  }
+
+  if (canUseCustomOrder && imagesOrder) {
+    const keptSet = new Set(keptImages);
+    const finalImages: string[] = [];
+    imagesOrder.forEach((token) => {
+      if (token.type === "remote") {
+        if (keptSet.has(token.url)) finalImages.push(token.url);
+        return;
+      }
+
+      const uploadedUrl = uploadedByIndex.get(token.newIndex);
+      if (uploadedUrl) finalImages.push(uploadedUrl);
+    });
+    results.updates.images = finalImages;
+  } else if (uploadedByIndex.size > 0) {
+    const uploadedOrdered = Array.from(uploadedByIndex.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, url]) => url);
+    results.updates.images = [...baseImages, ...uploadedOrdered];
+  }
+
+  delete results.updates.__imagesOrder;
+  delete results.updates.__keptImages;
 
   for (const del of plan.deletes) {
     if (del.type !== "delete") continue;
