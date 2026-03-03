@@ -149,6 +149,7 @@ export default function NewProduct() {
     
     for (let index = 0; index < productImages.items.length; index++) {
       const f = productImages.items[index].file;
+      if (!f) continue;
       try {
         fileSchema.parse(f);
       } catch (error) {

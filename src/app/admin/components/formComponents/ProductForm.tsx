@@ -239,14 +239,44 @@ export const ProdImages = ({
 }: {
   images: useFileType
 }) => {
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  const handleDrop = (toIndex: number) => {
+    if (dragIndex === null) return;
+    if (toIndex < 0 || toIndex >= images.items.length) return;
+    images.move(dragIndex, toIndex);
+    setDragIndex(null);
+    setOverIndex(null);
+  };
+
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium mb-2">Imágenes del producto (máximo 10 imágenes)</label>
       <div className="flex flex-wrap gap-4 justify-center">
         {images.items.map((item, i) => {
           const src = item.url ? (/^%2F/i.test(item.url) ? `${storagePath}${item.url}` : item.url) : null;
+          const isDropTarget = overIndex === i && dragIndex !== null && dragIndex !== i;
           return (
-            <div key={i} className="size-24 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+            <div
+              key={item.id}
+              draggable
+              onDragStart={() => setDragIndex(i)}
+              onDragEnter={() => setOverIndex(i)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (overIndex !== i) setOverIndex(i);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(i);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+              className={`size-24 bg-gray-100 rounded overflow-hidden flex items-center justify-center transition ${isDropTarget ? "ring-2 ring-blue-500 opacity-85" : ""}`}
+            >
               {src ? (
                 <div className="relative w-full h-full">
                   {item.file && <ImgSizeIndicator sizeInBytes={item.file.size} />}
@@ -267,7 +297,7 @@ export const ProdImages = ({
                         if (res.isConfirmed) images.remove(i);
                       });
                     }} />
-                  <Image src={src} alt={`Imagen ${i + 1}`} width={96} height={96} style={{ objectFit: "cover" }} />
+                  <Image className="hover:cursor-move" src={src} alt={`Imagen ${i + 1}`} width={96} height={96} style={{ objectFit: "cover" }} />
                 </div>
               ) : (
                 <div className="text-xs text-gray-500">Sin imagen</div>
