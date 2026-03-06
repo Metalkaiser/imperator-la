@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import { useDB } from "@/app/admin/components/context/dbContext";
 import { replaceTopProductsAction } from "@/app/actions/products";
 import { productProps } from "@/app/utils/types";
+import { storagePath } from "@/app/utils/utils";
 
 function normalizeId(id: string | number) {
   return String(id);
@@ -165,7 +166,7 @@ export default function TopProductsManager() {
                   <div className="min-w-0">
                     <div className="w-full justify-center flex mb-1">
                       <Image
-                        src={product.thumbnail}
+                        src={/^%2F/i.test(product.thumbnail) ? `${storagePath}${product.thumbnail}` : product.thumbnail}
                         alt={product.name}
                         width={50}
                         height={50}
@@ -205,7 +206,7 @@ export default function TopProductsManager() {
                     <div className="min-w-0">
                       <div className="w-full justify-center flex mb-1">
                         <Image
-                          src={product.thumbnail}
+                          src={/^%2F/i.test(product.thumbnail) ? `${storagePath}${product.thumbnail}` : product.thumbnail}
                           alt={product.name}
                           width={50}
                           height={50}

@@ -641,7 +641,7 @@ const exportPDF = () => {
                     <td className="p-2 w-20 h-20">
                       <div className="w-12 h-12 relative rounded overflow-hidden">
                         {p.thumbnail ? (
-                          <Image src={storagePath + p.thumbnail} alt={p.name} width={0} height={0} className="object-cover w-full h-full"></Image>
+                          <Image src={/^%2F/i.test(p.thumbnail) ? `${storagePath}${p.thumbnail}` : p.thumbnail} alt={p.name} width={0} height={0} className="object-cover w-full h-full"></Image>
                         ) : (
                           <div className="bg-gray-100 dark:bg-gray-800 w-full h-full flex items-center justify-center text-xs text-gray-600">No image</div>
                         )}
