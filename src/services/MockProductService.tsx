@@ -38,6 +38,18 @@ export class MockProductService implements ProductService {
     return {code: "success", response: topProducts , status: 200}
   }
 
+  async replaceTopProducts(productIds: Array<string | number>): Promise<appResponse> {
+    mutableTop.splice(0, mutableTop.length);
+    productIds.forEach((productId, index) => {
+      mutableTop.push({
+        id: `top_${index + 1}`,
+        productId: String(productId),
+      });
+    });
+
+    return { code: "success", response: mutableTop, status: 200 };
+  }
+
   async getItemById(id: string, collection: string): Promise<appResponse> {
     switch (collection) {
       case "products":

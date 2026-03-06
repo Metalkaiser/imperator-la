@@ -10,6 +10,7 @@ import {
   query,
   where,
   orderBy,
+  documentId,
   doc,
   getDoc,
   addDoc,
@@ -46,8 +47,30 @@ export class FirebaseProductService implements ProductService {
 
   async getTopProducts(): Promise<appResponse> {
     return handleFirebase(async () => {
-      const snapshot = await getDocs(query(topProductsCollection));
+      const snapshot = await getDocs(query(topProductsCollection, orderBy(documentId(), "asc")));
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
+  }
+
+  async replaceTopProducts(productIds: Array<string | number>): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const topProductsCol = admin.firestore().collection(dbCollections.topProducts);
+      const existing = await topProductsCol.get();
+      const batch = admin.firestore().batch();
+
+      existing.docs.forEach((d) => batch.delete(d.ref));
+
+      productIds.forEach((productId, index) => {
+        const ordinal = String(index + 1).padStart(2, "0");
+        const ref = topProductsCol.doc(`${ordinal}_${String(productId)}`);
+        batch.set(ref, {
+          productId,
+          updatedAt: Date.now(),
+        });
+      });
+
+      await batch.commit();
+      return { updatedCount: productIds.length };
     });
   }
 

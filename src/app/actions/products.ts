@@ -10,7 +10,7 @@ import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryC
 import { sanitizeFileName, removeUndefined, diffObjects } from "@/app/utils/functions";
 import { newProductSchema, newProductImagesSchema, fileSchema, updateProductSchema } from "@/app/utils/apis/validatePayload";
 import { dbCollections } from "../utils/utils";
-import { NewActivityLog, NewProduct, productProps, User } from "../utils/types";
+import { NewActivityLog, NewProduct, productProps, topProductsProps, User } from "../utils/types";
 import { buildUploads } from "../utils/apis/buildUploads";
 
 export type BulkPatchBody = Partial<Pick<productProps, "price" | "discount" | "status" | "isDeleted">>;
@@ -21,6 +21,12 @@ export type BulkUpdateProductsResult = {
   failedCount: number;
   failedItems: Array<{ id: string; status?: number; reason: string }>;
   message?: string;
+};
+
+export type ReplaceTopProductsResult = {
+  success: boolean;
+  message?: string;
+  error?: string;
 };
 
 async function getAdminUser() {
@@ -530,5 +536,82 @@ export async function bulkUpdateProductsAction(input: BulkUpdateProductsInput): 
       failedItems: [],
       message: err?.message ?? "Internal server error"
     };
+  }
+}
+
+export async function replaceTopProductsAction(productIds: Array<string | number>): Promise<ReplaceTopProductsResult> {
+  try {
+    const authResult = await getAdminUser();
+    if (!authResult.success) {
+      return { success: false, error: String(authResult.response ?? "No autorizado") };
+    }
+
+    if (!Array.isArray(productIds)) {
+      return { success: false, error: "Formato inválido de productos top" };
+    }
+
+    const normalized = productIds
+      .map((id) => String(id).trim())
+      .filter((id) => id.length > 0);
+
+    if (normalized.length !== 6) {
+      return { success: false, error: "Debes seleccionar exactamente 6 productos" };
+    }
+
+    if (new Set(normalized).size !== normalized.length) {
+      return { success: false, error: "No se permiten productos repetidos en la lista top" };
+    }
+
+    const dbService = await getProductService();
+    const validatedIds: Array<string | number> = [];
+
+    for (const id of normalized) {
+      const productRes = await dbService.getItemById(id, dbCollections.products);
+      if (!productRes || productRes.status !== 200 || !productRes.response) {
+        return { success: false, error: `Producto no encontrado: ${id}` };
+      }
+
+      const product = productRes.response as productProps;
+      if (product.status !== 1 || product.isDeleted === true) {
+        return { success: false, error: `Producto no disponible para destacados: ${product.name}` };
+      }
+
+      validatedIds.push(product.id);
+    }
+
+    const oldTopRes = await dbService.getTopProducts();
+    const oldIds = oldTopRes?.status === 200 && Array.isArray(oldTopRes.response)
+      ? (oldTopRes.response as topProductsProps[]).map((item) => String(item.productId))
+      : [];
+
+    const replaceRes = await dbService.replaceTopProducts(validatedIds);
+    if (!replaceRes || replaceRes.status !== 200) {
+      return { success: false, error: String(replaceRes?.response ?? "No se pudo actualizar la lista top") };
+    }
+
+    console.log("Productos top reemplazados en DB:", validatedIds);
+
+    const adminUser = authResult.response as { id: string | number; role: string; username: string };
+    const logData: NewActivityLog = {
+      userId: adminUser.id,
+      username: adminUser.username.toLowerCase(),
+      action: "topProducts_edited",
+      target: { collection: dbCollections.topProducts, item: "list" },
+      diff: [
+        { item: "old", oldValue: oldIds.join(", "), newValue: "-" },
+        { item: "new", oldValue: "-", newValue: validatedIds.map((id) => String(id)).join(", ") }
+      ]
+    };
+    const logRes = await dbService.setActivityLog(logData);
+    if (logRes.status !== 200) console.warn("Top products activity log not saved");
+
+    revalidatePath("/");
+    revalidatePath("/catalog");
+    revalidatePath("/admin/top-products");
+
+    return { success: true, message: "Productos top actualizados correctamente" };
+  } catch (err: any) {
+    console.error("replaceTopProductsAction error:", err);
+    return { success: false, error: err?.message ?? "Error interno al actualizar productos top" };
   }
 }

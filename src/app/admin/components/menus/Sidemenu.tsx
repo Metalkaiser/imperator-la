@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, X, Menu } from "lucide-react";
+import { ChevronRight, X, Menu, Star } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "../context/authContext";
 import { capitalizeName } from "@/app/utils/functions";
@@ -147,6 +147,15 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
               </Link>
             </li>
 
+            {displayUser?.role === "admin" && (
+              <li className="mb-4">
+              <Link {...getLinkProps("/admin/top-products")}>
+                <Star size={20} className="mr-3 flex-shrink-0" />
+                Productos top
+                <ChevronRight className="ml-auto" />
+              </Link>
+            </li>)}
+
             {cartEnabled && (
               <li className="mb-4">
                 <Link {...getLinkProps("/admin/orders")}>
@@ -236,6 +245,14 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
                   <ChevronRight className="ml-auto" />
                 </Link>
               </li>
+              {displayUser?.role === "admin" && (
+                <li>
+                  <Link {...getLinkProps("/admin/top-products")}>
+                    <Star size={20} className="mr-3 flex-shrink-0" />
+                    Productos top
+                    <ChevronRight className="ml-auto" />
+                  </Link>
+                </li>)}
               {cartEnabled && (
                 <li>
                   <Link {...getLinkProps("/admin/orders")}>

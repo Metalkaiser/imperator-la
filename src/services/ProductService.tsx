@@ -20,6 +20,13 @@ export interface ProductService {
   getTopProducts(): Promise<appResponse>;
 
   /**
+   * Replaces the top products list preserving the received order.
+   * @param productIds Ordered list of product IDs to persist as top products.
+   * @returns A promise that resolves to an appResponse indicating the result of the operation.
+   */
+  replaceTopProducts(productIds: Array<string | number>): Promise<appResponse>;
+
+  /**
    * Fetches a single item by its ID from the specified collection.
    * @param id The ID of the item to fetch.
    * @param collection The collection from which to fetch the item.

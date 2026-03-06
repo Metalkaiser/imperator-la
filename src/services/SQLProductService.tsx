@@ -21,6 +21,11 @@ export class SQLProductService implements ProductService {
     return {code: "success", response: topProducts , status: 200};
   }
 
+  async replaceTopProducts(productIds: Array<string | number>): Promise<appResponse> {
+    console.log(productIds);
+    return notImplemented;
+  }
+
   async getProductById(id: string): Promise<appResponse> {
     const product = await prisma.product.findUnique({ where: { id } });
     return {code: "success", response: product , status: 200};
