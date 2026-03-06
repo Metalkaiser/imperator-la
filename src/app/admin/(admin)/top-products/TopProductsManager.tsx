@@ -177,14 +177,15 @@ export default function TopProductsManager() {
                       SKU: {product.mainSku} | ID: {String(product.id)}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => addProduct(product.id)}
-                    disabled={selectedIds.length >= 6 || saving || !canEditAll}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-sm rounded bg-emerald-600 text-white disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    <Plus size={16} /> Agregar
-                  </button>
+                  {canEditAll && (
+                    <button
+                      type="button"
+                      onClick={() => addProduct(product.id)}
+                      disabled={selectedIds.length >= 6 || saving || !canEditAll}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-sm rounded bg-emerald-600 text-white disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      <Plus size={16} /> Agregar
+                    </button>)}
                 </div>
               ))
             )}
@@ -218,35 +219,36 @@ export default function TopProductsManager() {
                         SKU: {product?.mainSku ?? "-"} | ID: {id}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => moveItem(index, "up")}
-                        disabled={index === 0 || saving || !canEditAll}
-                        className="p-1 rounded border disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                        aria-label={`Mover producto ${index + 1} hacia arriba`}
-                      >
-                        <ArrowUp size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveItem(index, "down")}
-                        disabled={index === selectedIds.length - 1 || saving || !canEditAll}
-                        className="p-1 rounded border disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                        aria-label={`Mover producto ${index + 1} hacia abajo`}
-                      >
-                        <ArrowDown size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeProduct(id)}
-                        disabled={saving || !canEditAll}
-                        className="p-1 rounded border text-rose-600 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                        aria-label={`Quitar producto ${index + 1}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    {canEditAll && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveItem(index, "up")}
+                          disabled={index === 0 || saving || !canEditAll}
+                          className="p-1 rounded border disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          aria-label={`Mover producto ${index + 1} hacia arriba`}
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveItem(index, "down")}
+                          disabled={index === selectedIds.length - 1 || saving || !canEditAll}
+                          className="p-1 rounded border disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          aria-label={`Mover producto ${index + 1} hacia abajo`}
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(id)}
+                          disabled={saving || !canEditAll}
+                          className="p-1 rounded border text-rose-600 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          aria-label={`Quitar producto ${index + 1}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>)}
                   </div>
                 );
               })
@@ -256,15 +258,17 @@ export default function TopProductsManager() {
       </div>
 
       <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || selectedIds.length !== 6 || !canEditAll}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-        >
-          <Save size={18} />
-          {saving ? "Guardando..." : "Guardar productos top"}
-        </button>
+        {canEditAll && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || selectedIds.length !== 6 || !canEditAll}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+          >
+            <Save size={18} />
+            {saving ? "Guardando..." : "Guardar productos top"}
+          </button>
+        )}
       </div>
     </section>
   );
