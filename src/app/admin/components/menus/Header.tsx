@@ -14,7 +14,8 @@ export default function Header() {
       "/admin/dashboard": "Resumen",
       "/admin/inventory": "Inventario",
       "/admin/orders": "Órdenes",
-      "/admin/settings": "Configuraciones"
+      "/admin/settings": "Configuraciones",
+      "/admin/top-products": "Productos top"
     };
 
     const segments = pathname.split("/");

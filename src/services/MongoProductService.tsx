@@ -51,6 +51,11 @@ export class MongoProductService implements ProductService {
     }
   }
 
+  async replaceTopProducts(productIds: Array<string | number>): Promise<appResponse> {
+    console.log(productIds);
+    return notImplemented;
+  }
+
   async getProductById(id: string): Promise<appResponse> {
     try {
       const db = await getDb();
