@@ -503,18 +503,19 @@ const exportPDF = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-10 md::gap-3">
+      <div className="sticky top-14 md:top-4 z-40 -mx-2 px-2 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 shadow-sm backdrop-blur-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         {canEditAll && (
-          <div className="flex flex-col md:flex-row md:items-center gap-2">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
             <button
               onClick={() => router.push("/admin/inventory/new")}
-              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+              className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded w-full md:w-auto"
             >
               <Plus size={16} /> Nuevo producto
             </button>
 
             <select 
-              className="px-3 py-1 border rounded" 
+              className="px-3 py-1 border rounded w-full md:w-auto" 
               onChange={(e) => handleBulkEdit(e.target.value)}
               value={bulkEdit}
               disabled={!selectedIds.size}>
@@ -527,7 +528,7 @@ const exportPDF = () => {
         )}
         
 
-        <div className="flex flex-col md:flex-row md:items-center gap-2">
+        <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
           <input
             type="text"
             placeholder="Buscar por nombre o SKU..."
@@ -536,7 +537,7 @@ const exportPDF = () => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-1 border rounded md:w-64"
+            className="px-3 py-1 border rounded w-full md:w-64"
           />
 
           <select
@@ -546,7 +547,7 @@ const exportPDF = () => {
               setStatusFilter(v === "all" ? "all" : Number(v));
               setPage(1);
             }}
-            className="px-3 py-1 border rounded"
+            className="px-3 py-1 border rounded w-full md:w-auto"
           >
             <option value="all">Todos</option>
             <option value="1">Disponible</option>
@@ -560,7 +561,7 @@ const exportPDF = () => {
               setPerPage(Number(e.target.value));
               setPage(1);
             }}
-            className="px-3 py-1 border rounded"
+            className="px-3 py-1 border rounded w-full md:w-auto"
           >
             <option value="5">5</option>
             <option value="10">10</option>
@@ -569,7 +570,7 @@ const exportPDF = () => {
             <option value={products.length.toString()}>Todos</option>
           </select>
 
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 flex-wrap md:flex-nowrap">
             <button onClick={exportCSV} title="Exportar CSV" className="px-2 py-1 border rounded">
               {csvIcon}
             </button>
@@ -581,6 +582,7 @@ const exportPDF = () => {
             </button>
           </div>
         </div>
+      </div>
       </div>
 
       {/* tabla */}
