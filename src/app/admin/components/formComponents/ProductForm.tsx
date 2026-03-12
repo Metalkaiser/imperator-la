@@ -533,3 +533,21 @@ export const ProdVariant = ({
     </div>
   )
 }
+
+const colorClasses: {[key: string]: string} = {
+  indigo: "border-indigo-800 border-b-indigo-300",
+  green: "border-green-800 border-b-green-300",
+  orange: "border-orange-800 border-b-orange-300",
+  red: "border-red-800 border-b-red-300"
+}
+
+export function StatCard({ title, value, color }: { title: string; value: number; color: string }) {
+  return (
+    <div className={`min-w-[100px] border-2 rounded p-2 ${colorClasses[color]}`}>
+      <div className="flex flex-col gap-1 items-center">
+        <span>{value}</span>
+        <span><strong>{title}</strong></span>
+      </div>
+    </div>
+  )
+}
