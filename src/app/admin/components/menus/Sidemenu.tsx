@@ -98,7 +98,7 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
       <button
         aria-label="Open menu"
         onClick={() => setOpen(true)}
-        className={`md:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center w-10 h-10 rounded bg-white/90 dark:bg-black/80 shadow ${open ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"} transition-opacity`}
+        className={`md:hidden fixed top-4 left-4 z-90 inline-flex items-center justify-center w-10 h-10 rounded bg-white/90 dark:bg-black/80 shadow ${open ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"} transition-opacity`}
       >
         <Menu size={20} />
       </button>
@@ -192,7 +192,7 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
         ref={drawerRef}
         role="dialog"
         aria-modal="true"
-        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-200 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-90 md:hidden transition-opacity duration-200 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         {/* backdrop */}
         <div
@@ -202,7 +202,7 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
 
         {/* drawer panel */}
         <aside
-          className={`fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white transform transition-transform duration-200 ${
+          className={`fixed inset-0 z-90 flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white transform transition-transform duration-200 ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
           style={{ willChange: "transform" }}

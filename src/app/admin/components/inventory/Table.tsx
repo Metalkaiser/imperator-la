@@ -12,6 +12,7 @@ import { useDB } from "../../components/context/dbContext";
 import { capitalize } from "@/app/utils/functions";
 import { pdfIcon, csvIcon, xlsIcon } from "@/app/utils/svgItems";
 import { bulkUpdateProductsAction } from "@/app/actions/products";
+import { StatCard } from "../formComponents/ProductForm";
 
 /**
  * Tabla de productos con:
@@ -54,6 +55,7 @@ export default function Table() {
 
   // selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // derivadas
   const filtered = useMemo(() => {
@@ -71,6 +73,30 @@ export default function Table() {
       return inName || inMainSku || inVariants;
     });
   }, [products, search, statusFilter]);
+
+  const stats = useMemo(() => {
+    const result = {
+      total: products.length,
+      available: 0,
+      out: 0,
+      deleted: 0
+    }
+
+    for (const p of products) {
+      if (p.status === 1) result.available++
+      else if (p.status === 0) result.out++
+      else if (p.status === 2) result.deleted++
+    }
+
+    return result
+  }, [products]);
+
+  const statConfig = [
+    { title: "Total", value: stats.total, color: "indigo" },
+    { title: "Disponibles", value: stats.available, color: "green" },
+    { title: "Agotados", value: stats.out, color: "orange" },
+    { title: "Eliminados", value: stats.deleted, color: "red" }
+  ]
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -95,6 +121,11 @@ export default function Table() {
       else s.add(key);
       return s;
     });
+  };
+
+  const toggleExpand = (id: string | number) => {
+    const key = String(id);
+    setExpandedId((prev) => (prev === key ? null : key));
   };
 
   const selectAllOnPage = () => {
@@ -502,19 +533,25 @@ const exportPDF = () => {
   // UI render
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-4 flex-nowrap overflow-x-auto">
+        {statConfig.map(stat => (
+          <StatCard key={stat.title} {...stat} />
+        ))}
+      </div>
       {/* toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-10 md::gap-3">
+      <div className="sticky top-14 md:top-4 z-40 -mx-2 px-2 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 shadow-sm backdrop-blur-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         {canEditAll && (
-          <div className="flex flex-col md:flex-row md:items-center gap-2">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
             <button
               onClick={() => router.push("/admin/inventory/new")}
-              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+              className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded w-full md:w-auto"
             >
               <Plus size={16} /> Nuevo producto
             </button>
 
             <select 
-              className="px-3 py-1 border rounded" 
+              className="px-3 py-1 border rounded w-full md:w-auto" 
               onChange={(e) => handleBulkEdit(e.target.value)}
               value={bulkEdit}
               disabled={!selectedIds.size}>
@@ -527,7 +564,7 @@ const exportPDF = () => {
         )}
         
 
-        <div className="flex flex-col md:flex-row md:items-center gap-2">
+        <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
           <input
             type="text"
             placeholder="Buscar por nombre o SKU..."
@@ -536,7 +573,7 @@ const exportPDF = () => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-1 border rounded md:w-64"
+            className="px-3 py-1 border rounded w-full md:w-64"
           />
 
           <select
@@ -546,7 +583,7 @@ const exportPDF = () => {
               setStatusFilter(v === "all" ? "all" : Number(v));
               setPage(1);
             }}
-            className="px-3 py-1 border rounded"
+            className="px-3 py-1 border rounded w-full md:w-auto"
           >
             <option value="all">Todos</option>
             <option value="1">Disponible</option>
@@ -560,7 +597,7 @@ const exportPDF = () => {
               setPerPage(Number(e.target.value));
               setPage(1);
             }}
-            className="px-3 py-1 border rounded"
+            className="px-3 py-1 border rounded w-full md:w-auto"
           >
             <option value="5">5</option>
             <option value="10">10</option>
@@ -569,7 +606,7 @@ const exportPDF = () => {
             <option value={products.length.toString()}>Todos</option>
           </select>
 
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 flex-wrap md:flex-nowrap">
             <button onClick={exportCSV} title="Exportar CSV" className="px-2 py-1 border rounded">
               {csvIcon}
             </button>
@@ -581,6 +618,7 @@ const exportPDF = () => {
             </button>
           </div>
         </div>
+      </div>
       </div>
 
       {/* tabla */}
@@ -628,66 +666,120 @@ const exportPDF = () => {
                 const catName = resolveCategoryName("es", allCategories[p.category])?.categoryLabel
                 const statusCol = p.isDeleted ? { text:"Eliminado", classText: "red" } : 
                   p.status ? { text:"Disponible", classText: "green" } : { text:"Agotado", classText: "orange" };
+                const variants = Array.isArray(p.variants) ? p.variants : [];
+                const isExpanded = expandedId === String(p.id);
                 return (
-                  <tr key={String(p.id)} className="border-t">
-                    <td className="p-2">
-                      <input
-                        className="size-5"
-                        type="checkbox"
-                        checked={selectedIds.has(String(p.id))}
-                        onChange={() => toggleSelect(p.id)}
-                      />
-                    </td>
-                    <td className="p-2 w-20 h-20">
-                      <div className="w-12 h-12 relative rounded overflow-hidden">
-                        {p.thumbnail ? (
-                          <Image src={/^%2F/i.test(p.thumbnail) ? `${storagePath}${p.thumbnail}` : p.thumbnail} alt={p.name} width={0} height={0} className="object-cover w-full h-full"></Image>
-                        ) : (
-                          <div className="bg-gray-100 dark:bg-gray-800 w-full h-full flex items-center justify-center text-xs text-gray-600">No image</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-xs text-gray-500">{catName ? capitalize(catName) : ""}</div>
-                    </td>
-                    <td className="p-2 text-sm">{p.mainSku}</td>
-                    <td className="p-2">
-                      <div>
-                        {hasDiscount ? (
-                          <div className="flex flex-col">
-                            <span className="text-sm text-red-600 line-through">{formatPrice(p.price ?? 0, cartSettings.mainCurrency)}</span>
-                            <span className="text-sm font-semibold">{formatPrice(discounted, cartSettings.mainCurrency)}</span>
-                          </div>
-                        ) : (
-                          <div className="text-sm font-semibold">{formatPrice(p.price ?? 0, cartSettings.mainCurrency)}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className={`p-2 font-bold`} style={{color: statusCol.classText}}>{statusCol.text}</td>
-                      {canEditAll && (
+                  <React.Fragment key={String(p.id)}>
+                    <tr className="border-t">
                       <td className="p-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className={`p-2 rounded hover:bg-gray-100 ${!canEditAll ? "opacity-50 cursor-not-allowed" : ""}`}
-                            onClick={() => handleEdit(p.id)}
-                            disabled={!canEditAll}
-                            title="Editar"
-                          >
-                            <Pen size={16} />
-                          </button>
-                          <button
-                            className={`p-2 rounded hover:bg-gray-100 ${!canEditAll ? "opacity-50 cursor-not-allowed" : ""}`}
-                            onClick={() => handleDelete(p.id, p.name)}
-                            disabled={!canEditAll}
-                            title="Eliminar"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                        <input
+                          className="size-5"
+                          type="checkbox"
+                          checked={selectedIds.has(String(p.id))}
+                          onChange={() => toggleSelect(p.id)}
+                        />
+                      </td>
+                      <td className="p-2 w-20 h-20">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(p.id)}
+                          className="w-12 h-12 relative rounded overflow-hidden border border-transparent hover:border-gray-200"
+                          aria-expanded={isExpanded}
+                          aria-label={`Mostrar detalles de ${p.name}`}
+                        >
+                          {p.thumbnail ? (
+                            <Image src={/^%2F/i.test(p.thumbnail) ? `${storagePath}${p.thumbnail}` : p.thumbnail} alt={p.name} width={0} height={0} className="object-cover w-full h-full"></Image>
+                          ) : (
+                            <div className="bg-gray-100 dark:bg-gray-800 w-full h-full flex items-center justify-center text-xs text-gray-600">No image</div>
+                          )}
+                        </button>
+                      </td>
+                      <td className="p-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(p.id)}
+                          className="text-left hover:underline"
+                          aria-expanded={isExpanded}
+                        >
+                          <div className="font-medium">{p.name}</div>
+                          <div className="text-xs text-gray-500">{catName ? capitalize(catName) : ""}</div>
+                        </button>
+                      </td>
+                      <td className="p-2 text-sm">{p.mainSku}</td>
+                      <td className="p-2">
+                        <div>
+                          {hasDiscount ? (
+                            <div className="flex flex-col">
+                              <span className="text-sm text-red-600 line-through">{formatPrice(p.price ?? 0, cartSettings.mainCurrency)}</span>
+                              <span className="text-sm font-semibold">{formatPrice(discounted, cartSettings.mainCurrency)}</span>
+                            </div>
+                          ) : (
+                            <div className="text-sm font-semibold">{formatPrice(p.price ?? 0, cartSettings.mainCurrency)}</div>
+                          )}
                         </div>
                       </td>
-                      )}
-                  </tr>
+                      <td className={`p-2 font-bold`} style={{color: statusCol.classText}}>{statusCol.text}</td>
+                        {canEditAll && (
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              className={`p-2 rounded hover:bg-gray-100 ${!canEditAll ? "opacity-50 cursor-not-allowed" : ""}`}
+                              onClick={() => handleEdit(p.id)}
+                              disabled={!canEditAll}
+                              title="Editar"
+                            >
+                              <Pen size={16} />
+                            </button>
+                            <button
+                              className={`p-2 rounded hover:bg-gray-100 ${!canEditAll ? "opacity-50 cursor-not-allowed" : ""}`}
+                              onClick={() => handleDelete(p.id, p.name)}
+                              disabled={!canEditAll}
+                              title="Eliminar"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                        )}
+                    </tr>
+                    {isExpanded && (
+                      <tr className="border-t dark:bg-gray-50/20 bg-gray-500/30">
+                        <td colSpan={canEditAll ? 7 : 6} className="p-3">
+                          {variants.length === 0 ? (
+                            <div className="text-sm text-gray-200 mt-1">Sin variantes</div>
+                          ) : (
+                            <div className="mt-2 space-y-3">
+                              {variants.map((v, vi) => (
+                                <div key={`${v.sku}-${vi}`} className="flex flex-col md:flex-row md:items-start md:gap-6 border-t first:border-t-0 pt-2">
+                                  <div className="min-w-[120px] text-sm font-medium">
+                                    <div>{v.sku || "SKU sin definir"}</div>
+                                    {v.image && <Image src={/^%2F/i.test(v.image) ? `${storagePath}${v.image}` : v.image} alt={p.name} width={50} height={50}></Image>}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="text-xs dark:text-gray-200">Tallas</div>
+                                    {v.stock && v.stock.length > 0 ? (
+                                      <div className="mt-1 flex flex-wrap gap-2">
+                                        {v.stock.map((st, si) => (
+                                          <span
+                                            key={`${st.name}-${si}`}
+                                            className="text-xs text-black px-2 py-1 rounded border border-gray-200 bg-white"
+                                          >
+                                            {st.name}: {st.quantity}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-gray-500">Sin tallas</div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })
             )}

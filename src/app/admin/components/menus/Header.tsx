@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { capitalize } from "@/app/utils/functions";
 
 export default function Header() {
   const pathname = usePathname();
@@ -15,19 +14,11 @@ export default function Header() {
       "/admin/inventory": "Inventario",
       "/admin/orders": "Órdenes",
       "/admin/settings": "Configuraciones",
-      "/admin/top-products": "Productos top"
+      "/admin/top-products": "Productos top",
+      "/admin/inventory/new": "Nuevo producto"
     };
-
-    const segments = pathname.split("/");
-    const lastSegment = `/${segments.slice(0, 3).join("/")}`;
-    
-    if (pathToTitleMap[lastSegment]) {
-      setTitle(pathToTitleMap[lastSegment]);
-    } else if (segments.length > 3) {
-      setTitle(capitalize(segments[3].replace(/-/g, " ")));
-    } else {
-      setTitle("Resumen");
-    }
+    console.log("Current pathname:", pathname);
+    setTitle(pathToTitleMap[pathname] || "Editar producto");
   }, [pathname]);
 
   return (
