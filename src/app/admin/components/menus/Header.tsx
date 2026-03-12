@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { capitalize } from "@/app/utils/functions";
 
 export default function Header() {
   const pathname = usePathname();
