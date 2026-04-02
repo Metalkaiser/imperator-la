@@ -8245,5 +8245,26 @@ export const mockProductList:productProps[] =
         {"name": "60cm", "quantity": 0}
       ]}
     ],
+  },
+  {
+    "id":"EGxhn8V8cBTRdlKfGOlm",
+    "name": "Combo 1",
+    "category": 5,
+    "description": "Combo 1. Descripción",
+    "status": 1,
+    "mainSku": "SET-0010",
+    "price": 30,
+    "waLink": "combo%201",
+    "discount": {"type": 0, "value": 20},
+    "images": [
+      "%2Fclocks%2Fplateado%20con%20azul%201.webp?alt=media&token=f26df29a-828b-4392-ba84-e8e078716b61",
+      "%2Fclocks%2Fplateado%20con%20azul%202.webp?alt=media&token=e37f7da4-cf1a-4631-a8b8-e713a82df95c"
+    ],
+    "variants": [
+      {"color": "", "sku": "SET-0010", "image": "/misc/test-thumbnails/skus/REL-1030.webp", "stock": [
+        {"name": "60cm", "quantity": 0}
+      ]}
+    ],
+    "thumbnail": "%2Fthumbnails%2FREL-1030.webp?alt=media&token=b53a3437-3e5f-43cb-a9eb-3b66035839bf"
   }
 ]
