@@ -79,7 +79,7 @@ export const catalogLabels: {
       bracelets: "brazaletes",
       watches: "relojes",
       earrings: "zarcillos",
-      sets: "Combos"
+      sets: "Ofertas"
     },
     subcategories: {
       elegant: "elegantes",

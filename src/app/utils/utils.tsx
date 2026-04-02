@@ -78,7 +78,8 @@ export const allCategories = [
   "necklaces",
   "bracelets",
   "watches",
-  "pendants"
+  "pendants",
+  "sets"
 ];
 export const allSubcategories = [
   "elegants",
