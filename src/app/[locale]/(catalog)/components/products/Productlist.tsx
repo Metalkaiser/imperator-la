@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { storagePath } from '@/app/utils/utils';
 import { useCatalogContext } from '../context/CatalogContext';
 import { getCategoryIndexes } from "@/config/websiteConfig/categoryConfig";
+import type { productProps } from '@/app/utils/types';
 
 interface viewData {
   name:string,
@@ -17,12 +18,12 @@ interface viewData {
 
 
 export default function ProductList(props:viewData){
-  
   const [currentproducts, setProducts] = useState<JSX.Element[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [productsToLoad, setProductsToLoad] = useState(0);
   const [hasMoreProducts, setHasMoreProducts] = useState(true);
+  const itemsKey = props.items.join("/");
 
   const t = useTranslations("products");
   const { products, cartSettings } = useCatalogContext();
@@ -40,82 +41,97 @@ export default function ProductList(props:viewData){
     setProductsToLoad(determineProductsToLoad());
   }, [determineProductsToLoad]);
 
-  useEffect(() => {
-    if (props.loadSub) loadMoreProducts();
-  }, [props.loadSub]);
+  const filteredProducts = useCallback((): productProps[] => {
+    const { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
 
-  useEffect(() => {
-    if (productsToLoad > 0) {
-      loadMoreProducts();
+    switch (props.items.length) {
+      case 1:
+        return products.filter((prod) => prod.category === categoryIndex)
+          .sort((a,b) => a.mainSku.localeCompare(b.mainSku));
+      case 2:
+        return products.filter((prod) => prod.category === categoryIndex && prod.subcategory === subcategoryIndex)
+          .sort((a,b) => a.mainSku.localeCompare(b.mainSku));
+      default:
+        return [...products].sort((a, b) => String(a.id).localeCompare(String(b.id)));
     }
-  }, [productsToLoad]);
+  }, [products, props.items]);
 
+  const buildProductCard = useCallback((product: productProps) => (
+    <div key={"product-" + product.mainSku} className='flex flex-col items-center gap-2 size-full'>
+      <Link href={"/catalog/product/" + product.mainSku} prefetch={false} className="m-1 pb-3 size-11/12">
+        <div className='relative grow-1'>
+          {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartSettings.mainCurrency}. ${product.discount.value}`}`}</p>)}
+          <div className="relative w-full aspect-square overflow-hidden rounded-sm">
+            <Image
+              src={storagePath + product.thumbnail}
+              alt={product.name}
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className={Object.hasOwn(product, "variants") ? "absolute bottom-1 right-1 space-y-2" : "hidden"}>
+            {(product.variants && product.variants.length > 1) ? Object.values(product.variants).map((variant) => (<div key={variant.sku} style={{backgroundColor: variant.color}} className='border-white border-solid border-2 w-[20px] h-[20px] rounded-full'></div>))
+            : ""}
+          </div>
+        </div>
+        <h2 className="max-w-full name-list mt-1 truncate dark:text-white">{product.name}</h2>
+        <Prices prices={{price: product.price, discount: product.discount}} view='list'/>
+      </Link>
+    </div>
+  ), [cartSettings.mainCurrency]);
 
-  const loadMoreProducts = async () => {
-    if (hasMoreProducts && !isLoading) {
-      let prodList = [];
-      const { categoryIndex, subcategoryIndex } = getCategoryIndexes(props.items[0], props.items[1]);
-      switch (props.items.length) {
-        case 1:
-          prodList = products.filter((prod) => prod.category === categoryIndex);
-          break;
-        case 2:
-          prodList = products.filter((prod) => prod.category === categoryIndex && prod.subcategory === subcategoryIndex);
-            break;
-        default:
-          prodList = products.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-          break;
-      }
-      const nextProducts = prodList.slice(currentIndex, currentIndex + productsToLoad);
-      setIsLoading(true);
-      setTimeout(() => {
-        if (nextProducts.length > 0 && hasMoreProducts || currentIndex == 0) {
-          const initProducts = nextProducts.map((product) => (
-            <div key={"product-" + product.mainSku} className='flex flex-col items-center gap-2 size-full'>
-              <Link href={"/catalog/product/" + product.mainSku} prefetch={false} className="m-1 pb-3 size-11/12">
-                <div className='relative grow-1'>
-                  {product.discount && (<p className={`${product.discount.value ? '' : 'hidden'} absolute py-1 px-2 m-2 text-white font-bold right-0 discount-indicator-list z-10`}>-{`${product.discount.type === 0 ? `${product.discount.value}%` : `${cartSettings.mainCurrency}. ${product.discount.value}`}`}</p>)}
-                  <div className="relative w-full aspect-square overflow-hidden rounded-sm">
-                    <Image
-                      src={storagePath + product.thumbnail}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className={Object.hasOwn(product, "variants") ? "absolute bottom-1 right-1 space-y-2" : "hidden"}>
-                    {(product.variants && product.variants.length > 1) ? Object.values(product.variants).map((variant) => (<div key={variant.sku} style={{backgroundColor: variant.color}} className='border-white border-solid border-2 w-[20px] h-[20px] rounded-full'></div>))
-                    : ""}
-                  </div>
-                </div>
-                <h2 className="max-w-full name-list mt-1 truncate dark:text-white">{product.name}</h2>
-                <Prices prices={{price: product.price, discount: product.discount}} view='list'/>
-              </Link>
-            </div>
-          ));
-          
-          setProducts(previous => [...previous, ...initProducts]);
-          setCurrentIndex(prev => prev + productsToLoad);
-        } else {
-          setHasMoreProducts(false);
-        }
-        setIsLoading(false);
-      }, 500); // Retraso simulado para la carga de datos 
+  const loadMoreProducts = useCallback(() => {
+    if (productsToLoad <= 0 || isLoading || !hasMoreProducts) return;
+
+    const prodList = filteredProducts();
+    if (prodList.length === 0) {
+      setProducts([]);
+      setHasMoreProducts(false);
+      return;
     }
-  };
 
-  const handleScroll = () => {
+    const nextProducts = prodList.slice(currentIndex, currentIndex + productsToLoad);
+    if (nextProducts.length === 0) {
+      setHasMoreProducts(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setTimeout(() => {
+      setProducts(previous => [...previous, ...nextProducts.map(buildProductCard)]);
+      setCurrentIndex(prev => prev + nextProducts.length);
+      setHasMoreProducts(currentIndex + nextProducts.length < prodList.length);
+      setIsLoading(false);
+    }, 500);
+  }, [buildProductCard, currentIndex, filteredProducts, hasMoreProducts, isLoading, productsToLoad]);
+
+  useEffect(() => {
+    if (productsToLoad <= 0) return;
+
+    setProducts([]);
+    setCurrentIndex(0);
+    setHasMoreProducts(true);
+    setIsLoading(false);
+  }, [itemsKey, products, productsToLoad, props.loadSub]);
+
+  useEffect(() => {
+    if (productsToLoad <= 0 || isLoading || currentproducts.length > 0 || !hasMoreProducts) return;
+    loadMoreProducts();
+  }, [currentproducts.length, hasMoreProducts, isLoading, loadMoreProducts, productsToLoad]);
+
+  const handleScroll = useCallback(() => {
+    if (productsToLoad <= 0 || !hasMoreProducts) return;
     const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
     const footerHeight = document.getElementsByTagName("footer")[0].scrollHeight;
     if (!isLoading && (scrollTop + clientHeight + footerHeight - 50 >= scrollHeight)) {
       loadMoreProducts();
     }
-  };
+  }, [hasMoreProducts, isLoading, loadMoreProducts, productsToLoad]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isLoading]);
+  }, [handleScroll]);
 
   return(
     <section className="px-2 py-5">

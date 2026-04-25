@@ -43,7 +43,7 @@ export default function Home() {
       <CategoryGrid />
       <ProductCarousel title="home"/>
 */}
-      <ProductList name='allProds' items={[]} loadSub={true} />
+      <ProductList name='allProds' items={[]} loadSub={false} />
     </main>
   );
 }
