@@ -1,8 +1,10 @@
 import { Metadata } from 'next';
+/*
 import ImageSlider from './components/home/Imageslider';
 import Descr from './components/home/Description';
 import CategoryGrid from './components/home/categories/CategoryGrid';
 import ProductCarousel from './components/home/ProductCarousel';
+*/
 import ProductList from './components/products/Productlist';
 import { webAppProps } from '@/app/utils/utils';
 
@@ -35,11 +37,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Home() {
   return (
     <main>
+{ /*
       <ImageSlider />
       <Descr />
       <CategoryGrid />
       <ProductCarousel title="home"/>
-      <ProductList name='allProds' items={[]} loadSub={true} />
+*/}
+      <ProductList name='allProds' items={[]} loadSub={false} />
     </main>
   );
 }
