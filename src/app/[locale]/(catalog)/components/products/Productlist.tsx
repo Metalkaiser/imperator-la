@@ -63,7 +63,7 @@ export default function ProductList(props:viewData){
           prodList = products.filter((prod) => prod.category === categoryIndex && prod.subcategory === subcategoryIndex);
             break;
         default:
-          prodList = products;
+          prodList = products.sort((a, b) => String(a.id).localeCompare(String(b.id)));
           break;
       }
       const nextProducts = prodList.slice(currentIndex, currentIndex + productsToLoad);
