@@ -2,9 +2,22 @@
 
 import { useEffect } from 'react';
 
+interface MetaPixel {
+  (command: 'init', pixelId: string): void;
+  (command: 'track', event: string, parameters?: Record<string, any>): void;
+  (command: 'trackCustom', event: string, parameters?: Record<string, any>): void;
+  getState?: () => any;
+  queue?: any[];
+  loaded?: boolean;
+  version?: string;
+  push?: (...args: any[]) => void;
+  callMethod?: (...args: any[]) => void;
+}
+
 declare global {
   interface Window {
-    fbq: Function;
+    fbq: MetaPixel;
+    _fbq?: MetaPixel;
   }
 }
 
@@ -16,7 +29,7 @@ export function useMetaPixel() {
     if (typeof window === 'undefined' || !window.fbq || !pixelId || !isEnabled) return;
 
     // Inicialización (por si no se hizo en el layout)
-    if (!window.fbq('getState')) {
+    if (!window.fbq.loaded) {
       window.fbq('init', pixelId);
     }
   }, [pixelId]);
@@ -26,7 +39,6 @@ export function useMetaPixel() {
       console.warn('Meta Pixel no está cargado aún');
       return;
     }
-    console.log(`Trackeando evento: ${eventName}`, parameters);
     window.fbq('track', eventName, parameters);
   };
 

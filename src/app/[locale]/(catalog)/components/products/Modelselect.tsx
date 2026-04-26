@@ -13,7 +13,6 @@ import { useCatalogContext } from "../context/CatalogContext";
 import { storagePath } from "@/app/utils/utils";
 import unavailableImage from "@P/misc/other/forbidden.png";
 import { useMetaPixel } from "../meta_ads/useMetaPixel";
-import { tr } from "zod/locales";
 
 export default function Modelselect ({product}:{product:productProps}) {
   const { locale, cartSettings } = useCatalogContext();

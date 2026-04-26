@@ -1,7 +1,6 @@
 "use client"
 
 import { notFound } from "next/navigation";
-import { use, useEffect } from "react";
 import { useCatalogContext } from "../../../components/context/CatalogContext";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
@@ -25,18 +24,14 @@ export default function ProductDetails() {
     return notFound();
   }
 
-  useEffect(() => {
-    if (product) {
-      track('ViewContent', {
-        content_name: product.name,
-        content_ids: product.mainSku,
-        content_type: 'product',
-        content_category: product.category,
-        value: product.price,
-        currency: 'USD',
-      });
-    }
-  }, [product]);
+  track('ViewContent', {
+    content_name: product.name,
+    content_ids: product.mainSku,
+    content_type: 'product',
+    content_category: product.category,
+    value: product.price,
+    currency: 'USD',
+  });
 
   return (
     <section className="m-5">
