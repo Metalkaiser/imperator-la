@@ -12,10 +12,13 @@ import { useCart } from "../context/Cartcontext";
 import { useCatalogContext } from "../context/CatalogContext";
 import { storagePath } from "@/app/utils/utils";
 import unavailableImage from "@P/misc/other/forbidden.png";
+import { useMetaPixel } from "../meta_ads/useMetaPixel";
+import { tr } from "zod/locales";
 
 export default function Modelselect ({product}:{product:productProps}) {
-  const { locale } = useCatalogContext();
+  const { locale, cartSettings } = useCatalogContext();
   const { addOrUpdateItem, enabled } = useCart();
+  const { track } = useMetaPixel();
   const currentPrice = product.discount ? parseFloat(getDiscountedPrice(product.price,product.discount)) : product.price;
   const defaultItemProps = {
     id: product.id,
@@ -61,6 +64,14 @@ export default function Modelselect ({product}:{product:productProps}) {
     if (!selectedItem.qt || !selectedItem.sku) return;
 
     addOrUpdateItem(selectedItem);
+    track('AddToCart', {
+      content_name: selectedItem.name,
+      content_ids: selectedItem.sku,
+      content_type: 'product',
+      content_category: product.category,
+      value: selectedItem.price,
+      currency: cartSettings.mainCurrency,
+    });
     Swal.fire({
       text: `${selectedItem.name} (${selectedItem.sku}) ${cartTranslations("itemadded")}`,
       theme: "auto",

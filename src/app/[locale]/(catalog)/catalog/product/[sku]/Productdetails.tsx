@@ -1,6 +1,7 @@
 "use client"
 
 import { notFound } from "next/navigation";
+import { use, useEffect } from "react";
 import { useCatalogContext } from "../../../components/context/CatalogContext";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
@@ -9,9 +10,11 @@ import ProductCarousel from "../../../components/home/ProductCarousel";
 import Modelselect from "../../../components/products/Modelselect";
 import ImageComponent from "../../../components/products/Imagecomponent";
 import WaProduct from "../../../components/products/Waproduct";
+import { useMetaPixel } from "../../../components/meta_ads/useMetaPixel";
 
 
 export default function ProductDetails() {
+  const { track } = useMetaPixel();
   const nav = usePathname();
   const sku = nav.split("/").at(-1);
   
@@ -21,6 +24,19 @@ export default function ProductDetails() {
   if (!product) {
     return notFound();
   }
+
+  useEffect(() => {
+    if (product) {
+      track('ViewContent', {
+        content_name: product.name,
+        content_ids: product.mainSku,
+        content_type: 'product',
+        content_category: product.category,
+        value: product.price,
+        currency: 'USD',
+      });
+    }
+  }, [product]);
 
   return (
     <section className="m-5">

@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import showCheckoutModal from "../../cart/checkoutModal";
 import { useCatalogContext } from "../context/CatalogContext";
 import { PaymentMethod, shippingMethod, GiftOption, cartItem, saleData } from "@/app/utils/types";
+import { useMetaPixel } from "../meta_ads/useMetaPixel";
 
 interface Props {
   title: string;
@@ -53,8 +54,17 @@ export default function Carttotal ({
   functions
 }: Props) {
   const { cartSettings } = useCatalogContext();
+  const { track } = useMetaPixel();
   const handleClick = async () => {
     const cartFinal = purchaseParams.item.filter(item => item.qt > 0 );
+    track('InitiateCheckout', {
+      value: amounts.total,
+      currency: cartSettings.mainCurrency,
+      content_name: 'Checkout',
+      content_category: 'Checkout',
+      content_ids: cartFinal.map(item => item.sku),
+      num_ids: cartFinal.reduce((total, item) => total + item.qt, 0)
+    });
     const wasConfirmed = await showCheckoutModal({
       cart: cartFinal,
       payment: selectedParams.selectedPayment!,
@@ -72,6 +82,14 @@ export default function Carttotal ({
 
     if (wasConfirmed.status == 200 && wasConfirmed.response) {
       const clientData: saleData = wasConfirmed.response.inputs;
+      track('Purchase', {
+        value: amounts.total,
+        currency: cartSettings.mainCurrency,
+        content_name: 'Purchase',
+        content_category: 'Checkout',
+        content_ids: cartFinal.map(item => item.sku),
+        num_ids: cartFinal.reduce((total, item) => total + item.qt, 0)
+      });
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/registerSale`, {
         method: "POST",
         headers: {
