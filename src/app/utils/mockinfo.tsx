@@ -41,7 +41,95 @@ export const cartItems = [
 ];
 
 export const mockSales: sale[] = [
-  
+  {
+    id: 1,
+    clientName: "Juan Pérez",
+    clientId: "12345678",
+    clientPhone: "0414-1234567",
+    clientEmail: "jperez@test.com",
+    clientAddress: {
+      street: "Calle Falsa 123",
+      city: "Caracas",
+      state: "Distrito Capital",
+    },
+    paymentMethodId: 1,
+    paymentData: {
+      reference: "PAYPAL-123456",
+      clientEmail: "jperez@test.com",
+    },
+    shippingMethod: 1,
+    shippingData: {
+      officeName: "Zoom Oficina Central",
+      officeAddress: "Av. Principal de Las Mercedes, Caracas",
+      Municipality: "Baruta",
+      Community: "Las Mercedes",
+      City: "Caracas",
+      State: "Distrito Capital"
+    },
+    giftOption: [1],
+    totalAmount: 58,
+    status: "placed",
+    items: [
+      {id: 17, name: "Medalla de cruz", mainSku: "COL-0110", sku: "COL-0111", image: "/misc/test-thumbnails/skus/COL-0111.webp", qt: 1, max: 1, price: 23},
+      {id: 1, name: "León ojos rojos", mainSku: "ANI-0010", sku: "ANI-0011", image: "/misc/test-thumbnails/skus/ANI-0011.webp", qt: 1, size: 12, max: 1, price: 20},
+      {id: 35, name: "Brazalete minimalista de cuero", mainSku: "BRA-3080", sku: "BRA-3081", image: "/misc/test-thumbnails/skus/BRA-3081.webp", qt: 1, size: 70, max: 1, price: 15},
+    ],
+    notesHistory: [
+      {
+        id: "note_1",
+        text: "Cliente solicitó cambio de dirección de envío",
+        authorId: "admin_1",
+        authorName: "Admin User",
+        authorRole: "admin",
+        createdAt: Date.parse("08-21-2025")
+      },
+      {
+        id: "note_2",
+        text: "Dirección de envío actualizada a: Av. Principal de Las Mercedes, Caracas",
+        authorId: "admin_1",
+        authorName: "Admin User",
+        authorRole: "admin",
+        createdAt: Date.parse("08-22-2025")
+      }
+    ],
+    createdAt: Date.parse("08-20-2025")
+  },
+  {
+    id: 2,
+    clientName: "María Gómez",
+    clientId: "87654321",
+    clientPhone: "0424-7654321",
+    clientEmail: "mgomez@test.com",
+    clientAddress: {
+      street: "Av. Siempre Viva 456",
+      city: "Maracaibo",
+      state: "Zulia",
+    },
+    paymentMethodId: 2,
+    paymentData: {
+      reference: "PAGOMOVIL-654321",
+      phoneNumber: "0414-7654321",
+      bank: "Banesco",
+      id: "18.765.432"
+    },
+    shippingMethod: 2,
+    shippingData: {
+      officeName: "MRW Maracaibo",
+      officeAddress: "Calle 72, Maracaibo",
+      Municipality: "Maracaibo",
+      Community: "Centro",
+      City: "Maracaibo",
+      State: "Zulia"
+    },
+    giftOption: [2],
+    totalAmount: 40,
+    status: "shipped",
+    items: [
+      {id: 36, name: "CURREN Marrón", mainSku: "REL-0010", sku: "REL-0010", image: "/misc/test-thumbnails/skus/REL-0010.webp", qt: 1, max: 1, price: 40},
+    ],
+    notesHistory: [],
+    createdAt: Date.parse("08-18-2025")
+  }
 ];
 
 export const mockSpecials: sale[] = [

@@ -12,7 +12,7 @@ export default function Header() {
     const pathToTitleMap: { [key: string]: string } = {
       "/admin/dashboard": "Resumen",
       "/admin/inventory": "Inventario",
-      "/admin/orders": "Órdenes",
+      "/admin/orders": "Ventas",
       "/admin/settings": "Configuraciones",
       "/admin/top-products": "Productos top",
       "/admin/inventory/new": "Nuevo producto"

@@ -1,4 +1,4 @@
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from "@/app/utils/types";
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote } from "@/app/utils/types";
 
 export interface ProductService {
   /**
@@ -68,6 +68,20 @@ export interface ProductService {
    * @returns A promise that resolves to an appResponse containing the list of orders.
    */
   getOrders(): Promise<appResponse>;
+
+  /**
+   * Updates the status of an order.
+   * @param id The order ID.
+   * @param status The next status value.
+   */
+  updateOrderStatus(id: string | number, status: string): Promise<appResponse>;
+
+  /**
+   * Appends a note to an order history.
+   * @param id The order ID.
+   * @param note Note payload to append.
+   */
+  addOrderNote(id: string | number, note: orderNote): Promise<appResponse>;
 
   /**
    * Fetches users from the database.

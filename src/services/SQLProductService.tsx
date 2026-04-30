@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote } from '@/app/utils/types';
 import { prisma } from '@/config/prisma';
 
 const notImplemented = {code: "not-implemented", response: null , status: 403}
@@ -100,6 +100,16 @@ export class SQLProductService implements ProductService {
       console.error(error)
       return {code: "unknown", response: null, status: 500};
     }
+  }
+
+  async updateOrderStatus(id: string | number, status: string): Promise<appResponse> {
+    console.warn("updateOrderStatus not implemented for SQL provider", id, status);
+    return notImplemented;
+  }
+
+  async addOrderNote(id: string | number, note: orderNote): Promise<appResponse> {
+    console.warn("addOrderNote not implemented for SQL provider", id, note);
+    return notImplemented;
   }
 
   async getUsers(): Promise<appResponse> {

@@ -94,11 +94,11 @@ export default function LatestOrders({ limit = 5 }: { limit: number }) {
   return (
     <div className="flex flex-col md:flex-row gap-10 w-full justify-between">
       <div className="md:w-5/12">
-        <TableSection title={`Últimas ${limit} órdenes`} rows={latest} loading={loading} />
+        <TableSection title={`Últimas ${limit} ventas`} rows={latest} loading={loading} />
       </div>
 
       <div className="md:w-5/12">
-        <TableSection title={`Últimas ${limit} órdenes pendientes`} rows={pending} loading={loading} />
+        <TableSection title={`Últimas ${limit} ventas pendientes`} rows={pending} loading={loading} />
       </div>
     </div>
   );

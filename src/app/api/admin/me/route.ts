@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import admin from "@/app/utils/firebaseAdmin";
 import { authConfigs } from "@/config/websiteConfig/authConfig";
-import { dbCollections } from "@/app/utils/utils"; // coincide con el usado en tus servicios
+import { dbCollections, normalizeRole } from "@/app/utils/utils"; // coincide con el usado en tus servicios
 import type { currentUser, User } from "@/app/utils/types";
 
 const COOKIE_NAME = authConfigs.cookieName ?? "imperator_admin_session";
@@ -13,7 +13,7 @@ const COOKIE_NAME = authConfigs.cookieName ?? "imperator_admin_session";
  * Si tu documento de usuario ya contiene `permissions`, se usará ese campo en vez de este mapa.
  */
 function mapRoleToPermissions(role: string | undefined): string[] {
-  switch ((role || "").toLowerCase()) {
+  switch (normalizeRole(role)) {
     case "admin":
       return ["users.read", "users.write", "settings.manage", "items.read", "items.write"];
     case "editor":
@@ -69,13 +69,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Construir currentUser conforme a tu tipo
-    const permissions = (doc as any).permissions ?? mapRoleToPermissions(doc.role);
+    const normalizedRole = normalizeRole(doc.role);
+    const permissions = (doc as any).permissions ?? mapRoleToPermissions(normalizedRole);
 
     const current: currentUser = {
       uid: doc.uid,
       name: doc.name,
       email: doc.email,
-      role: doc.role,
+      role: normalizedRole,
       permissions,
       lastLogin: doc.lastLogin ?? null,
       image: doc.image ?? undefined,

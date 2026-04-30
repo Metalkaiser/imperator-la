@@ -97,8 +97,7 @@ export const orderStatuses = new Map<string, string>([
   ["placed", "Pedido realizado"],
   ["shipped", "Enviado"],
   ["canceled", "Cancelado"],
-  ["completed", "Completado"],
-  ["reviewed", "Reseñado"],
+  ["completed", "Completado"]
 ]);
 
 export const actionLabels = new Map<string, { label: string; color: string; badgeClass: string }>([
@@ -145,9 +144,16 @@ export const variantsColors = [
   { name: "green", label: "Verde" }
 ];
 
+export function normalizeRole(role?: string | null): string {
+  const normalized = String(role ?? "").trim().toLowerCase();
+  if (!normalized) return "viewer";
+  if (normalized === "auditor") return "viewer";
+  return normalized;
+}
+
 // roles map (display)
-const roles = ["admin", "editor", "viewer"];
-const translatedRoles = ["Administrador", "Editor", "Visualizador"];
+const roles = ["admin", "editor", "viewer", "auditor"];
+const translatedRoles = ["Administrador", "Editor", "Visualizador", "Visualizador"];
 export const rolesMap = roles.reduce((acc, role, index) => {
   acc[role] = translatedRoles[index];
   return acc;

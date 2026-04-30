@@ -160,7 +160,7 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
               <li className="mb-4">
                 <Link {...getLinkProps("/admin/orders")}>
                   <IconWrap light={cart_light} dark={cart_dark} alt="Cart" />
-                  Órdenes
+                  Ventas
                   <ChevronRight className="ml-auto" />
                 </Link>
               </li>
@@ -257,7 +257,7 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
                 <li>
                   <Link {...getLinkProps("/admin/orders")}>
                     <IconWrap light={cart_light} dark={cart_dark} alt="Cart" />
-                    Órdenes
+                    Ventas
                     <ChevronRight className="ml-auto" />
                   </Link>
                 </li>

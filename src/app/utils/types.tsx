@@ -133,6 +133,14 @@ export type saleData = {
   notes?: string;
 };
 
+export type orderNote = {
+  id: string;
+  text: string;
+  authorId: string | number;
+  authorName: string;
+  authorRole: string;
+  createdAt: string | number;
+};
 
 export type sale = {
   id: string | number;
@@ -150,7 +158,9 @@ export type sale = {
   status: string;
   items: cartItem[];
   notes?: string;
+  notesHistory?: orderNote[];
   createdAt: string | number;
+  updatedAt?: string | number;
 }
 
 export type User = {

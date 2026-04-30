@@ -2,7 +2,7 @@ import { ProductService } from './ProductService';
 import {v4 as uuidv4} from 'uuid';
 import sharp from 'sharp';
 import admin from '@/app/utils/firebaseAdmin';
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
 import {
   collection,
@@ -207,6 +207,42 @@ export class FirebaseProductService implements ProductService {
       const ordersCol = admin.firestore().collection(dbCollections.orders);
       const snap = await ordersCol.get();
       return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
+  }
+
+  async updateOrderStatus(id: string | number, status: string): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const ordersCol = admin.firestore().collection(dbCollections.orders);
+      const docRef = ordersCol.doc(String(id));
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        throw new Error("Order not found");
+      }
+
+      const updatedAt = Date.now();
+      await docRef.update({ status, updatedAt });
+      return { id: docSnap.id, ...docSnap.data(), status, updatedAt };
+    });
+  }
+
+  async addOrderNote(id: string | number, note: orderNote): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const ordersCol = admin.firestore().collection(dbCollections.orders);
+      const docRef = ordersCol.doc(String(id));
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        throw new Error("Order not found");
+      }
+
+      const data = docSnap.data() as { notesHistory?: orderNote[]; notes?: string };
+      const notesHistory = Array.isArray(data.notesHistory) ? [...data.notesHistory] : [];
+      notesHistory.push(note);
+
+      const updatedAt = Date.now();
+      await docRef.update({ notesHistory, updatedAt });
+      return { id: docSnap.id, ...docSnap.data(), notesHistory, updatedAt };
     });
   }
 
