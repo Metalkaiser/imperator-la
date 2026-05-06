@@ -1,5 +1,5 @@
 import { productProps, PaymentMethod, shippingMethod, GiftOption, sale, activity_logs } from "./types";
-import { phoneNumber } from "./utils";
+//import { phoneNumber } from "./utils";
 
 export const mockTopProds = [
   {
