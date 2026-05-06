@@ -2,7 +2,7 @@ import { ProductService } from './ProductService';
 import {v4 as uuidv4} from 'uuid';
 import sharp from 'sharp';
 import admin from '@/app/utils/firebaseAdmin';
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote, PaymentMethod, shippingMethod, GiftOption, sale } from '@/app/utils/types';
 import { db } from '@/config/fbConfig';
 import {
   collection,
@@ -15,11 +15,12 @@ import {
   getDoc,
   addDoc,
   limit as limitFn,
-  runTransaction,
+  //runTransaction,
   startAfter
 } from "firebase/firestore";
 import { dbCollections } from '@/app/utils/utils';
 import { handleFirebase } from './helpers/Firebase/firebaseWrapper';
+import { removeUndefined } from '@/app/utils/functions';
 //import { firebaseProductsList, mockTopProds, paymentMethods, shippingMethods, giftOptions } from '@/app/utils/mockinfo';
 
 const catalogCollection = collection(db, dbCollections.products);
@@ -139,11 +140,38 @@ export class FirebaseProductService implements ProductService {
     });
   }
 
+  async upsertPaymentMethod(method: PaymentMethod): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const { id, ...data } = method;
+      const docRef = admin.firestore().collection(dbCollections.payment).doc(String(id));
+      await docRef.set(data, { merge: true });
+      return { id, ...data };
+    });
+  }
+
+  async upsertShippingMethod(method: shippingMethod): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const { id, ...data } = method;
+      const docRef = admin.firestore().collection(dbCollections.shipping).doc(String(id));
+      await docRef.set(data, { merge: true });
+      return { id, ...data };
+    });
+  }
+
+  async upsertGiftOption(option: GiftOption): Promise<appResponse> {
+    return handleFirebase(async () => {
+      const { id, ...data } = option;
+      const docRef = admin.firestore().collection(dbCollections.giftOptions).doc(String(id));
+      await docRef.set(data, { merge: true });
+      return { id, ...data };
+    });
+  }
+
   async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
     return handleFirebase(async () => {
       if (!Array.isArray(cart) || cart.length === 0) throw new Error("Carrito vacío");
       //const updatedProducts: productProps[] = [];
-
+/*
       const newOrderId = runTransaction(db, async (tx) => {
         for (const item of cart) {
           const productRef = doc(db, dbCollections.products, item.id.toString());
@@ -161,16 +189,6 @@ export class FirebaseProductService implements ProductService {
           const stock = product.variants[variantIndex].stock[sizeIndex];
           if (stock.quantity < item.qt) throw new Error(`Stock insuficiente para ${item.name}, talla ${item.size}`);
 
-          /*
-          // Descontar del stock
-          product.variants[variantIndex].stock[sizeIndex].quantity -= item.qt;
-
-          // Guardar el producto actualizado
-          await updateDoc(productRef, { variants: product.variants });
-          const { id, ...productWithoutId } = product;
-          updatedProducts.push({ id: id, ...productWithoutId });
-          */
-
           const newQty = stock.quantity - item.qt;
           const updatedVariants = [...product.variants];
           updatedVariants[variantIndex] = {
@@ -185,20 +203,45 @@ export class FirebaseProductService implements ProductService {
           // Escribir doc actualizado dentro de la transacción
           tx.update(productRef, { variants: updatedVariants });
         }
-      })
+      }).then(() => {
+        console.log("Stock actualizado correctamente");
+      }).catch((error) => {
+        if (error instanceof FirebaseError) {
+          console.error("FirebaseError al actualizar stock:", error.code, error.message);
+        } else {
+          console.error("Error desconocido al actualizar stock:", error);
+        }
+        throw error; // Re-lanzar para que el error se propague y no se registre la venta
+      });
+*/
+      const newOrderObject: Omit<sale, 'id'> = {
+        clientName: clientData.clientName || "Sin nombre",
+        clientPhone: clientData.clientPhone || "-",
+        clientEmail: clientData.clientEmail,
+        clientAddress: clientData.clientAddress,
+        clientId: clientData.clientId,
+        items: cart,
+        totalAmount: clientData.totalAmount,
+        status: "pending",
+        createdAt: Date.now(),
+        paymentMethodId: clientData.paymentMethodId,
+        paymentData: clientData.paymentData,
+        shippingMethod: clientData.shippingMethod,
+        shippingData: clientData.shippingData,
+        giftOption: clientData.giftOption
+      }
 
-      console.log(newOrderId);
+      const cleanOrderObject = removeUndefined(newOrderObject);
 
       // Registrar la venta
-      const newOrder = await addDoc(ordersCollection, {
-        cart,
-        clientData,
-        totalAmount: clientData.totalAmount.toFixed(2),
-        status: "placed",
-        createdAt: new Date().toISOString()
-      });
-
-      return newOrder.id;
+      try {
+        const newOrder = await addDoc(ordersCollection, cleanOrderObject);
+        console.log("Venta registrada con ID:", newOrder.id);
+        return newOrder.id;
+      } catch (error) {
+        console.error("Error al registrar la venta:", error);
+        throw new Error("Error al registrar la venta");
+      }
     });
   }
 

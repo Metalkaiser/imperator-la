@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, sale, NewActivityLog, NewProduct, orderNote } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, sale, NewActivityLog, NewProduct, orderNote, PaymentMethod, shippingMethod, GiftOption } from '@/app/utils/types';
 import { 
   mockProductList as mutableProducts,
   mockTopProds as mutableTop,
@@ -88,6 +88,30 @@ export class MockProductService implements ProductService {
     }
 
     return {code: "success", response: response , status: 200}
+  }
+
+  async upsertPaymentMethod(method: PaymentMethod): Promise<appResponse> {
+    const index = mutablePays.findIndex((item) => String(item.id) === String(method.id));
+    const updated = { ...method };
+    if (index >= 0) mutablePays[index] = updated;
+    else mutablePays.push(updated);
+    return { code: "success", response: updated, status: 200 };
+  }
+
+  async upsertShippingMethod(method: shippingMethod): Promise<appResponse> {
+    const index = mutableShips.findIndex((item) => String(item.id) === String(method.id));
+    const updated = { ...method };
+    if (index >= 0) mutableShips[index] = updated;
+    else mutableShips.push(updated);
+    return { code: "success", response: updated, status: 200 };
+  }
+
+  async upsertGiftOption(option: GiftOption): Promise<appResponse> {
+    const index = mutableGifts.findIndex((item) => String(item.id) === String(option.id));
+    const updated = { ...option };
+    if (index >= 0) mutableGifts[index] = updated;
+    else mutableGifts.push(updated);
+    return { code: "success", response: updated, status: 200 };
   }
 
   async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {

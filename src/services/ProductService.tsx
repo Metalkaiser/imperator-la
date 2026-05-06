@@ -1,4 +1,4 @@
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote } from "@/app/utils/types";
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
 
 export interface ProductService {
   /**
@@ -54,6 +54,21 @@ export interface ProductService {
    * @returns A promise that resolves to an appResponse containing the cart configuration settings.
    */
   getCartConfigs(): Promise<appResponse>;
+
+  /**
+   * Creates or updates a payment method.
+   */
+  upsertPaymentMethod(method: PaymentMethod): Promise<appResponse>;
+
+  /**
+   * Creates or updates a shipping method.
+   */
+  upsertShippingMethod(method: shippingMethod): Promise<appResponse>;
+
+  /**
+   * Creates or updates a gift option.
+   */
+  upsertGiftOption(option: GiftOption): Promise<appResponse>;
 
   /**
    * Registers a sale in the database.

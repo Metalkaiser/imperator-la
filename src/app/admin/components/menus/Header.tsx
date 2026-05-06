@@ -15,6 +15,7 @@ export default function Header() {
       "/admin/orders": "Ventas",
       "/admin/settings": "Configuraciones",
       "/admin/top-products": "Productos top",
+      "/admin/sales-options": "Opciones de ventas",
       "/admin/inventory/new": "Nuevo producto"
     };
     console.log("Current pathname:", pathname);

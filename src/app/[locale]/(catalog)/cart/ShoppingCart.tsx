@@ -119,7 +119,17 @@ export default function ShoppingCart() {
     [selectedPayment, subtotal, giftTotal, shippingFee]
   );
 
-  const total = subtotal + giftTotal + shippingFee + paymentFee;
+  const discount = useMemo(() => {
+    if (!selectedPayment || !selectedPayment.discount) return 0;
+    const disc = selectedPayment.discount;
+    if (disc.type === "percentage") {
+      return (subtotal + giftTotal + shippingFee + paymentFee) * (disc.value / 100);
+    } else {
+      return disc.value;
+    }
+  }, [selectedPayment, subtotal, giftTotal, shippingFee, paymentFee]);
+
+  const total = subtotal + giftTotal + shippingFee + paymentFee - discount;
   const isPurchaseReady =
     total > 0 && formData.payment && formData.shipping;
 

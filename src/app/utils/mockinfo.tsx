@@ -206,6 +206,7 @@ export const mockActivity: activity_logs[] = [
   *
 */
 export const paymentMethods:PaymentMethod[] = [
+  /*
   { 
     id: 1,
     order: 4,
@@ -303,7 +304,7 @@ export const paymentMethods:PaymentMethod[] = [
     id: 6,
     order: 6,
     name: "cash",
-    enabled: true,
+    enabled: false,
     data: {
       phoneNumber: phoneNumber,
     },
@@ -313,6 +314,7 @@ export const paymentMethods:PaymentMethod[] = [
       status: false
     }
   }
+    */
 ];
 
 export const shippingMethods:shippingMethod[] = [
@@ -325,7 +327,6 @@ export const shippingMethods:shippingMethod[] = [
     data: [
       "clientName",
       "clientId",
-      "officeName",
       "officeAddress",
       "Municipality",
       "Community",
@@ -348,7 +349,6 @@ export const shippingMethods:shippingMethod[] = [
     data: [
       "clientName",
       "clientId",
-      "officeName",
       "officeAddress",
       "Municipality",
       "Community",
@@ -357,8 +357,8 @@ export const shippingMethods:shippingMethod[] = [
     ],
     icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/MRW_logo.svg/330px-MRW_logo.svg.png",
     fee: {
-      status: true,
-      onlyPayOnDelivery: false,
+      status: false,
+      onlyPayOnDelivery: true,
       fixed: 1.45,
     }
   },
@@ -371,7 +371,6 @@ export const shippingMethods:shippingMethod[] = [
     data: [
       "clientName",
       "clientId",
-      "officeName",
       "officeAddress",
       "Municipality",
       "Community",
@@ -394,7 +393,6 @@ export const shippingMethods:shippingMethod[] = [
     data: [
       "clientName",
       "clientId",
-      "officeName",
       "officeAddress",
       "Municipality",
       "Community",
@@ -434,7 +432,7 @@ export const giftOptions: GiftOption[] = [
     type: "case",
     price: 3,
     image: "/misc/other/leather-bag.webp",
-    available: true
+    available: false
   },
   {
     id: 2,
@@ -443,7 +441,7 @@ export const giftOptions: GiftOption[] = [
     type: "wrapping",
     price: 1.5,
     image: "/misc/other/gift.webp",
-    available: false
+    available: true
   }
 ];
 

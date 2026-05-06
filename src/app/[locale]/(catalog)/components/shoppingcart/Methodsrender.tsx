@@ -61,6 +61,13 @@ export default function Methodrender ({
               method.fee.onlyPayOnDelivery && (
                 <p className="text-xs">({feesT("shippingOnArrival")})</p>
               )}
+            {('discount' in method && method.discount) && (
+              <p className="text-xs text-green-600">
+                {method.discount.type === "percentage"
+                  ? `(${method.discount.value}% de descuento)`
+                  : `(${mainCurrency}${method.discount.value} de descuento)`}
+              </p>
+            )}
           </label>
         ));
 

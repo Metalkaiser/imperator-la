@@ -94,7 +94,7 @@ export const sessionCartName = "imperator_cart";            // Name of the sessi
 export const phoneNumber = "584267835498";                  // Phone number for contact, used in the footer and other places
 
 export const orderStatuses = new Map<string, string>([
-  ["placed", "Pedido realizado"],
+  ["pending", "Pedido realizado"],
   ["shipped", "Enviado"],
   ["canceled", "Cancelado"],
   ["completed", "Completado"]

@@ -78,6 +78,10 @@ export type PaymentMethod = {
   data: {
     [key: string]: string | number; // Using string or number to allow for different types of data (e.g., id, phoneNumber, bank, etc.)
   };
+  discount?: {
+    type: "percentage" | "fixed"; // Type of discount
+    value: number; // Value of the discount (e.g., 10 for 10% or $10)
+  };
   userData: string[];
   icon: string;
   fee: {

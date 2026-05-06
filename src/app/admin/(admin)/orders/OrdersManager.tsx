@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ChevronDown, ChevronUp, FilePenLine, Lock, MessageSquarePlus } from "lucide-react";
 import { useAuth } from "@/app/admin/components/context/authContext";
 import { addOrderNoteAction, updateOrderStatusAction } from "@/app/actions/orders";
-import { orderStatuses } from "@/app/utils/utils";
+import { orderStatuses, storagePath } from "@/app/utils/utils";
 import { capitalizeName } from "@/app/utils/functions";
 import type { sale, orderNote } from "@/app/utils/types";
 import { useDB } from "../../components/context/dbContext";
@@ -140,7 +140,7 @@ function OrderRow({
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                           <span>
                             <Image
-                              src={item.image}
+                              src={storagePath + item.image}
                               alt={item.name}
                               width={32}
                               height={32}
@@ -393,7 +393,7 @@ export default function OrdersManager({ orders }: { orders: sale[] }) {
                     key={`${String(order.id)}-${String(order.updatedAt ?? order.createdAt)}`}
                     order={order}
                     expanded={expandedId === order.id}
-                    onToggle={() => setExpandedId((current) => (current === order.id ? null : order.id))}
+                    onToggle={ () => setExpandedId((current) => (current === order.id ? null : order.id)) }
                   />
                 ))
               )}
