@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import showCheckoutModal from "../../cart/checkoutModal";
 import { useCatalogContext } from "../context/CatalogContext";
 import { PaymentMethod, shippingMethod, GiftOption, cartItem, saleData } from "@/app/utils/types";
+import { useMetaPixel } from "../meta_ads/useMetaPixel";
 
 interface Props {
   title: string;
@@ -53,15 +54,24 @@ export default function Carttotal ({
   functions
 }: Props) {
   const { cartSettings } = useCatalogContext();
+  const { track } = useMetaPixel();
   const handleClick = async () => {
     const cartFinal = purchaseParams.item.filter(item => item.qt > 0 );
+    track('InitiateCheckout', {
+      value: amounts.total,
+      currency: cartSettings.mainCurrency,
+      content_name: 'Checkout',
+      content_category: 'Checkout',
+      content_ids: cartFinal.map(item => item.sku),
+      num_ids: cartFinal.reduce((total, item) => total + item.qt, 0)
+    });
     const wasConfirmed = await showCheckoutModal({
       cart: cartFinal,
       payment: selectedParams.selectedPayment!,
       shipping: selectedParams.selectedShipping!,
       modalWidth: modalWidth,
       exchangeRate: purchaseParams.exchangeRate,
-      total: amounts.total,
+      total: Number(amounts.total.toFixed(2)),
       selectedGifts: selectedParams.selectedGifts,
       mainCurrency: cartSettings.mainCurrency,
       exchangeCurrency: cartSettings.exchangeCurrency,
@@ -72,7 +82,16 @@ export default function Carttotal ({
 
     if (wasConfirmed.status == 200 && wasConfirmed.response) {
       const clientData: saleData = wasConfirmed.response.inputs;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/registerSale`, {
+      track('Purchase', {
+        value: amounts.total,
+        currency: cartSettings.mainCurrency,
+        content_name: 'Purchase',
+        content_category: 'Checkout',
+        content_ids: cartFinal.map(item => item.sku),
+        num_ids: cartFinal.reduce((total, item) => total + item.qt, 0)
+      });
+
+      const response = await fetch(`/api/registerSale`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -83,7 +102,8 @@ export default function Carttotal ({
         }),
       });
       if (response.status === 200) {
-        //const resData = await response.json();
+        const resData = await response.json();
+        console.log("✅ Venta registrada con éxito:", resData);
         functions.clearCartFunction();
       } else {
         console.error("❌ Error al registrar la venta:", response.statusText);
@@ -99,7 +119,9 @@ export default function Carttotal ({
         console.log("✅ El usuario completó la compra y el carrito fue limpiado.");
         window.open("/", "_self");
       });
+
     } else {
+      console.log(selectedParams.selectedPayment)
       console.log("❌ El usuario canceló o no llenó todos los campos");
     }
   }
@@ -120,6 +142,14 @@ export default function Carttotal ({
           )}
           {amounts.giftTotal > 0 && (
             feeComp(functions.feesT("giftFee"), amounts.giftTotal, cartSettings.mainCurrency)
+          )}
+          {selectedParams.selectedPayment?.discount && (
+            <p className="text-xs font-light text-green-600">
+              {selectedParams.selectedPayment.discount.type === "percentage"
+                ? `Descuento por pago: ${cartSettings.mainCurrency}${(amounts.total * (selectedParams.selectedPayment.discount.value)/100).toFixed(2)}`
+                : `Descuento por pago: ${cartSettings.mainCurrency}${selectedParams.selectedPayment.discount.value.toFixed(2)}`
+              }
+            </p>
           )}
         </div>
         <div className="flex flex-col items-end">

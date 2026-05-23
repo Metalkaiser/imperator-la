@@ -2,16 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { ZodError, output } from "zod";
-import jwt from "jsonwebtoken";
 import getProductService from "@/config/productServiceInstance";
-import admin from "@/app/utils/firebaseAdmin";
-import { authConfigs } from "@/config/websiteConfig/authConfig";
 import { getCategoriesWithSubcategories } from "@/config/websiteConfig/categoryConfig";
 import { sanitizeFileName, removeUndefined, diffObjects } from "@/app/utils/functions";
 import { newProductSchema, newProductImagesSchema, fileSchema, updateProductSchema } from "@/app/utils/apis/validatePayload";
 import { dbCollections } from "../utils/utils";
-import { NewActivityLog, NewProduct, productProps, topProductsProps, User } from "../utils/types";
+import { NewActivityLog, NewProduct, productProps, topProductsProps } from "../utils/types";
 import { buildUploads } from "../utils/apis/buildUploads";
+import { getSessionUser } from "./session";
 
 export type BulkPatchBody = Partial<Pick<productProps, "price" | "discount" | "status" | "isDeleted">>;
 export type BulkUpdateProductsInput = { ids: Array<string | number>; changes: BulkPatchBody };
@@ -28,54 +26,6 @@ export type ReplaceTopProductsResult = {
   message?: string;
   error?: string;
 };
-
-async function getAdminUser() {
-  const { cookies } = await import("next/headers");
-  const cookieStore = await cookies();
-  const token = cookieStore.get(authConfigs.cookieName)?.value;
-
-  if (!token) return { success: false, response: "No autenticado"};
-
-  let uid: string | number = "";
-  if (authConfigs.source === "firebase") {
-    let decodedToken: admin.auth.DecodedIdToken | null = null;
-    try {
-      decodedToken = await admin.auth().verifySessionCookie(token, true);
-    } catch (err) {
-      console.debug("verifySessionCookie falló, intentando verifyIdToken", err);
-    }
-    if (!decodedToken) {
-      try {
-        decodedToken = await admin.auth().verifyIdToken(token);
-      } catch (err) {
-        console.error("Ambos métodos fallaron:", err);
-        return { success: false, response: "Token inválido" };
-      }
-    }
-    uid = decodedToken!.uid;
-  } else if (authConfigs.source === "custom") {
-    const jwtSecret = process.env.AUTH_JWT_SECRET;
-    if (!jwtSecret) return { success: false, response: "Configuración del servidor incompleta"};
-    try {
-      const payload = jwt.verify(token, jwtSecret) as any;
-      uid = payload.sub ?? payload.uid ?? "";
-    } catch (err) {
-      console.warn(err);
-      return { success: false, response: "Token inválido, sesión fallida"}
-    }
-  } else return { success: false, response: "Proveedor de autenticación desconocido"};
-  if (!uid) {
-    return { success: false, response: "Token inválido"};
-  }
-  const userCol = admin.firestore().collection(dbCollections.users);
-  const q = userCol.where("uid", "==", uid).limit(1);
-  const snap = await q.get();
-  if (snap.empty) return { success: false, response: "Usuario no encontrado" };
-  const userData = snap.docs[0].data() as User;
-  if (!userData) return { success: false, response: "Problema al autenticar usuario" }
-  if (userData.role !== "admin") return { success: false, response: "Permisos insuficientes" };
-  return { success: true, response: { id: uid, role: userData.role, username: userData.name }}
-}
 
 function getBulkAllowedChanges(changes: BulkPatchBody) {
   const allowed: Record<string, any> = {};
@@ -133,7 +83,7 @@ function getBulkAllowedChanges(changes: BulkPatchBody) {
 
 export async function createProductAction(prevState: any, formData: FormData) {
   try {
-    const authResult = await getAdminUser();
+    const authResult = await getSessionUser(true);
     if (!authResult.success) return { success: false, error: authResult.response }
     const adminUser = authResult.response as { id: string | number; role: string; username: string };
 
@@ -309,7 +259,7 @@ export async function updateProductAction(prevState: any, formData: FormData) {
     if (!id) return { success: false, error: "ID de producto requerido" };
     if (typeof id !== "string") return { success: false, error: "ID de producto inválido" };
 
-    const authResult = await getAdminUser();
+    const authResult = await getSessionUser(true);
     if (!authResult.success) return { success: false, error: authResult.response }
     const adminUser = authResult.response as { id: string | number; role: string; username: string };
     
@@ -405,7 +355,7 @@ export async function updateProductAction(prevState: any, formData: FormData) {
 
 export async function bulkUpdateProductsAction(input: BulkUpdateProductsInput): Promise<BulkUpdateProductsResult> {
   try {
-    const authResult = await getAdminUser();
+    const authResult = await getSessionUser(true);
     if (!authResult.success) {
       return {
         success: false,
@@ -541,7 +491,7 @@ export async function bulkUpdateProductsAction(input: BulkUpdateProductsInput): 
 
 export async function replaceTopProductsAction(productIds: Array<string | number>): Promise<ReplaceTopProductsResult> {
   try {
-    const authResult = await getAdminUser();
+    const authResult = await getSessionUser(true);
     if (!authResult.success) {
       return { success: false, error: String(authResult.response ?? "No autorizado") };
     }

@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, sale, NewActivityLog, NewProduct } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, sale, NewActivityLog, NewProduct, orderNote, PaymentMethod, shippingMethod, GiftOption } from '@/app/utils/types';
 import { 
   mockProductList as mutableProducts,
   mockTopProds as mutableTop,
@@ -90,6 +90,30 @@ export class MockProductService implements ProductService {
     return {code: "success", response: response , status: 200}
   }
 
+  async upsertPaymentMethod(method: PaymentMethod): Promise<appResponse> {
+    const index = mutablePays.findIndex((item) => String(item.id) === String(method.id));
+    const updated = { ...method };
+    if (index >= 0) mutablePays[index] = updated;
+    else mutablePays.push(updated);
+    return { code: "success", response: updated, status: 200 };
+  }
+
+  async upsertShippingMethod(method: shippingMethod): Promise<appResponse> {
+    const index = mutableShips.findIndex((item) => String(item.id) === String(method.id));
+    const updated = { ...method };
+    if (index >= 0) mutableShips[index] = updated;
+    else mutableShips.push(updated);
+    return { code: "success", response: updated, status: 200 };
+  }
+
+  async upsertGiftOption(option: GiftOption): Promise<appResponse> {
+    const index = mutableGifts.findIndex((item) => String(item.id) === String(option.id));
+    const updated = { ...option };
+    if (index >= 0) mutableGifts[index] = updated;
+    else mutableGifts.push(updated);
+    return { code: "success", response: updated, status: 200 };
+  }
+
   async registerSale(cart: cartItem[], clientData: saleData): Promise<appResponse> {
     try {
       const updatedProducts: productProps[] = [];
@@ -175,7 +199,35 @@ export class MockProductService implements ProductService {
   }
 
   async getOrders(): Promise<appResponse> {
-    return notImplemented;
+    const orders = [...mutableSales].sort((a, b) => {
+      const ta = typeof a.createdAt === "number" ? a.createdAt : Date.parse(String(a.createdAt));
+      const tb = typeof b.createdAt === "number" ? b.createdAt : Date.parse(String(b.createdAt));
+      return tb - ta;
+    });
+    return { code: "success", response: orders, status: 200 };
+  }
+
+  async updateOrderStatus(id: string | number, status: string): Promise<appResponse> {
+    const existing = mutableSales.find((sale) => String(sale.id) === String(id));
+    if (!existing) return { code: "not-found", response: null, status: 404 };
+
+    existing.status = status;
+    existing.updatedAt = Date.now();
+    return { code: "success", response: existing, status: 200 };
+  }
+
+  async addOrderNote(id: string | number, note: orderNote): Promise<appResponse> {
+    const existing = mutableSales.find((sale) => String(sale.id) === String(id));
+    if (!existing) return { code: "not-found", response: null, status: 404 };
+
+    const notesHistory = Array.isArray(existing.notesHistory) ? [...existing.notesHistory] : [];
+    notesHistory.push(note);
+    existing.notesHistory = notesHistory;
+    existing.updatedAt = Date.now();
+
+    console.log(`Note added to order ${id}: ${note.text}. By ${note.authorName} at ${new Date(note.createdAt).toLocaleString()}`);
+
+    return { code: "success", response: existing, status: 200 };
   }
 
   async uploadImage(file: File, destPath: string): Promise<{ ok: boolean; url?: string; error?: string; }> {

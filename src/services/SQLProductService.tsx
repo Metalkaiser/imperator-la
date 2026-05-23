@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from '@/app/utils/types';
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote, PaymentMethod, shippingMethod, GiftOption } from '@/app/utils/types';
 import { prisma } from '@/config/prisma';
 
 const notImplemented = {code: "not-implemented", response: null , status: 403}
@@ -61,10 +61,26 @@ export class SQLProductService implements ProductService {
 
     const response = {
       paymentMethods: payment,
-      shippingMethods: shipping
+      shippingMethods: shipping,
+      giftOptions: []
     }
 
     return {code: "success", response: response , status: 200};
+  }
+
+  async upsertPaymentMethod(method: PaymentMethod): Promise<appResponse> {
+    console.warn("upsertPaymentMethod not implemented for SQL provider", method.id);
+    return { code: "not-implemented", response: "SQL provider does not support sales options yet", status: 501 };
+  }
+
+  async upsertShippingMethod(method: shippingMethod): Promise<appResponse> {
+    console.warn("upsertShippingMethod not implemented for SQL provider", method.id);
+    return { code: "not-implemented", response: "SQL provider does not support sales options yet", status: 501 };
+  }
+
+  async upsertGiftOption(option: GiftOption): Promise<appResponse> {
+    console.warn("upsertGiftOption not implemented for SQL provider", option.id);
+    return { code: "not-implemented", response: "SQL provider does not support sales options yet", status: 501 };
   }
 
   async deleteProduct(id: string | number): Promise<appResponse> {
@@ -100,6 +116,16 @@ export class SQLProductService implements ProductService {
       console.error(error)
       return {code: "unknown", response: null, status: 500};
     }
+  }
+
+  async updateOrderStatus(id: string | number, status: string): Promise<appResponse> {
+    console.warn("updateOrderStatus not implemented for SQL provider", id, status);
+    return notImplemented;
+  }
+
+  async addOrderNote(id: string | number, note: orderNote): Promise<appResponse> {
+    console.warn("addOrderNote not implemented for SQL provider", id, note);
+    return notImplemented;
   }
 
   async getUsers(): Promise<appResponse> {

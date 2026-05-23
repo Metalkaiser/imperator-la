@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, X, Menu, Star } from "lucide-react";
+import { ChevronRight, X, Menu, Star, SlidersHorizontal } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "../context/authContext";
 import { capitalizeName } from "@/app/utils/functions";
@@ -160,7 +160,17 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
               <li className="mb-4">
                 <Link {...getLinkProps("/admin/orders")}>
                   <IconWrap light={cart_light} dark={cart_dark} alt="Cart" />
-                  Órdenes
+                  Ventas
+                  <ChevronRight className="ml-auto" />
+                </Link>
+              </li>
+            )}
+
+            {cartEnabled && displayUser?.role === "admin" && (
+              <li className="mb-4">
+                <Link {...getLinkProps("/admin/sales-options")}>
+                  <SlidersHorizontal size={20} className="mr-3 flex-shrink-0" />
+                  Opciones de ventas
                   <ChevronRight className="ml-auto" />
                 </Link>
               </li>
@@ -257,7 +267,16 @@ export default function AdminSideMenu({ cartEnabled }: Props) {
                 <li>
                   <Link {...getLinkProps("/admin/orders")}>
                     <IconWrap light={cart_light} dark={cart_dark} alt="Cart" />
-                    Órdenes
+                    Ventas
+                    <ChevronRight className="ml-auto" />
+                  </Link>
+                </li>
+              )}
+              {cartEnabled && displayUser?.role === "admin" && (
+                <li>
+                  <Link {...getLinkProps("/admin/sales-options")}>
+                    <SlidersHorizontal size={20} className="mr-3 flex-shrink-0" />
+                    Opciones de ventas
                     <ChevronRight className="ml-auto" />
                   </Link>
                 </li>

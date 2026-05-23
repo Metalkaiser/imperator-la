@@ -1,4 +1,4 @@
-import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct } from "@/app/utils/types";
+import { productProps, appResponse, cartItem, saleData, NewActivityLog, NewProduct, orderNote, PaymentMethod, shippingMethod, GiftOption } from "@/app/utils/types";
 
 export interface ProductService {
   /**
@@ -56,6 +56,21 @@ export interface ProductService {
   getCartConfigs(): Promise<appResponse>;
 
   /**
+   * Creates or updates a payment method.
+   */
+  upsertPaymentMethod(method: PaymentMethod): Promise<appResponse>;
+
+  /**
+   * Creates or updates a shipping method.
+   */
+  upsertShippingMethod(method: shippingMethod): Promise<appResponse>;
+
+  /**
+   * Creates or updates a gift option.
+   */
+  upsertGiftOption(option: GiftOption): Promise<appResponse>;
+
+  /**
    * Registers a sale in the database.
    * @param cart The items in the cart.
    * @param clientData The client data associated with the sale.
@@ -68,6 +83,20 @@ export interface ProductService {
    * @returns A promise that resolves to an appResponse containing the list of orders.
    */
   getOrders(): Promise<appResponse>;
+
+  /**
+   * Updates the status of an order.
+   * @param id The order ID.
+   * @param status The next status value.
+   */
+  updateOrderStatus(id: string | number, status: string): Promise<appResponse>;
+
+  /**
+   * Appends a note to an order history.
+   * @param id The order ID.
+   * @param note Note payload to append.
+   */
+  addOrderNote(id: string | number, note: orderNote): Promise<appResponse>;
 
   /**
    * Fetches users from the database.

@@ -35,7 +35,6 @@ export default function DirectBuyPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    console.log(selectedPayment, selectedShipping);
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -104,9 +103,19 @@ export default function DirectBuyPage() {
     return 0;
   }, [selectedPayment, subtotal, giftTotal, shippingFee]);
 
+  const discount = useMemo(() => {
+    if (!selectedPayment || !selectedPayment.discount) return 0;
+    const disc = selectedPayment.discount;
+    if (disc.type === "percentage") {
+      return (subtotal + giftTotal + shippingFee + paymentFee) * (disc.value / 100);
+    } else {
+      return disc.value;
+    }
+  }, [selectedPayment, subtotal, giftTotal, shippingFee, paymentFee]);
+
   const total = useMemo(() => {
-    return subtotal + giftTotal + paymentFee + shippingFee;
-  }, [subtotal, giftTotal, paymentFee, shippingFee]);
+    return subtotal + giftTotal + paymentFee + shippingFee - discount;
+  }, [subtotal, giftTotal, paymentFee, shippingFee, discount]);
 
   const isPurchaseReady =
     total > 0 && formData.payment && formData.shipping;

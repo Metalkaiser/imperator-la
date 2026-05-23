@@ -5,6 +5,7 @@ import Wa from './components/wa';
 import Footer from './components/Footer';
 import CatalogProvider from './components/context/CatalogContext';
 import { CartProvider } from './components/context/Cartcontext';
+import Metapixel from './components/meta_ads/Metapixel';
 
 const shoppinCartSettings = {
   enabled: process.env.NEXT_PUBLIC_CART_ENABLED?.toLocaleLowerCase() === "true",
@@ -27,6 +28,7 @@ export default function CatalogLayout({ children }: Readonly<{ children: React.R
             <Sidemenu type='Menu' />
             {shoppinCartSettings.enabled && <Sidemenu type="Carrito" />}
             <Topmenu />
+            <Metapixel />
             {children}
           </CartProvider>
         </CatalogProvider>

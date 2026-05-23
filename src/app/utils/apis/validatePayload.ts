@@ -100,3 +100,66 @@ export const newProductImagesSchema = z.object({
   thumbnail: fileSchema,
   images: z.array(fileSchema).min(1, {error: "Debe subir al menos una imagen adicional"}).max(10, {error: "El máximo de imágenes adicionales es 10"})
 });
+
+const idSchema = z.union([z.string().min(1), z.number()]);
+const stringNumberRecordSchema = z.record(z.string(), z.union([z.string(), z.number()]));
+const giftDataSchema = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]));
+const feeBaseSchema = z.object({
+  status: z.boolean(),
+  percentage: z.number().nonnegative().optional(),
+  fixed: z.number().nonnegative().optional(),
+});
+
+export const paymentMethodSchema = z.object({
+  id: idSchema,
+  order: z.number().int().nonnegative(),
+  name: z.string().min(1, "El nombre es obligatorio").trim(),
+  enabled: z.boolean(),
+  data: stringNumberRecordSchema,
+  userData: z.array(z.string().min(1)).default([]),
+  icon: z.string().min(1, "El icono es obligatorio").trim(),
+  fee: feeBaseSchema,
+}).superRefine((method, ctx) => {
+  if (!method.fee.status) return;
+  if (method.fee.percentage === undefined && method.fee.fixed === undefined) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Debes indicar porcentaje o monto fijo si el recargo está activo",
+      path: ["fee"],
+    });
+  }
+});
+
+export const shippingMethodSchema = z.object({
+  id: idSchema,
+  order: z.number().int().nonnegative(),
+  name: z.string().min(1, "El nombre es obligatorio").trim(),
+  enabled: z.boolean(),
+  shipToHome: z.boolean(),
+  data: z.array(z.string().min(1)).default([]),
+  icon: z.string().min(1, "El icono es obligatorio").trim(),
+  fee: feeBaseSchema.extend({
+    onlyPayOnDelivery: z.boolean(),
+  }),
+}).superRefine((method, ctx) => {
+  if (!method.fee.status) return;
+  if (method.fee.percentage === undefined && method.fee.fixed === undefined) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Debes indicar porcentaje o monto fijo si el costo está activo",
+      path: ["fee"],
+    });
+  }
+});
+
+export const giftOptionSchema = z.object({
+  id: idSchema,
+  name: z.string().min(1, "El nombre es obligatorio").trim(),
+  description: z.string().trim().optional(),
+  type: z.enum(["wrapping", "case", "card", "other"]),
+  price: z.number().nonnegative(),
+  image: z.string().trim().optional(),
+  available: z.boolean(),
+  exclusiveToProducts: z.array(z.string().min(1)).optional(),
+  data: giftDataSchema.optional(),
+});

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { phoneNumber } from "@/app/utils/utils";
 import { getDiscountedPrice } from "@/app/utils/functions";
 import { useCatalogContext } from "../context/CatalogContext";
+import { useMetaPixel } from "../meta_ads/useMetaPixel";
 
 
 type wap = {
@@ -17,6 +18,7 @@ type wap = {
 }
 
 export default function WaProduct ({ link, price, discount } : wap) {
+  const { track } = useMetaPixel();
   const t = useTranslations("actionDetailsButtons");
   const { cartSettings } = useCatalogContext();
 
@@ -25,11 +27,19 @@ export default function WaProduct ({ link, price, discount } : wap) {
   if (discount) {
     displayPrice = parseFloat(getDiscountedPrice(price,discount));
   }
+
+  const handleClick = () => {
+    track('Lead', {
+      value: displayPrice,
+      currency: cartSettings.mainCurrency,
+      content_name: decodeURIComponent(link)
+    });
+  };
   
   const waLink = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${t('waLink')}${link}%20(${cartSettings.mainCurrency}%20${displayPrice})`;
 
   return (
-    <Link href={waLink} target="_blank">
+    <Link onClick={handleClick} href={waLink} target="_blank">
       <div className="flex relative justify-evenly justify-items-stretch items-center w-5/6 bg-green-500 my-5 p-5 rounded-lg shadow-lg text-center mx-auto">
         <p className="text-white text-md md:text-lg">{t("whatsAppProduct")}</p>
         <svg className="absolute right-5 size-[20px] md:size-[40px]" fill="#fff"

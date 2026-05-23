@@ -84,6 +84,15 @@ type ProductsEndpointResponse = {
   topProductsIds: ApiResponse<topProductsProps[]>;
 };
 
+function normalizeCartConfig(value: any): AdminData["cart"] {
+  const response = value?.status === 200 && value?.response ? value.response : value;
+  return {
+    paymentMethods: Array.isArray(response?.paymentMethods) ? response.paymentMethods : [],
+    shippingMethods: Array.isArray(response?.shippingMethods) ? response.shippingMethods : [],
+    giftOptions: Array.isArray(response?.giftOptions) ? response.giftOptions : [],
+  };
+}
+
 export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "default", shoppinCartSettings }) => {
   const [products, setProducts] = useState<productProps[]>([]);
   const [topProducts, setTopProducts] = useState<topProductsProps[]>([]);
@@ -173,8 +182,8 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
       if (ordersRes?.status === 200 && ordersRes.response) {
         setOrders(ordersRes.response);
       }
-      if (cartRes?.status === 200 && cartRes.response && canEditAll) {
-        setCart(cartRes.response);
+      if (canEditAll) {
+        setCart(normalizeCartConfig(cartRes));
       }
     } catch (err) {
       console.error("refreshOrders error:", err);
@@ -264,15 +273,15 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
         const cartSett = results[idx++];
 
         if (ordersSett?.status === "fulfilled") {
-          const ordersRes = ordersSett.value as {orders:appResponse};
-
-          if (ordersRes.orders.status === 200 && mountedRef.current) setOrders(ordersRes.orders.response ?? []);
+          const ordersRes = ordersSett.value as appResponse | {orders:appResponse};
+          const normalizedOrders = "orders" in ordersRes ? ordersRes.orders : ordersRes;
+          if (normalizedOrders.status === 200 && mountedRef.current) setOrders(normalizedOrders.response ?? []);
         } else {
           console.warn("refreshAll - orders failed", ordersSett?.reason);
         }
 
         if (cartSett?.status === "fulfilled") {
-          setCart(cartSett.value);
+          setCart(normalizeCartConfig(cartSett.value));
         } else {
           console.warn("refreshAll - cart failed", cartSett?.reason);
         }
@@ -282,8 +291,9 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
       if (canViewUsersLogs) {
         const logsSett = results[idx++];
         if (logsSett?.status === "fulfilled") {
-          const logsRes = logsSett.value as {logs: appResponse};
-          if (mountedRef.current && logsRes.logs.status === 200) setLogs(logsRes.logs.response);
+          const logsRes = logsSett.value as appResponse | {logs: appResponse};
+          const normalizedLogs = "logs" in logsRes ? logsRes.logs : logsRes;
+          if (mountedRef.current && normalizedLogs.status === 200) setLogs(normalizedLogs.response);
         } else {
           console.warn("refreshAll - logs failed", logsSett?.reason);
         }
@@ -291,8 +301,9 @@ export const DBProvider: React.FC<DBProviderProps> = ({ children, locale = "defa
         if (canEditAll) {
           const usersSett = results[idx++];
           if (usersSett?.status === "fulfilled") {
-            const usersRes = usersSett.value as {users: appResponse};
-            if (usersRes.users.status === 200 && mountedRef.current) setUsers(usersRes.users.response ?? []);
+            const usersRes = usersSett.value as appResponse | {users: appResponse};
+            const normalizedUsers = "users" in usersRes ? usersRes.users : usersRes;
+            if (normalizedUsers.status === 200 && mountedRef.current) setUsers(normalizedUsers.response ?? []);
           } else {
             console.warn("refreshAll - users failed", usersSett?.reason);
           }

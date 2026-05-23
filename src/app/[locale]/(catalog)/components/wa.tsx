@@ -1,10 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { phoneNumber } from "@/app/utils/utils";
+import { useMetaPixel } from "./meta_ads/useMetaPixel";
 
 export default function Wa(){
+  const { track } = useMetaPixel();
+
+  const handleClick = () => {
+    track('Contact');
+  };
   return(
     <div className="fixed md:bottom-8 md:right-8 bottom-2 right-2 z-50">
-      <Link href={`https://api.whatsapp.com/send?phone=${phoneNumber}`} target="_blank">
+      <Link onClick={handleClick} href={`https://api.whatsapp.com/send?phone=${phoneNumber}`} target="_blank">
         <svg width="50px" height="50px" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
           <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>

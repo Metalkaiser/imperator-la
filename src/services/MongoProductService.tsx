@@ -1,5 +1,5 @@
 import { ProductService } from './ProductService';
-import { appResponse, productProps, topProductsProps, PaymentMethod, cartItem, saleData, NewActivityLog, activity_logs, NewProduct } from '@/app/utils/types';
+import { appResponse, productProps, topProductsProps, PaymentMethod, cartItem, saleData, NewActivityLog, activity_logs, NewProduct, orderNote, shippingMethod, GiftOption } from '@/app/utils/types';
 import { getDb } from '@/config/mongoClient';
 import { dbCollections, noProductError } from '@/app/utils/utils';
 import { MongoError } from 'mongodb';
@@ -120,19 +120,58 @@ export class MongoProductService implements ProductService {
     try {
       const db = await getDb();
       const paymentCollection = db.collection<PaymentMethod>(dbCollections.payment);
-      const shippingCollection = db.collection<PaymentMethod>(dbCollections.shipping);
+      const shippingCollection = db.collection<shippingMethod>(dbCollections.shipping);
+      const giftCollection = db.collection<GiftOption>(dbCollections.giftOptions);
       const paymentMethods = await paymentCollection.find({}).toArray();
       const shippingMethods = await shippingCollection.find({}).toArray();
+      const giftOptions = await giftCollection.find({}).toArray();
 
       const response = {
         paymentMethods: paymentMethods,
-        shippingMethods: shippingMethods
+        shippingMethods: shippingMethods,
+        giftOptions: giftOptions
       }
 
       return {code: "success", response: response , status: 200};
     } catch (error) {
       console.error((error as MongoError).message);
       return {code: "unknown", response: null, status: 500};
+    }
+  }
+
+  async upsertPaymentMethod(method: PaymentMethod): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection<PaymentMethod>(dbCollections.payment);
+      await collection.updateOne({ id: method.id }, { $set: method }, { upsert: true });
+      return { code: "success", response: method, status: 200 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return { code: "unknown", response: null, status: 500 };
+    }
+  }
+
+  async upsertShippingMethod(method: shippingMethod): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection<shippingMethod>(dbCollections.shipping);
+      await collection.updateOne({ id: method.id }, { $set: method }, { upsert: true });
+      return { code: "success", response: method, status: 200 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return { code: "unknown", response: null, status: 500 };
+    }
+  }
+
+  async upsertGiftOption(option: GiftOption): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection<GiftOption>(dbCollections.giftOptions);
+      await collection.updateOne({ id: option.id }, { $set: option }, { upsert: true });
+      return { code: "success", response: option, status: 200 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return { code: "unknown", response: null, status: 500 };
     }
   }
 
@@ -159,7 +198,47 @@ export class MongoProductService implements ProductService {
   }
 
   async getOrders(): Promise<appResponse> {
-    return notImplemented;
+    try {
+      const db = await getDb();
+      const collection = db.collection<any>(dbCollections.orders);
+      const orders = await collection.find({}).sort({ createdAt: -1 }).toArray();
+      return { code: "success", response: orders, status: 200 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return { code: "unknown", response: null, status: 500 };
+    }
+  }
+
+  async updateOrderStatus(id: string | number, status: string): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection<any>(dbCollections.orders);
+      const result = await collection.updateOne({ $or: [{ id }, { id: String(id) }] }, { $set: { status, updatedAt: Date.now() } });
+      if (result.matchedCount === 0) return { code: "not-found", response: null, status: 404 };
+      return { code: "success", response: { id, status }, status: 200 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return { code: "unknown", response: null, status: 500 };
+    }
+  }
+
+  async addOrderNote(id: string | number, note: orderNote): Promise<appResponse> {
+    try {
+      const db = await getDb();
+      const collection = db.collection<any>(dbCollections.orders);
+      const result = await (collection as any).updateOne(
+        { $or: [{ id }, { id: String(id) }] },
+        {
+          $push: { notesHistory: { $each: [note] } },
+          $set: { updatedAt: Date.now() },
+        }
+      );
+      if (result.matchedCount === 0) return { code: "not-found", response: null, status: 404 };
+      return { code: "success", response: { id, note }, status: 200 };
+    } catch (error) {
+      console.error((error as MongoError).message);
+      return { code: "unknown", response: null, status: 500 };
+    }
   }
 
   async getUsers(): Promise<appResponse> {
