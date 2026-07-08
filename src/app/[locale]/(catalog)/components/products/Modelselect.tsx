@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Swal from "sweetalert2";
 import { productProps, cartItem } from "@/app/utils/types";
-import { QuantitySelector } from "../Quantityselector";
-import { plusIcon, minusIcon, getShoppingCartIcon } from "@/app/utils/svgItems";
+//import { QuantitySelector } from "../Quantityselector";
+import { /*plusIcon, minusIcon,*/ getShoppingCartIcon } from "@/app/utils/svgItems";
 import { getDiscountedPrice } from "@/app/utils/functions";
 import { useCart } from "../context/Cartcontext";
 import { useCatalogContext } from "../context/CatalogContext";
@@ -55,9 +55,9 @@ export default function Modelselect ({product}:{product:productProps}) {
     }
     setSelectedItem(item);
   }
-  const newQt = (newqt: number) => {
+  /*const newQt = (newqt: number) => {
     changeItemProps("qt", newqt);
-  }
+  }*/
 
   const addToCart = () => {
     if (!selectedItem.qt || !selectedItem.sku) return;
@@ -165,13 +165,14 @@ export default function Modelselect ({product}:{product:productProps}) {
             ))
             return (
             <div className="flex flex-col gap-5">
-              <div id={!enabled ? "onlysku" : ""}>{skuText}</div>
+              <div>{skuText}</div>
               <div className="flex flex-col gap-2 justify-center items-center">
                 <h2 className="text-sm">{cartTranslations("size")}s:</h2>
                 <div className="flex gap-2">{selector}</div>
               </div>
               {selectedItem.size && (
                 <div className="flex flex-col gap-2 justify-center items-center">
+                  {/*
                   <h2 className="text-sm">{cartTranslations("quantity")}:</h2>
                   <div className="flex gap-5">
                     <QuantitySelector
@@ -180,8 +181,9 @@ export default function Modelselect ({product}:{product:productProps}) {
                       minusIcon={minusIcon}
                       plusIcon={plusIcon}
                       onChange={newQt} />
+                  */}
                     <p>{cartTranslations("qtRemaining")}: {variant.stock.find(s => s.name === selectedItem.size)?.quantity}</p>
-                  </div>
+                  {/*</div>*/}
                 </div>
               )}
             </div>)
